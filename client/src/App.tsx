@@ -1,38 +1,97 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import UpcomingGamesSlider from "./components/UpcomingGamesSlider";
+
+// Public Pages
 import Home from "./pages/Home";
+import LeagueRules from "./pages/LeagueRules";
+import Teams from "./pages/Teams";
+import Schedule from "./pages/Schedule";
+import Stats from "./pages/Stats";
+import Suspensions from "./pages/Suspensions";
+import Standings from "./pages/Standings";
+import Registration from "./pages/Registration";
+
+// Admin Pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminPlayers from "./pages/admin/Players";
+import AdminGames from "./pages/admin/Games";
+import AdminNews from "./pages/admin/News";
+import AdminStars from "./pages/admin/Stars";
+import AdminSuspensions from "./pages/admin/AdminSuspensions";
+import AdminMessages from "./pages/admin/Messages";
+import AdminSettings from "./pages/admin/Settings";
+
+import NotFound from "./pages/NotFound";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      {/* Public Pages */}
+      <Route path="/" component={Home} />
+      <Route path="/league-rules" component={LeagueRules} />
+      <Route path="/teams" component={Teams} />
+      <Route path="/schedule" component={Schedule} />
+      <Route path="/stats" component={Stats} />
+      <Route path="/suspensions" component={Suspensions} />
+      <Route path="/standings" component={Standings} />
+      <Route path="/register" component={Registration} />
+
+      {/* Admin Pages */}
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/players" component={AdminPlayers} />
+      <Route path="/admin/games" component={AdminGames} />
+      <Route path="/admin/news" component={AdminNews} />
+      <Route path="/admin/stars" component={AdminStars} />
+      <Route path="/admin/suspensions" component={AdminSuspensions} />
+      <Route path="/admin/messages" component={AdminMessages} />
+      <Route path="/admin/settings" component={AdminSettings} />
+
+      {/* 404 Fallback */}
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <Header />
+      <UpcomingGamesSlider />
+      <main className="flex-1">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <Header isAdmin />
+      <main className="flex-1">
+        {children}
+      </main>
+    </div>
+  );
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <PublicLayout>
+            <Router />
+          </PublicLayout>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
