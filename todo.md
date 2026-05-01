@@ -46,12 +46,12 @@
 - [ ] Venue management (add/edit game locations) - TODO: implement
 
 ## Data & Features
-- [ ] Seed sample data (2026 summer season, 4 teams, 20 sample games)
-- [ ] Sample news posts
-- [ ] Sample blog posts
+- [x] Seed sample data (2026 summer season, 4 teams, 20 sample games)
+- [x] Sample news posts
+- [x] Sample blog posts
 - [ ] Sample player registrations
 - [ ] Sample player stats
-- [ ] Sample team stats
+- [x] Sample team stats
 - [ ] Sample suspensions
 
 ## Testing & Polish

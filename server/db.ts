@@ -1,6 +1,12 @@
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, users, 
+  seasons, teams, games, playerRegistrations, 
+  playerTeams, playerStats, teamStats, newsPosts, 
+  blogPosts, starsOfWeek, suspensions, gameVenues,
+  InsertPlayerRegistration, InsertGame, InsertNewsPost, InsertBlogPost, InsertStarOfWeek, InsertSuspension
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +95,173 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// League-specific queries
+
+export async function getActiveSeasonId() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
+  return result.length > 0 ? result[0].id : null;
+}
+
+export async function getUpcomingGames(seasonId: number, days: number = 14) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const futureDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
+  const futureDateStr = futureDate.toISOString().split('T')[0];
+  
+  return await db
+    .select()
+    .from(games)
+    .where(
+      and(
+        eq(games.seasonId, seasonId),
+        gte(games.gameDate, todayStr as any),
+        lte(games.gameDate, futureDateStr as any)
+      )
+    )
+    .orderBy(games.gameDate);
+}
+
+export async function getPlayerRegistrations(seasonId: number, status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const conditions = [eq(playerRegistrations.seasonId, seasonId)];
+  if (status) {
+    conditions.push(eq(playerRegistrations.status, status as any));
+  }
+  
+  return await db
+    .select()
+    .from(playerRegistrations)
+    .where(and(...conditions))
+    .orderBy(desc(playerRegistrations.createdAt));
+}
+
+export async function createPlayerRegistration(data: InsertPlayerRegistration) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(playerRegistrations).values(data);
+  return result;
+}
+
+export async function updatePlayerRegistration(id: number, data: Partial<InsertPlayerRegistration>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.update(playerRegistrations).set(data).where(eq(playerRegistrations.id, id));
+}
+
+export async function getTeamsBySeasonId(seasonId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(teams).where(eq(teams.seasonId, seasonId));
+}
+
+export async function getGamesBySeasonId(seasonId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(games)
+    .where(eq(games.seasonId, seasonId))
+    .orderBy(games.gameDate);
+}
+
+export async function updateGameScore(gameId: number, homeScore: number, awayScore: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db
+    .update(games)
+    .set({ homeScore, awayScore, status: "completed" })
+    .where(eq(games.id, gameId));
+}
+
+export async function getNewsPosts(seasonId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(newsPosts)
+    .where(eq(newsPosts.seasonId, seasonId))
+    .orderBy(desc(newsPosts.createdAt))
+    .limit(limit);
+}
+
+export async function createNewsPost(data: InsertNewsPost) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(newsPosts).values(data);
+}
+
+export async function getBlogPosts(seasonId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(blogPosts)
+    .where(eq(blogPosts.seasonId, seasonId))
+    .orderBy(desc(blogPosts.createdAt))
+    .limit(limit);
+}
+
+export async function createBlogPost(data: InsertBlogPost) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(blogPosts).values(data);
+}
+
+export async function getStarsOfWeek(seasonId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(starsOfWeek)
+    .where(eq(starsOfWeek.seasonId, seasonId))
+    .orderBy(desc(starsOfWeek.weekNumber));
+}
+
+export async function createStarOfWeek(data: InsertStarOfWeek) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(starsOfWeek).values(data);
+}
+
+export async function getSuspensions(seasonId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(suspensions)
+    .where(eq(suspensions.seasonId, seasonId))
+    .orderBy(desc(suspensions.startDate));
+}
+
+export async function createSuspension(data: InsertSuspension) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.insert(suspensions).values(data);
+}
+
+export async function updateSuspension(id: number, data: Partial<InsertSuspension>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return await db.update(suspensions).set(data).where(eq(suspensions.id, id));
+}
