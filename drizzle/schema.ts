@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, date, boolean, decimal, json } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -11,8 +11,10 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  emergencyContact: text("emergencyContact"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -28,6 +30,7 @@ export const seasons = mysqlTable("seasons", {
   name: varchar("name", { length: 100 }).notNull(),
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
+  registrationDeadline: date("registrationDeadline"),
   isActive: boolean("isActive").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -40,6 +43,8 @@ export const teams = mysqlTable("teams", {
   name: varchar("name", { length: 100 }).notNull(),
   logoUrl: text("logoUrl"),
   seasonId: int("seasonId").notNull(),
+  captainId: int("captainId"),
+  colors: varchar("colors", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -67,6 +72,7 @@ export const games = mysqlTable("games", {
   homeScore: int("homeScore"),
   awayScore: int("awayScore"),
   status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled").notNull(),
+  isEvaluationGame: boolean("isEvaluationGame").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -76,17 +82,30 @@ export type InsertGame = typeof games.$inferInsert;
 
 export const playerRegistrations = mysqlTable("playerRegistrations", {
   id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
   firstName: varchar("firstName", { length: 100 }).notNull(),
   lastName: varchar("lastName", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 20 }),
-  teamId: int("teamId").notNull(),
   seasonId: int("seasonId").notNull(),
+  registrationType: mysqlEnum("registrationType", ["individual", "team", "spare", "referee", "scorekeeper"]).notNull(),
+  playerRating: int("playerRating"),
+  position: mysqlEnum("position", ["forward", "defenseman", "goalie"]),
   isFirstTime: boolean("isFirstTime").default(false).notNull(),
-  registrationType: mysqlEnum("registrationType", ["individual", "team"]).notNull(),
-  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
-  paymentConfirmed: boolean("paymentConfirmed").default(false).notNull(),
-  jerseyOrderConfirmed: boolean("jerseyOrderConfirmed").default(false).notNull(),
+  wantsCaptain: boolean("wantsCaptain").default(false).notNull(),
+  preferredTeamId: int("preferredTeamId"),
+  friendRequestIds: json("friendRequestIds"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "waitlist"]).default("pending").notNull(),
+  paymentStatus: mysqlEnum("paymentStatus", ["unpaid", "partial", "paid"]).default("unpaid").notNull(),
+  paymentAmount: decimal("paymentAmount", { precision: 10, scale: 2 }),
+  paymentDueDate: date("paymentDueDate"),
+  paymentNotes: text("paymentNotes"),
+  waiverSigned: boolean("waiverSigned").default(false).notNull(),
+  waiverSignedDate: timestamp("waiverSignedDate"),
+  refereeAvailability: json("refereeAvailability"),
+  scorekeeperAvailability: json("scorekeeperAvailability"),
+  refereeEarnings: decimal("refereeEarnings", { precision: 10, scale: 2 }).default("0"),
+  scorekeeperEarnings: decimal("scorekeeperEarnings", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -96,16 +115,57 @@ export type InsertPlayerRegistration = typeof playerRegistrations.$inferInsert;
 
 export const playerTeams = mysqlTable("playerTeams", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId"),
-  registrationId: int("registrationId"),
+  registrationId: int("registrationId").notNull(),
   teamId: int("teamId").notNull(),
   seasonId: int("seasonId").notNull(),
   jerseyNumber: int("jerseyNumber"),
+  isCaptain: boolean("isCaptain").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type PlayerTeam = typeof playerTeams.$inferSelect;
 export type InsertPlayerTeam = typeof playerTeams.$inferInsert;
+
+export const spareAssignments = mysqlTable("spareAssignments", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  gameId: int("gameId").notNull(),
+  teamId: int("teamId").notNull(),
+  replacingPlayerId: int("replacingPlayerId"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "played"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SpareAssignment = typeof spareAssignments.$inferSelect;
+export type InsertSpareAssignment = typeof spareAssignments.$inferInsert;
+
+export const teamRosterRequests = mysqlTable("teamRosterRequests", {
+  id: int("id").autoincrement().primaryKey(),
+  teamCaptainId: int("teamCaptainId").notNull(),
+  playerRegistrationIds: json("playerRegistrationIds"),
+  seasonId: int("seasonId").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TeamRosterRequest = typeof teamRosterRequests.$inferSelect;
+export type InsertTeamRosterRequest = typeof teamRosterRequests.$inferInsert;
+
+export const teamTrades = mysqlTable("teamTrades", {
+  id: int("id").autoincrement().primaryKey(),
+  fromTeamId: int("fromTeamId").notNull(),
+  toTeamId: int("toTeamId").notNull(),
+  fromTeamCaptainId: int("fromTeamCaptainId").notNull(),
+  toTeamCaptainId: int("toTeamCaptainId").notNull(),
+  playerFromId: int("playerFromId").notNull(),
+  playerToId: int("playerToId").notNull(),
+  seasonId: int("seasonId").notNull(),
+  status: mysqlEnum("status", ["pending", "approved_both", "approved_admin", "rejected"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TeamTrade = typeof teamTrades.$inferSelect;
+export type InsertTeamTrade = typeof teamTrades.$inferInsert;
 
 export const playerStats = mysqlTable("playerStats", {
   id: int("id").autoincrement().primaryKey(),
@@ -115,6 +175,8 @@ export const playerStats = mysqlTable("playerStats", {
   assists: int("assists").default(0).notNull(),
   points: int("points").default(0).notNull(),
   gamesPlayed: int("gamesPlayed").default(0).notNull(),
+  penalties: int("penalties").default(0).notNull(),
+  shotsOnGoal: int("shotsOnGoal").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -139,6 +201,35 @@ export const teamStats = mysqlTable("teamStats", {
 export type TeamStat = typeof teamStats.$inferSelect;
 export type InsertTeamStat = typeof teamStats.$inferInsert;
 
+export const gameStats = mysqlTable("gameStats", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("gameId").notNull(),
+  playerTeamId: int("playerTeamId").notNull(),
+  goals: int("goals").default(0).notNull(),
+  assists: int("assists").default(0).notNull(),
+  penalties: int("penalties").default(0).notNull(),
+  penaltyDuration: int("penaltyDuration").default(0).notNull(),
+  shotsOnGoal: int("shotsOnGoal").default(0).notNull(),
+  period: int("period").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type GameStat = typeof gameStats.$inferSelect;
+export type InsertGameStat = typeof gameStats.$inferInsert;
+
+export const badges = mysqlTable("badges", {
+  id: int("id").autoincrement().primaryKey(),
+  playerTeamId: int("playerTeamId").notNull(),
+  badgeType: varchar("badgeType", { length: 50 }).notNull(),
+  description: text("description"),
+  seasonId: int("seasonId").notNull(),
+  awardedBy: mysqlEnum("awardedBy", ["system", "admin"]).default("system").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = typeof badges.$inferInsert;
+
 export const newsPosts = mysqlTable("newsPosts", {
   id: int("id").autoincrement().primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
@@ -146,6 +237,7 @@ export const newsPosts = mysqlTable("newsPosts", {
   imageUrl: text("imageUrl"),
   authorId: int("authorId"),
   seasonId: int("seasonId"),
+  isApproved: boolean("isApproved").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -183,7 +275,19 @@ export const suspensions = mysqlTable("suspensions", {
 export type Suspension = typeof suspensions.$inferSelect;
 export type InsertSuspension = typeof suspensions.$inferInsert;
 
-export const messages = mysqlTable("messages", {
+export const teamMessages = mysqlTable("teamMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  fromPlayerId: int("fromPlayerId").notNull(),
+  content: text("content").notNull(),
+  isArchivedAfterSeason: boolean("isArchivedAfterSeason").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TeamMessage = typeof teamMessages.$inferSelect;
+export type InsertTeamMessage = typeof teamMessages.$inferInsert;
+
+export const adminMessages = mysqlTable("adminMessages", {
   id: int("id").autoincrement().primaryKey(),
   fromAdminId: int("fromAdminId").notNull(),
   toPlayerTeamId: int("toPlayerTeamId"),
@@ -194,8 +298,8 @@ export const messages = mysqlTable("messages", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = typeof messages.$inferInsert;
+export type AdminMessage = typeof adminMessages.$inferSelect;
+export type InsertAdminMessage = typeof adminMessages.$inferInsert;
 
 export const blogPosts = mysqlTable("blogPosts", {
   id: int("id").autoincrement().primaryKey(),
@@ -210,3 +314,90 @@ export const blogPosts = mysqlTable("blogPosts", {
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+export const refereeIncidentReports = mysqlTable("refereeIncidentReports", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("gameId").notNull(),
+  refereeId: int("refereeId").notNull(),
+  playerTeamId: int("playerTeamId"),
+  teamId: int("teamId"),
+  description: text("description").notNull(),
+  severity: mysqlEnum("severity", ["minor", "major", "ejection"]).notNull(),
+  sentToTeamCaptain: boolean("sentToTeamCaptain").default(false).notNull(),
+  sentToPlayer: boolean("sentToPlayer").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RefereeIncidentReport = typeof refereeIncidentReports.$inferSelect;
+export type InsertRefereeIncidentReport = typeof refereeIncidentReports.$inferInsert;
+
+export const jerseyPoll = mysqlTable("jerseyPoll", {
+  id: int("id").autoincrement().primaryKey(),
+  seasonId: int("seasonId").notNull(),
+  option: varchar("option", { length: 100 }).notNull(),
+  votes: int("votes").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type JerseyPoll = typeof jerseyPoll.$inferSelect;
+export type InsertJerseyPoll = typeof jerseyPoll.$inferInsert;
+
+export const jerseyPollVotes = mysqlTable("jerseyPollVotes", {
+  id: int("id").autoincrement().primaryKey(),
+  pollId: int("pollId").notNull(),
+  registrationId: int("registrationId").notNull(),
+  selectedOption: varchar("selectedOption", { length: 100 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type JerseyPollVote = typeof jerseyPollVotes.$inferSelect;
+export type InsertJerseyPollVote = typeof jerseyPollVotes.$inferInsert;
+
+export const waivers = mysqlTable("waivers", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  seasonId: int("seasonId").notNull(),
+  fullName: varchar("fullName", { length: 200 }).notNull(),
+  signedDate: timestamp("signedDate").notNull(),
+  waiverText: text("waiverText").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Waiver = typeof waivers.$inferSelect;
+export type InsertWaiver = typeof waivers.$inferInsert;
+
+export const seasonArchives = mysqlTable("seasonArchives", {
+  id: int("id").autoincrement().primaryKey(),
+  seasonId: int("seasonId").notNull(),
+  archivedData: json("archivedData"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SeasonArchive = typeof seasonArchives.$inferSelect;
+export type InsertSeasonArchive = typeof seasonArchives.$inferInsert;
+
+export const contactSubmissions = mysqlTable("contactSubmissions", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  submissionType: mysqlEnum("submissionType", ["registration_question", "general_inquiry", "complaint", "feedback"]).notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContactSubmission = typeof contactSubmissions.$inferSelect;
+export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
+
+export const auditLogs = mysqlTable("auditLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  adminId: int("adminId").notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  description: text("description"),
+  targetType: varchar("targetType", { length: 50 }),
+  targetId: int("targetId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;

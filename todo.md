@@ -24,17 +24,19 @@
 - [ ] Registration page (player registration form with pricing info) - TODO: backend persistence
 
 ## Registration & Player Management
-- [x] Player registration form (individual/team, first-time player checkbox) - UI complete, TODO: backend
-- [ ] Registration status tracking (pending/approved/rejected) - TODO: connect to database
-- [ ] Payment confirmation workflow - TODO: implement
-- [ ] Jersey order confirmation - TODO: implement
-- [ ] Email notification: player receives approval/rejection email - TODO: implement
-- [ ] Email notification: admin receives new registration email - TODO: implement
+- [x] Player registration form (individual/team, first-time player checkbox, spare, referee, scorekeeper) - COMPLETE with tRPC integration
+- [x] Registration status tracking (pending/approved/rejected) - COMPLETE with database persistence
+- [x] Payment confirmation workflow - COMPLETE with mark paid functionality
+- [x] Digital waiver signing - COMPLETE with signature capture
+- [x] Bilingual support (EN/FR) - COMPLETE with language toggle
+- [x] Email notification: player receives approval/rejection email - COMPLETE (console logging)
+- [x] Email notification: admin receives new registration email - COMPLETE (console logging)
 
 ## Admin Dashboard
-- [ ] Admin authentication & role-based access - TODO: implement role checking
-- [ ] Dashboard overview page - TODO: build real dashboard with stats
-- [ ] Player management (view, approve, reject registrations) - UI built, TODO: backend mutations
+- [x] Admin authentication & role-based access - COMPLETE with role checking
+- [x] Dashboard overview page - COMPLETE with registration stats
+- [x] Player management (view, approve, reject registrations) - COMPLETE with tRPC mutations
+- [x] Registration stats (pending, approved, rejected, total counts) - COMPLETE
 - [ ] Game score entry interface - TODO: implement
 - [ ] News post management (create, edit, delete) - TODO: implement
 - [ ] Blog post management (create, edit, delete) - TODO: implement
@@ -66,3 +68,12 @@
 ## Deployment
 - [ ] Final checkpoint created
 - [ ] Project ready for publishing
+
+## NEW: Logo & Color Palette Updates
+- [x] Upload MIHL league logo to storage
+- [x] Update header to display MIHL league logo
+- [x] Update color palette to Navy Blue (#1a1f3a) + Light Silver (#c0c5d0)
+- [x] Update all pages with new color scheme
+- [ ] Upload team logos when provided by user
+- [ ] Replace AI-generated team logos with user-provided logos
+- [ ] Test color contrast and accessibility with new palette

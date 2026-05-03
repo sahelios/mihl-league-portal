@@ -44,10 +44,8 @@ export default function Header({ isAdmin = false }: HeaderProps) {
           {/* Logo */}
           <Link href="/">
             <span className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition cursor-pointer">
-              <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
-                <span className="text-primary font-bold">⚡</span>
-              </div>
-              <span className="hidden sm:inline">MIHL</span>
+              <img src="/manus-storage/mihl-league-logo_5025857d.png" alt="MIHL Logo" className="w-12 h-12 object-contain" />
+              <span className="hidden sm:inline text-lg">MIHL</span>
             </span>
           </Link>
 
