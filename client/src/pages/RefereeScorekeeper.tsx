@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Whistle, BarChart3, DollarSign, Calendar } from "lucide-react";
+import { Loader2, Users, BarChart3, DollarSign, Calendar } from "lucide-react";
 
 export default function RefereeScorekeeper() {
   const [registrationType, setRegistrationType] = useState<"referee" | "scorekeeper">("referee");
@@ -136,7 +136,7 @@ export default function RefereeScorekeeper() {
           <Card className="bg-gradient-to-br from-accent/20 to-accent/5 border-accent/30">
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
-                <Whistle className="text-accent mt-1" size={32} />
+                <Users className="text-accent mt-1" size={32} />
                 <div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">
                     {language === "en" ? "Become a Referee" : "Devenez Arbitre"}
