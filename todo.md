@@ -8,29 +8,41 @@
 - [ ] Email notification system setup
 
 ## Layout & Navigation
-- [ ] Global header with navigation menu (8 pages) - FIX: nested anchor tags in Wouter Link
+- [x] Global header with navigation menu (9 pages including Referee/Scorekeeper)
 - [ ] Upcoming games slider component (2-week forecast, all pages) - TODO: connect to real schedule data
-- [x] Footer with contact info and social links
-- [ ] Responsive design for mobile/tablet/desktop - TODO: verify across all pages
+- [x] Footer with contact info, social links, registration deadline, and phone number
+- [x] Responsive design for mobile/tablet/desktop - COMPLETE with mobile-first design
 
 ## Public Pages
 - [x] Home page (news, blog, stars slider, top players slider, top teams slider) - UI complete, uses sample data
-- [x] League Rules page (display rules document)
-- [x] Teams page (4 team profiles with logos, rosters, stats) - UI complete with logos
+- [x] League Rules page (display rules document with updated game times and requirements)
+- [x] Teams page (4 team profiles with logos, rosters, stats) - UI complete with logos and 12 players per team
 - [ ] Schedule & Results page (Tuesday/Thursday games with score entry UI) - TODO: full season schedule, score entry
-- [x] Stats page (individual player statistics) - UI complete with sample data
+- [x] Stats page (individual player statistics) - UI complete with generic player names
 - [x] Suspensions page (active and past suspensions list) - UI complete with sample data
 - [x] Standings page (win/loss/points table) - UI complete with sample data
-- [ ] Registration page (player registration form with pricing info) - TODO: backend persistence
+- [x] Registration page (player registration form with pricing info, evaluation games info) - COMPLETE with backend persistence
+- [x] Referee & Scorekeeper recruitment page - COMPLETE with attractive UI and payment info
 
 ## Registration & Player Management
 - [x] Player registration form (individual/team, first-time player checkbox, spare, referee, scorekeeper) - COMPLETE with tRPC integration
+- [x] Player rating 1-10 field - COMPLETE
+- [x] Captain selection checkbox - COMPLETE
+- [x] Position assignment for team players - COMPLETE
+- [x] Referee & scorekeeper recruitment page - COMPLETE with attractive UI
+- [x] Available days selection (Tuesday/Thursday) - COMPLETE
 - [x] Registration status tracking (pending/approved/rejected) - COMPLETE with database persistence
 - [x] Payment confirmation workflow - COMPLETE with mark paid functionality
 - [x] Digital waiver signing - COMPLETE with signature capture
-- [x] Bilingual support (EN/FR) - COMPLETE with language toggle
+- [x] Bilingual support (EN/FR) - COMPLETE with language toggle throughout
 - [x] Email notification: player receives approval/rejection email - COMPLETE (console logging)
 - [x] Email notification: admin receives new registration email - COMPLETE (console logging)
+- [x] League rules updated with game times and equipment requirements - COMPLETE
+- [x] Evaluation games info displayed - COMPLETE
+- [x] Registration deadline (June 9, 2026) displayed - COMPLETE
+- [x] Contact info (registration@mihl.ca, 514-965-2842) on all pages - COMPLETE
+- [x] Jersey "Coming Soon" with poll message - COMPLETE
+- [x] All sample player names replaced with Player 1-16 - COMPLETE
 
 ## Admin Dashboard
 - [x] Admin authentication & role-based access - COMPLETE with role checking

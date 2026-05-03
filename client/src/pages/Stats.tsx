@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface PlayerStat {
   name: string;
@@ -11,16 +11,16 @@ interface PlayerStat {
 
 export default function Stats() {
   const playerStats: PlayerStat[] = [
-    { name: "Michael Elfassy", team: "H Hammers", goals: 12, assists: 12, points: 24, gamesPlayed: 10 },
-    { name: "Gad Cohen", team: "Golan Guards", goals: 10, assists: 12, points: 22, gamesPlayed: 10 },
-    { name: "Oren Elkaim", team: "Iron Lions", goals: 9, assists: 11, points: 20, gamesPlayed: 10 },
-    { name: "Alex Cohen", team: "Iron Lions", goals: 8, assists: 10, points: 18, gamesPlayed: 10 },
-    { name: "Nate Eljarrat", team: "Golan Guards", goals: 7, assists: 9, points: 16, gamesPlayed: 10 },
-    { name: "David Stein", team: "Iron Lions", goals: 7, assists: 8, points: 15, gamesPlayed: 10 },
-    { name: "Yaniv Cohen", team: "Golan Guards", goals: 6, assists: 8, points: 14, gamesPlayed: 10 },
-    { name: "Theo X", team: "H Hammers", goals: 6, assists: 7, points: 13, gamesPlayed: 10 },
-    { name: "Moshe Stein", team: "Schvitz Saints", goals: 5, assists: 6, points: 11, gamesPlayed: 10 },
-    { name: "Yossi Cohen", team: "Schvitz Saints", goals: 4, assists: 5, points: 9, gamesPlayed: 10 },
+    { name: "Player 7", team: "H Hammers", goals: 12, assists: 12, points: 24, gamesPlayed: 10 },
+    { name: "Player 8", team: "Golan Guards", goals: 10, assists: 12, points: 22, gamesPlayed: 10 },
+    { name: "Player 9", team: "Iron Lions", goals: 9, assists: 11, points: 20, gamesPlayed: 10 },
+    { name: "Player 10", team: "Iron Lions", goals: 8, assists: 10, points: 18, gamesPlayed: 10 },
+    { name: "Player 11", team: "Golan Guards", goals: 7, assists: 9, points: 16, gamesPlayed: 10 },
+    { name: "Player 12", team: "Iron Lions", goals: 7, assists: 8, points: 15, gamesPlayed: 10 },
+    { name: "Player 13", team: "Golan Guards", goals: 6, assists: 8, points: 14, gamesPlayed: 10 },
+    { name: "Player 14", team: "H Hammers", goals: 6, assists: 7, points: 13, gamesPlayed: 10 },
+    { name: "Player 15", team: "Schvitz Saints", goals: 5, assists: 6, points: 11, gamesPlayed: 10 },
+    { name: "Player 16", team: "Schvitz Saints", goals: 4, assists: 5, points: 9, gamesPlayed: 10 },
   ];
 
   return (

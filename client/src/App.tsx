@@ -16,6 +16,7 @@ import Stats from "./pages/Stats";
 import Suspensions from "./pages/Suspensions";
 import Standings from "./pages/Standings";
 import Registration from "./pages/Registration";
+import RefereeScorekeeper from "./pages/RefereeScorekeeper";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/suspensions" component={Suspensions} />
       <Route path="/standings" component={Standings} />
       <Route path="/register" component={Registration} />
+      <Route path="/referee-scorekeeper" component={RefereeScorekeeper} />
 
       {/* Admin Pages */}
       <Route path="/admin" component={AdminDashboard} />

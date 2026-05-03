@@ -22,6 +22,7 @@ export default function Header({ isAdmin = false }: HeaderProps) {
     { href: "/suspensions", label: "Suspensions" },
     { href: "/standings", label: "Standings" },
     { href: "/register", label: "Registration" },
+    { href: "/referee-scorekeeper", label: "Referee/Scorekeeper" },
   ];
 
   const adminLinks = [

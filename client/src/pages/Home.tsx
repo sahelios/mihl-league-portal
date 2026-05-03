@@ -65,7 +65,7 @@ export default function Home() {
       id: 2,
       title: "Registration Now Open",
       content:
-        "Players can now register for the upcoming season. Individual registration is $350, or join a full team for $6,500. First-time players must purchase jerseys and socks for $80.",
+        "Players can now register for the upcoming season. Individual registration is $350, or join a full team for $6,500. Jersey and socks set coming soon!",
       date: "2026-06-10",
     },
     {
@@ -105,15 +105,15 @@ export default function Home() {
   ];
 
   const starsOfWeek: StarPlayer[] = [
-    { id: 1, name: "Alex Cohen", team: "Iron Lions", rating: 5 },
-    { id: 2, name: "David Stein", team: "Golan Guards", rating: 5 },
-    { id: 3, name: "Michael Elfassy", team: "H Hammers", rating: 4 },
+    { id: 1, name: "Player 1", team: "Iron Lions", rating: 5 },
+    { id: 2, name: "Player 2", team: "Golan Guards", rating: 5 },
+    { id: 3, name: "Player 3", team: "H Hammers", rating: 4 },
   ];
 
   const topPlayers: Player[] = [
-    { id: 1, name: "Michael Elfassy", team: "H Hammers", points: 24 },
-    { id: 2, name: "Gad Cohen", team: "Golan Guards", points: 22 },
-    { id: 3, name: "Oren Elkaim", team: "Iron Lions", points: 20 },
+    { id: 1, name: "Player 4", team: "H Hammers", points: 24 },
+    { id: 2, name: "Player 5", team: "Golan Guards", points: 22 },
+    { id: 3, name: "Player 6", team: "Iron Lions", points: 20 },
   ];
 
   const topTeams: Team[] = [

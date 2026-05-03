@@ -735,12 +735,31 @@ export default function Registration() {
                 <div className="border-b border-border pb-4">
                   <p className="text-sm text-muted-foreground mb-1">{language === "en" ? "Spare Player" : "Joueur Suppléant"}</p>
                   <p className="text-2xl font-bold text-accent">$40</p>
+                  <p className="text-xs text-muted-foreground mt-1">{language === "en" ? "Per game" : "Par match"}</p>
                 </div>
 
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{language === "en" ? "Jersey & Socks Set" : "Ensemble Jersey & Bas"}</p>
-                  <p className="text-2xl font-bold text-accent">$80</p>
-                  <p className="text-xs text-muted-foreground mt-1">{language === "en" ? "First-time players only" : "Nouveaux joueurs seulement"}</p>
+                <div className="bg-accent/10 border border-accent/20 rounded p-3">
+                  <p className="text-sm text-muted-foreground mb-2">{language === "en" ? "Jersey & Socks Set" : "Ensemble Jersey & Bas"}</p>
+                  <p className="text-sm font-semibold text-accent mb-2">{language === "en" ? "Coming Soon!" : "À Venir!"}</p>
+                  <p className="text-xs text-muted-foreground">{language === "en" ? "We're polling players on their preferences. This will be available to add to your registration costs soon." : "Nous sondons les joueurs sur leurs préférences. Ceci sera bientôt disponible à ajouter à vos frais d'inscription."}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === "en" ? "Evaluation Games" : "Matchs d'Évaluation"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="bg-accent/10 border border-accent/20 rounded p-3">
+                  <p className="text-foreground font-semibold mb-2">
+                    {language === "en" ? "Two Pickup Games Scheduled" : "Deux Matchs Amicaux Prévus"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "en"
+                      ? "All registered players will participate in two evaluation games to assess skill levels and form team captains. Attendance is mandatory."
+                      : "Tous les joueurs inscrits participeront à deux matchs d'évaluation pour évaluer les niveaux de compétence et former les capitaines d'équipe. La participation est obligatoire."}
+                  </p>
                 </div>
               </CardContent>
             </Card>
