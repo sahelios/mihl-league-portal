@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +9,40 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 import { Loader2 } from "lucide-react";
 
 export default function Registration() {
+  const [, navigate] = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
   const [registrationType, setRegistrationType] = useState<"individual" | "team" | "spare" | "referee" | "scorekeeper">("individual");
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      window.location.href = getLoginUrl("/register");
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-accent" />
+          <p className="text-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render form if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Individual/Spare/Referee/Scorekeeper Form
   const [playerForm, setPlayerForm] = useState({
