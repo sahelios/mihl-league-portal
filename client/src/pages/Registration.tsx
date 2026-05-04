@@ -60,7 +60,11 @@ export default function Registration() {
     emergencyRelationship: "",
     waiverSigned: false,
     waiverSignature: "",
+    evaluationDate: "",
   });
+
+  // Fetch evaluation game capacity
+  const { data: evaluationCapacity } = trpc.registration.getEvaluationCapacity.useQuery();
 
   // Team Form
   const [teamForm, setTeamForm] = useState({
@@ -107,6 +111,7 @@ export default function Registration() {
       emergencyRelationship: "",
       waiverSigned: false,
       waiverSignature: "",
+      evaluationDate: "",
     });
     setTeamForm({
       teamName: "",
@@ -148,6 +153,7 @@ export default function Registration() {
         rating: playerForm.rating,
         position: playerForm.position,
         preferredTeam: playerForm.preferredTeam || undefined,
+        evaluationDate: playerForm.evaluationDate || undefined,
         friendRequests: friendList,
         wantsCaptain: playerForm.wantsCaptain,
         emergencyName: playerForm.emergencyName,
@@ -368,7 +374,7 @@ export default function Registration() {
                               <SelectValue placeholder={language === "en" ? "No preference" : "Aucune préférence"} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">
+                              <SelectItem value="none">
                                 {language === "en" ? "No preference" : "Aucune préférence"}
                               </SelectItem>
                               <SelectItem value="Iron Lions">Iron Lions</SelectItem>
@@ -377,6 +383,43 @@ export default function Registration() {
                               <SelectItem value="Schvitz Saints">Schvitz Saints</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+
+                        {/* Evaluation Date Selection */}
+                        <div>
+                          <Label htmlFor="evaluationDate">{language === "en" ? "Evaluation Game Date *" : "Date du Match d'Évaluation *"}</Label>
+                          <Select value={playerForm.evaluationDate} onValueChange={(value) => setPlayerForm({ ...playerForm, evaluationDate: value })}>
+                            <SelectTrigger id="evaluationDate">
+                              <SelectValue placeholder={language === "en" ? "Select a date" : "Sélectionnez une date"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {evaluationCapacity?.map((game) => {
+                                const isGoalie = playerForm.position === 'goalie';
+                                const spotsLeft = isGoalie ? game.goalieSpotsLeft : game.playerSpotsLeft;
+                                const isFull = spotsLeft === 0;
+                                return (
+                                  <SelectItem key={game.date} value={game.date} disabled={isFull}>
+                                    <span>{game.label} - {spotsLeft} {isGoalie ? (language === 'en' ? 'goalie spots' : 'places de gardien') : (language === 'en' ? 'player spots' : 'places de joueur')}</span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          {evaluationCapacity && (
+                            <div className="mt-2 p-2 bg-muted rounded text-sm text-muted-foreground">
+                              {evaluationCapacity.map((game) => (
+                                <div key={game.date} className="mb-2 pb-2 border-b last:border-b-0">
+                                  <div className="font-semibold">{game.label}</div>
+                                  <div className="text-xs">{game.venue} • {game.time}</div>
+                                  <div className="text-xs mt-1">
+                                    {language === 'en' ? 'Available: ' : 'Disponible: '}
+                                    {game.playerSpotsLeft}/{game.maxPlayers} {language === 'en' ? 'players' : 'joueurs'}, 
+                                    {game.goalieSpotsLeft}/{game.maxGoalies} {language === 'en' ? 'goalies' : 'gardiens'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div>

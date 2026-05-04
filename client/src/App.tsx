@@ -27,6 +27,7 @@ import AdminStars from "./pages/admin/Stars";
 import AdminSuspensions from "./pages/admin/AdminSuspensions";
 import AdminMessages from "./pages/admin/Messages";
 import AdminSettings from "./pages/admin/Settings";
+import EvaluationGames from "./pages/admin/EvaluationGames";
 
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/players" component={AdminPlayers} />
       <Route path="/admin/games" component={AdminGames} />
+      <Route path="/admin/evaluation-games" component={EvaluationGames} />
       <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/stars" component={AdminStars} />
       <Route path="/admin/suspensions" component={AdminSuspensions} />

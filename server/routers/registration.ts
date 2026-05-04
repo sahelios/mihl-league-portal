@@ -3,7 +3,15 @@ import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
 import { playerRegistrations } from '../../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
+
+// Evaluation game dates and capacity
+const EVALUATION_DATES = [
+  { date: '2026-06-24', label: 'Tuesday, June 24, 2026', venue: 'Samuel Moscovitch Arena', time: '9:30 PM' },
+  { date: '2026-06-26', label: 'Thursday, June 26, 2026', venue: 'Outremont Arena', time: '10:00 PM' },
+];
+const MAX_PLAYERS_PER_DATE = 24;
+const MAX_GOALIES_PER_DATE = 2;
 
 const registrationSchema = z.object({
   registrationType: z.enum(['individual', 'team', 'spare', 'referee', 'scorekeeper']),
@@ -31,6 +39,7 @@ const registrationSchema = z.object({
   waiverSigned: z.boolean(),
   waiverSignature: z.string(),
   language: z.enum(['en', 'fr']).default('en'),
+  evaluationDate: z.string().optional(),
 });
 
 async function sendRegistrationEmail(data: any, language: 'en' | 'fr') {
@@ -39,8 +48,8 @@ async function sendRegistrationEmail(data: any, language: 'en' | 'fr') {
     : 'Nouvelle Inscription de Joueur - Ligue MIHL';
 
   const emailBody = language === 'en'
-    ? `New registration received:\n\nName: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nType: ${data.registrationType}\nRating: ${data.rating || 'N/A'}`
-    : `Nouvelle inscription reçue:\n\nNom: ${data.firstName} ${data.lastName}\nCourriel: ${data.email}\nType: ${data.registrationType}\nNiveau: ${data.rating || 'N/A'}`;
+    ? `New registration received:\n\nName: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nType: ${data.registrationType}\nRating: ${data.rating || 'N/A'}\nEvaluation Date: ${data.evaluationDate || 'N/A'}`
+    : `Nouvelle inscription reçue:\n\nNom: ${data.firstName} ${data.lastName}\nCourriel: ${data.email}\nType: ${data.registrationType}\nNiveau: ${data.rating || 'N/A'}\nDate d'évaluation: ${data.evaluationDate || 'N/A'}`;
 
   console.log(`[EMAIL] To: registration@mihl.ca\nSubject: ${subject}\n${emailBody}`);
 }
@@ -70,6 +79,94 @@ async function sendRejectionEmail(playerEmail: string, playerName: string, reaso
 }
 
 export const registrationRouter = router({
+  // Public: get evaluation game capacity
+  getEvaluationCapacity: publicProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) {
+        // Return default capacity if DB unavailable
+        return EVALUATION_DATES.map(d => ({
+          ...d,
+          playersRegistered: 0,
+          goaliesRegistered: 0,
+          playerSpotsLeft: MAX_PLAYERS_PER_DATE,
+          goalieSpotsLeft: MAX_GOALIES_PER_DATE,
+          maxPlayers: MAX_PLAYERS_PER_DATE,
+          maxGoalies: MAX_GOALIES_PER_DATE,
+        }));
+      }
+
+      const results = await Promise.all(EVALUATION_DATES.map(async (evalDate) => {
+        // Count players (non-goalie) registered for this date
+        const playerCount = await db.select({ count: sql<number>`count(*)` })
+          .from(playerRegistrations)
+          .where(and(
+            eq(playerRegistrations.evaluationDate, evalDate.date),
+            sql`${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL`
+          ));
+
+        // Count goalies registered for this date
+        const goalieCount = await db.select({ count: sql<number>`count(*)` })
+          .from(playerRegistrations)
+          .where(and(
+            eq(playerRegistrations.evaluationDate, evalDate.date),
+            eq(playerRegistrations.position, 'goalie')
+          ));
+
+        const players = Number(playerCount[0]?.count || 0);
+        const goalies = Number(goalieCount[0]?.count || 0);
+
+        return {
+          ...evalDate,
+          playersRegistered: players,
+          goaliesRegistered: goalies,
+          playerSpotsLeft: Math.max(0, MAX_PLAYERS_PER_DATE - players),
+          goalieSpotsLeft: Math.max(0, MAX_GOALIES_PER_DATE - goalies),
+          maxPlayers: MAX_PLAYERS_PER_DATE,
+          maxGoalies: MAX_GOALIES_PER_DATE,
+        };
+      }));
+
+      return results;
+    }),
+
+  // Public: get evaluation attendance for admin
+  getEvaluationAttendance: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (ctx.user?.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      const results = await Promise.all(EVALUATION_DATES.map(async (evalDate) => {
+        const attendees = await db.select()
+          .from(playerRegistrations)
+          .where(eq(playerRegistrations.evaluationDate, evalDate.date));
+
+        return {
+          ...evalDate,
+          attendees: attendees.map(a => ({
+            id: a.id,
+            firstName: a.firstName,
+            lastName: a.lastName,
+            email: a.email,
+            position: a.position,
+            rating: a.playerRating,
+            registrationType: a.registrationType,
+            status: a.status,
+          })),
+          totalPlayers: attendees.filter(a => a.position !== 'goalie').length,
+          totalGoalies: attendees.filter(a => a.position === 'goalie').length,
+          maxPlayers: MAX_PLAYERS_PER_DATE,
+          maxGoalies: MAX_GOALIES_PER_DATE,
+        };
+      }));
+
+      return results;
+    }),
+
   submit: publicProcedure
     .input(registrationSchema)
     .mutation(async ({ input }) => {
@@ -85,6 +182,43 @@ export const registrationRouter = router({
               code: 'BAD_REQUEST',
               message: 'Team must have 10-15 players',
             });
+          }
+        }
+
+        // Validate evaluation date capacity for individual/spare registrations
+        if (input.evaluationDate && (input.registrationType === 'individual' || input.registrationType === 'spare')) {
+          const isGoalie = input.position === 'goalie';
+
+          if (isGoalie) {
+            const goalieCount = await db.select({ count: sql<number>`count(*)` })
+              .from(playerRegistrations)
+              .where(and(
+                eq(playerRegistrations.evaluationDate, input.evaluationDate),
+                eq(playerRegistrations.position, 'goalie')
+              ));
+            if (Number(goalieCount[0]?.count || 0) >= MAX_GOALIES_PER_DATE) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: input.language === 'en'
+                  ? 'No goalie spots remaining for this evaluation date. Please select another date.'
+                  : 'Plus de places de gardien disponibles pour cette date d\'évaluation. Veuillez choisir une autre date.',
+              });
+            }
+          } else {
+            const playerCount = await db.select({ count: sql<number>`count(*)` })
+              .from(playerRegistrations)
+              .where(and(
+                eq(playerRegistrations.evaluationDate, input.evaluationDate),
+                sql`${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL`
+              ));
+            if (Number(playerCount[0]?.count || 0) >= MAX_PLAYERS_PER_DATE) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: input.language === 'en'
+                  ? 'No player spots remaining for this evaluation date. Please select another date.'
+                  : 'Plus de places de joueur disponibles pour cette date d\'évaluation. Veuillez choisir une autre date.',
+              });
+            }
           }
         }
 
@@ -104,6 +238,7 @@ export const registrationRouter = router({
           userId: 0,
           isFirstTime: false,
           wantsCaptain: input.wantsCaptain || false,
+          evaluationDate: input.evaluationDate || null,
         });
 
         // Send admin notification
@@ -117,12 +252,25 @@ export const registrationRouter = router({
             : 'Inscription soumise avec succès. Vous recevrez une confirmation par courriel.',
         };
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         console.error('Registration submission error:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to submit registration',
         });
       }
+    }),
+
+  getAll: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (ctx.user?.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      return await db.select().from(playerRegistrations);
     }),
 
   getPending: protectedProcedure

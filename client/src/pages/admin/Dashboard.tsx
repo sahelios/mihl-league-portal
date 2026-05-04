@@ -48,6 +48,13 @@ export default function AdminDashboard() {
       color: "text-blue-600",
     },
     {
+      title: "Evaluation Games",
+      description: "View player attendance for evaluation games",
+      icon: Users,
+      href: "/admin/evaluation-games",
+      color: "text-cyan-600",
+    },
+    {
       title: "Game Management",
       description: "Enter scores and manage games",
       icon: BarChart3,

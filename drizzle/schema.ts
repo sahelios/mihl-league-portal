@@ -13,7 +13,6 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  emergencyContact: text("emergencyContact"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -105,6 +104,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   scorekeeperAvailability: json("scorekeeperAvailability"),
   refereeEarnings: decimal("refereeEarnings", { precision: 10, scale: 2 }).default("0"),
   scorekeeperEarnings: decimal("scorekeeperEarnings", { precision: 10, scale: 2 }).default("0"),
+  evaluationDate: varchar("evaluationDate", { length: 20 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
