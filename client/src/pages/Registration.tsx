@@ -60,11 +60,13 @@ export default function Registration() {
     emergencyRelationship: "",
     waiverSigned: false,
     waiverSignature: "",
-    evaluationDate: "",
+    // evaluationDate: "",
   });
 
   // Fetch evaluation game capacity
-  const { data: evaluationCapacity } = trpc.registration.getEvaluationCapacity.useQuery();
+  // TODO: Re-enable once evaluationDate column is added to database
+  // const { data: evaluationCapacity } = trpc.registration.getEvaluationCapacity.useQuery();
+  const evaluationCapacity = [];
 
   // Team Form
   const [teamForm, setTeamForm] = useState({
@@ -111,7 +113,7 @@ export default function Registration() {
       emergencyRelationship: "",
       waiverSigned: false,
       waiverSignature: "",
-      evaluationDate: "",
+      // evaluationDate: "",
     });
     setTeamForm({
       teamName: "",

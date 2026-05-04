@@ -91,7 +91,7 @@
 - [ ] Test color contrast and accessibility with new palette
 
 ## Evaluation Game Date Selection
-- [ ] Add evaluation game date selection to registration form
-- [ ] Cap capacity: 2 goalies + 24 players per evaluation date
-- [ ] Show remaining spots for each evaluation date
-- [ ] Auto-populate admin portal with evaluation game attendance
+- [x] Add evaluation game date selection to registration form - COMPLETE
+- [x] Cap capacity: 2 goalies + 24 players per evaluation date - COMPLETE
+- [x] Show remaining spots for each evaluation date - COMPLETE
+- [x] Auto-populate admin portal with evaluation game attendance - COMPLETE

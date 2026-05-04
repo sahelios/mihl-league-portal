@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
-import { playerRegistrations } from '../../drizzle/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { playerRegistrations, seasons } from '../../drizzle/schema';
+import { eq, and, sql, or } from 'drizzle-orm';
 
 // Evaluation game dates and capacity
 const EVALUATION_DATES = [
@@ -12,6 +12,14 @@ const EVALUATION_DATES = [
 ];
 const MAX_PLAYERS_PER_DATE = 24;
 const MAX_GOALIES_PER_DATE = 2;
+
+// Get active season
+async function getActiveSeason() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
+  return result[0] || null;
+}
 
 const registrationSchema = z.object({
   registrationType: z.enum(['individual', 'team', 'spare', 'referee', 'scorekeeper']),
@@ -41,6 +49,8 @@ const registrationSchema = z.object({
   language: z.enum(['en', 'fr']).default('en'),
   evaluationDate: z.string().optional(),
 });
+
+
 
 async function sendRegistrationEmail(data: any, language: 'en' | 'fr') {
   const subject = language === 'en' 
@@ -78,8 +88,12 @@ async function sendRejectionEmail(playerEmail: string, playerName: string, reaso
   console.log(`[EMAIL] To: ${playerEmail}\nSubject: ${subject}\n${body}`);
 }
 
+// Add getActiveSeason procedure
 export const registrationRouter = router({
-  // Public: get evaluation game capacity
+  getActiveSeason: publicProcedure.query(async () => {
+    return await getActiveSeason();
+  }),
+
   getEvaluationCapacity: publicProcedure
     .query(async () => {
       const db = await getDb();
@@ -100,10 +114,12 @@ export const registrationRouter = router({
         // Count players (non-goalie) registered for this date
         const playerCount = await db.select({ count: sql<number>`count(*)` })
           .from(playerRegistrations)
-          .where(and(
-            eq(playerRegistrations.evaluationDate, evalDate.date),
-            sql`${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL`
-          ));
+          .where(
+            and(
+              eq(playerRegistrations.evaluationDate, evalDate.date),
+              sql`(${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL)`
+            )
+          );
 
         // Count goalies registered for this date
         const goalieCount = await db.select({ count: sql<number>`count(*)` })

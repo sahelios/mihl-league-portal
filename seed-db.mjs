@@ -1,162 +1,125 @@
+// /home/ubuntu/mihl-league-portal/seed-db.mjs
 import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import { URL } from 'url';
 
-dotenv.config();
+const DATABASE_URL = process.env.DATABASE_URL;
 
-const connection = await mysql.createConnection(process.env.DATABASE_URL);
+if (!DATABASE_URL) {
+  console.error("Error: DATABASE_URL environment variable is not set.");
+  process.exit(1);
+}
 
-try {
-  console.log('🌱 Starting database seeding...');
+const parseDbUrl = (dbUrl) => {
+  const parsed = new URL(dbUrl);
+  return {
+    host: parsed.hostname,
+    user: parsed.username,
+    password: parsed.password,
+    database: parsed.pathname.substring(1),
+    port: parsed.port || 3306,
+  };
+};
 
-  // Create season
-  const [seasonResult] = await connection.query(
-    'INSERT INTO seasons (name, startDate, endDate, isActive) VALUES (?, ?, ?, ?)',
-    ['2026 Summer Season', '2026-06-23', '2026-08-25', true]
-  );
-  const seasonId = seasonResult.insertId;
-  console.log(`✅ Created season: ${seasonId}`);
+async function seed() {
+  const config = parseDbUrl(DATABASE_URL);
+  const shouldClear = process.argv.includes('--clear');
 
-  // Create teams
-  const teams = [
-    { name: 'Iron Lions', logo: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/iron-lions-logo-fiEiAMaxLU9qYQBRDYwNns.webp' },
-    { name: 'Golan Guards', logo: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/golan-guards-logo-FbhtjKpEXATVoD9wpHyW2B.webp' },
-    { name: 'H Hammers', logo: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/h-hammers-logo-GXbHhx2YjSRs2NYyRT5gQn.webp' },
-    { name: 'Schvitz Saints', logo: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/schvitz-saints-logo-goQfhvsxxvmaJf3eho6a3J.webp' },
-  ];
+  console.log("Seeding database...");
 
-  const teamIds = [];
-  for (const team of teams) {
-    const [result] = await connection.query(
-      'INSERT INTO teams (name, logoUrl, seasonId) VALUES (?, ?, ?)',
-      [team.name, team.logo, seasonId]
+  const connection = await mysql.createConnection({
+    ...config,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  try {
+    if (shouldClear) {
+      console.log("Clearing existing data...");
+      await connection.query('DELETE FROM suspensions');
+      await connection.query('DELETE FROM game_results');
+      await connection.query('DELETE FROM player_registrations');
+    }
+
+    // A. Seed Player Registrations (20 total)[cite: 1, 2, 3]
+    const players = [];
+    const types = ['individual', 'spare', 'referee', 'scorekeeper'];
+    const statuses = ['pending', 'approved', 'rejected'];
+    const payments = ['paid', 'unpaid'];
+    const positions = ['forward', 'defenseman', 'goalie'];
+
+    for (let i = 1; i <= 20; i++) {
+      let regType = 'individual';
+      if (i > 10 && i <= 15) regType = 'spare';
+      if (i > 15 && i <= 18) regType = 'referee';
+      if (i > 18) regType = 'scorekeeper';
+
+      players.push([
+        `First${i}`,
+        `Last${i}`,
+        `player${i}@example.com`,
+        `514-555-00${i.toString().padStart(2, '0')}`,
+        regType,
+        regType === 'referee' || regType === 'scorekeeper' ? null : positions[i % 3],
+        regType === 'referee' || regType === 'scorekeeper' ? null : Math.floor(Math.random() * 10) + 1,
+        statuses[i % 3],
+        payments[i % 2],
+        i % 2 === 0 ? '2026-06-24' : '2026-06-26',
+        1 // seasonId
+      ]);
+    }
+
+    const [regResult] = await connection.query(
+      `INSERT INTO player_registrations 
+      (firstName, lastName, email, phone, registrationType, position, playerRating, status, paymentStatus, evaluationDate, seasonId) 
+      VALUES ?`,
+      [players]
     );
-    teamIds.push(result.insertId);
-    console.log(`✅ Created team: ${team.name}`);
-  }
+    console.log(`- Inserted ${regResult.affectedRows} player registrations.`);
 
-  // Create venues
-  const [venue1Result] = await connection.query(
-    'INSERT INTO gameVenues (name, address) VALUES (?, ?)',
-    ['Samuel Moscovitch Arena', 'Montreal, QC']
-  );
-  const venue1Id = venue1Result.insertId;
+    // B. Seed Game Results (10 games)[cite: 1, 2, 3]
+    const teams = ['Iron Lions', 'Golan Guards', 'H Hammers', 'Schvitz Saints'];
+    const games = [];
+    for (let i = 1; i <= 10; i++) {
+      const teamA = teams[i % 4];
+      const teamB = teams[(i + 1) % 4];
+      games.push([
+        teamA,
+        teamB,
+        Math.floor(Math.random() * 6),
+        Math.floor(Math.random() * 6),
+        `2026-06-${(10 + i).toString().padStart(2, '0')}`,
+        'completed'
+      ]);
+    }
 
-  const [venue2Result] = await connection.query(
-    'INSERT INTO gameVenues (name, address) VALUES (?, ?)',
-    ['Outremont Arena', 'Montreal, QC']
-  );
-  const venue2Id = venue2Result.insertId;
-  console.log(`✅ Created venues`);
+    const [gameResult] = await connection.query(
+      `INSERT INTO game_results (teamAName, teamBName, teamAScore, teamBScore, date, status) VALUES ?`,
+      [games]
+    );
+    console.log(`- Inserted ${gameResult.affectedRows} game results.`);
 
-  // Generate games for 10 weeks (June 23 - August 25)
-  // Tuesdays: 9:30 PM at Samuel Moscovitch Arena
-  // Thursdays: 10:00 PM at Outremont Arena
-  const games = [];
-  const startDate = new Date('2026-06-23');
-
-  for (let week = 0; week < 10; week++) {
-    // Tuesday game
-    const tuesdayDate = new Date(startDate);
-    tuesdayDate.setDate(tuesdayDate.getDate() + week * 7);
-    const tuesdayDateStr = tuesdayDate.toISOString().split('T')[0];
-
-    // Thursday game
-    const thursdayDate = new Date(startDate);
-    thursdayDate.setDate(thursdayDate.getDate() + 2 + week * 7);
-    const thursdayDateStr = thursdayDate.toISOString().split('T')[0];
-
-    // Rotate matchups
-    const matchups = [
-      [0, 1], // Iron Lions vs Golan Guards
-      [2, 3], // H Hammers vs Schvitz Saints
-      [0, 2], // Iron Lions vs H Hammers
-      [1, 3], // Golan Guards vs Schvitz Saints
-      [0, 3], // Iron Lions vs Schvitz Saints
-      [1, 2], // Golan Guards vs H Hammers
+    // C. Seed Suspensions (3 active)[cite: 1, 2, 3]
+    // Fetch newly created player IDs to link suspensions
+    const [rows] = await connection.query('SELECT id, firstName, lastName FROM player_registrations LIMIT 3');
+    const suspensions = [
+      [rows[0].id, `${rows[0].firstName} ${rows[0].lastName}`, "Fighting", 2, true],
+      [rows[1].id, `${rows[1].firstName} ${rows[1].lastName}`, "Unsportsmanlike conduct", 3, true],
+      [rows[2].id, `${rows[2].firstName} ${rows[2].lastName}`, "Excessive penalties", 1, true]
     ];
 
-    const tuesdayMatchup = matchups[week % matchups.length];
-    const thursdayMatchup = matchups[(week + 1) % matchups.length];
-
-    // Tuesday game
-    await connection.query(
-      'INSERT INTO games (seasonId, homeTeamId, awayTeamId, venueId, gameDate, gameTime, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [seasonId, teamIds[tuesdayMatchup[0]], teamIds[tuesdayMatchup[1]], venue1Id, tuesdayDateStr, '21:30', 'scheduled']
+    const [susResult] = await connection.query(
+      `INSERT INTO suspensions (playerId, playerName, reason, gamesRemaining, active) VALUES ?`,
+      [suspensions]
     );
+    console.log(`- Inserted ${susResult.affectedRows} active suspensions.`);
 
-    // Thursday game
-    await connection.query(
-      'INSERT INTO games (seasonId, homeTeamId, awayTeamId, venueId, gameDate, gameTime, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [seasonId, teamIds[thursdayMatchup[0]], teamIds[thursdayMatchup[1]], venue2Id, thursdayDateStr, '22:00', 'scheduled']
-    );
-
-    console.log(`✅ Created games for week ${week + 1}`);
+    console.log("Seeding complete!");
+  } catch (error) {
+    console.error("Seeding failed:", error.message);
+  } finally {
+    await connection.end();
   }
-
-  // Create team stats
-  for (const teamId of teamIds) {
-    await connection.query(
-      'INSERT INTO teamStats (teamId, seasonId, wins, losses, ties, points, goalsFor, goalsAgainst) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [teamId, seasonId, 0, 0, 0, 0, 0, 0]
-    );
-  }
-  console.log(`✅ Created team stats`);
-
-  // Create sample news posts
-  const newsPosts = [
-    {
-      title: 'Season Kicks Off June 23',
-      content: 'The Mensches Ice Hockey League is excited to announce the start of the 2026 summer season on June 23rd. All four teams are ready to compete!',
-    },
-    {
-      title: 'Registration Now Open',
-      content: 'Player registration is now open for the 2026 season. Individual registration is $350, or register your full team for $6,500.',
-    },
-    {
-      title: 'Meet the Four Teams',
-      content: 'Get to know the Iron Lions, Golan Guards, H Hammers, and Schvitz Saints. Each team brings unique talent and passion to the league.',
-    },
-  ];
-
-  for (const post of newsPosts) {
-    await connection.query(
-      'INSERT INTO newsPosts (title, content, seasonId) VALUES (?, ?, ?)',
-      [post.title, post.content, seasonId]
-    );
-  }
-  console.log(`✅ Created news posts`);
-
-  // Create sample blog posts
-  const blogPosts = [
-    {
-      title: 'The History of the MIHL',
-      content: 'Learn about the founding and growth of The Mensches Ice Hockey League, a community-driven recreational league dedicated to competition and camaraderie.',
-    },
-    {
-      title: 'Training Tips for Summer Hockey',
-      content: 'As the season approaches, here are some tips to prepare yourself physically and mentally for the upcoming games.',
-    },
-    {
-      title: 'Sportsmanship and Fair Play',
-      content: 'The MIHL is committed to maintaining the highest standards of sportsmanship and fair play. Learn about our code of conduct.',
-    },
-  ];
-
-  for (const post of blogPosts) {
-    await connection.query(
-      'INSERT INTO blogPosts (title, content, seasonId) VALUES (?, ?, ?)',
-      [post.title, post.content, seasonId]
-    );
-  }
-  console.log(`✅ Created blog posts`);
-
-  console.log('\n✨ Database seeding completed successfully!');
-  console.log(`Season ID: ${seasonId}`);
-  console.log(`Team IDs: ${teamIds.join(', ')}`);
-
-} catch (error) {
-  console.error('❌ Error seeding database:', error);
-  process.exit(1);
-} finally {
-  await connection.end();
 }
+
+seed();

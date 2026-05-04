@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { z } from "zod";
 import {
   getActiveSeasonId,
   getUpcomingGames,
@@ -23,6 +23,12 @@ import { notifyOwner } from "../_core/notification";
 
 export const leagueRouter = router({
   // Public queries
+  getGames: publicProcedure.query(async () => {
+    const seasonId = await getActiveSeasonId();
+    if (!seasonId) return [];
+    return await getGamesBySeasonId(seasonId);
+  }),
+
   getUpcomingGames: publicProcedure
     .input(z.object({ days: z.number().optional() }).optional())
     .query(async ({ input }) => {
