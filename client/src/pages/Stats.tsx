@@ -1,33 +1,21 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Trophy, Languages, Filter, Loader2 } from "lucide-react";
+import { Languages, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function Stats() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [activeTab, setActiveTab] = useState<"points" | "goals" | "assists">("points");
-  const [search, setSearch] = useState("");
-  const [teamFilter, setTeamFilter] = useState("all");
-  const [posFilter, setPosFilter] = useState("all");
 
-  const { data: stats, isLoading } = trpc.league.getLeaderboard.useQuery({
-    stat: activeTab,
-    limit: 20,
-    search,
-    team: teamFilter,
-    position: posFilter
-  });
+  const { data: stats, isLoading } = trpc.league.getLeaderboard.useQuery({ stat: activeTab });
 
   const getRankStyle = (idx: number) => {
     if (idx === 0) return "bg-yellow-500/10 border-yellow-500 text-yellow-600";
     if (idx === 1) return "bg-slate-400/10 border-slate-400 text-slate-500";
-    if (idx === 2) return "bg-amber-700/10 border-amber-700 text-amber-700";
-    return "bg-muted border-transparent text-muted-foreground";
+    if (idx === 2) return "bg-amber-600/10 border-amber-600 text-amber-700";
+    return "bg-muted text-muted-foreground border-border";
   };
 
   return (
@@ -35,82 +23,42 @@ export default function Stats() {
       <div className="container py-12 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-accent" />
+            <h1 className="text-4xl font-bold text-foreground">
               {language === "en" ? "League Leaders" : "Meneurs de la Ligue"}
             </h1>
-            <p className="text-muted-foreground mt-1">{language === "en" ? "2026 Summer Season Statistics" : "Statistiques de la Saison d'Été 2026"}</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setLanguage(language === "en" ? "fr" : "en")}>
             <Languages className="mr-2 h-4 w-4" />{language === "en" ? "Français" : "English"}
           </Button>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-8">
-          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-2">
-              <Label>{language === "en" ? "Search Player" : "Rechercher un joueur"}</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="..." />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{language === "en" ? "Team" : "Équipe"}</Label>
-              <Select value={teamFilter} onValueChange={setTeamFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{language === "en" ? "All Teams" : "Toutes les équipes"}</SelectItem>
-                  <SelectItem value="Iron Lions">Iron Lions</SelectItem>
-                  <SelectItem value="Golan Guards">Golan Guards</SelectItem>
-                  <SelectItem value="H Hammers">H Hammers</SelectItem>
-                  <SelectItem value="Schvitz Saints">Schvitz Saints</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{language === "en" ? "Position" : "Position"}</Label>
-              <Select value={posFilter} onValueChange={setPosFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{language === "en" ? "All" : "Toutes"}</SelectItem>
-                  <SelectItem value="forward">{language === "en" ? "Forwards" : "Attaquants"}</SelectItem>
-                  <SelectItem value="defenseman">{language === "en" ? "Defensemen" : "Défenseurs"}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2 bg-muted p-1 rounded-lg">
-              {["points", "goals", "assists"].map((tab) => (
-                <Button 
-                  key={tab} 
-                  variant={activeTab === tab ? "default" : "ghost"} 
-                  className="flex-1 capitalize" 
-                  onClick={() => setActiveTab(tab as any)}
-                >
-                  {language === "en" ? tab : (tab === "points" ? "Points" : tab === "goals" ? "Buts" : "Passes")}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-4 mb-6 border-b border-border pb-4">
+          <Button variant={activeTab === "points" ? "default" : "outline"} onClick={() => setActiveTab("points")}>
+            {language === "en" ? "Points" : "Points"}
+          </Button>
+          <Button variant={activeTab === "goals" ? "default" : "outline"} onClick={() => setActiveTab("goals")}>
+            {language === "en" ? "Goals" : "Buts"}
+          </Button>
+          <Button variant={activeTab === "assists" ? "default" : "outline"} onClick={() => setActiveTab("assists")}>
+            {language === "en" ? "Assists" : "Aides"}
+          </Button>
+        </div>
 
-        {/* Table */}
         <Card>
           <CardContent className="p-0 overflow-x-auto">
             {isLoading ? (
-              <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center p-12"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 border-b border-border">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground">
                   <tr>
-                    <th className="py-4 px-6 font-semibold w-16">#</th>
-                    <th className="py-4 px-6 font-semibold">{language === "en" ? "Player" : "Joueur"}</th>
-                    <th className="py-4 px-6 font-semibold">{language === "en" ? "Team" : "Équipe"}</th>
-                    <th className="py-4 px-6 font-semibold text-center">GP</th>
-                    <th className={`py-4 px-6 font-semibold text-center ${activeTab === "goals" ? "text-accent bg-accent/5" : ""}`}>G</th>
-                    <th className={`py-4 px-6 font-semibold text-center ${activeTab === "assists" ? "text-accent bg-accent/5" : ""}`}>A</th>
-                    <th className={`py-4 px-6 font-semibold text-center ${activeTab === "points" ? "text-accent bg-accent/5" : ""}`}>PTS</th>
+                    <th className="py-3 px-6">#</th>
+                    <th className="py-3 px-6">{language === "en" ? "Player" : "Joueur"}</th>
+                    <th className="py-3 px-6">{language === "en" ? "Team" : "Équipe"}</th>
+                    <th className="py-3 px-6 text-center">GP</th>
+                    <th className="py-3 px-6 text-center">G</th>
+                    <th className="py-3 px-6 text-center">A</th>
+                    <th className="py-3 px-6 text-center">PTS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -119,19 +67,14 @@ export default function Stats() {
                       <td className="py-3 px-6">
                         <Badge variant="outline" className={`font-bold w-8 flex justify-center ${getRankStyle(idx)}`}>{idx + 1}</Badge>
                       </td>
-                      <td className="py-3 px-6 font-semibold">
-                        <Link href={`/player/${stat.id}`} className="hover:text-accent hover:underline">{stat.name}</Link>
-                      </td>
+                      <td className="py-3 px-6 font-semibold">{stat.name}</td>
                       <td className="py-3 px-6 text-muted-foreground">{stat.team}</td>
                       <td className="py-3 px-6 text-center">{stat.gamesPlayed}</td>
-                      <td className={`py-3 px-6 text-center ${activeTab === "goals" ? "font-bold text-accent bg-accent/5" : ""}`}>{stat.goals}</td>
-                      <td className={`py-3 px-6 text-center ${activeTab === "assists" ? "font-bold text-accent bg-accent/5" : ""}`}>{stat.assists}</td>
-                      <td className={`py-3 px-6 text-center ${activeTab === "points" ? "font-bold text-accent bg-accent/5" : ""}`}>{stat.points}</td>
+                      <td className="py-3 px-6 text-center">{stat.goals}</td>
+                      <td className="py-3 px-6 text-center">{stat.assists}</td>
+                      <td className="py-3 px-6 text-center font-bold text-accent bg-accent/5">{stat.points}</td>
                     </tr>
                   ))}
-                  {stats?.length === 0 && (
-                    <tr><td colSpan={7} className="text-center p-8 text-muted-foreground">{language === "en" ? "No players found." : "Aucun joueur trouvé."}</td></tr>
-                  )}
                 </tbody>
               </table>
             )}

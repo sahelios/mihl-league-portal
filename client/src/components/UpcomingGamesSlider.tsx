@@ -1,92 +1,49 @@
-import { useState, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
 export default function UpcomingGamesSlider() {
-  const [language, setLanguage] = useState<"en" | "fr">("en");
-  const sliderRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [language] = useState<"en" | "fr">("en"); // Can be wired up to global state later if needed
 
-  // Fetch upcoming games from API[cite: 1]
-  // Note: Assuming `trpc.league.getUpcomingGames` handles the 14-day filter backend-side 
-  // as defined in the requirements.
-  const { data: games, isLoading, isError, refetch } = trpc.league.getUpcomingGames.useQuery(undefined, {
-    // Auto-refresh every 5 minutes (300,000 ms)
-    refetchInterval: 300000,
+  // Fetch games using tRPC with auto-refresh every 5 minutes
+  const { data: games, isLoading } = trpc.league.getUpcomingGames.useQuery(undefined, {
+    refetchInterval: 5 * 60 * 1000,
   });
 
-  // Smooth scrolling implementation[cite: 11]
   const scroll = (direction: "left" | "right") => {
-    if (sliderRef.current) {
-      const scrollAmount = 330; // Card width + gap
-      const currentScroll = sliderRef.current.scrollLeft;
-      const newPosition = direction === "left" 
-        ? Math.max(0, currentScroll - scrollAmount) 
-        : currentScroll + scrollAmount;
-      
-      sliderRef.current.scrollTo({ left: newPosition, behavior: "smooth" });
+    const container = document.getElementById("games-slider");
+    if (container) {
+      const scrollAmount = 400;
+      const newPosition =
+        direction === "left"
+          ? Math.max(0, scrollPosition - scrollAmount)
+          : scrollPosition + scrollAmount;
+      container.scrollTo({ left: newPosition, behavior: "smooth" });
+      setScrollPosition(newPosition);
     }
   };
 
-  // Date formatting helper for bilingual display
-  const formatDate = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(language === "en" ? "en-US" : "fr-FR", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  // Ensure we have a valid array of games
+  const safeGames = Array.isArray(games) ? games : [];
 
-  // Time formatting helper (12-hour AM/PM format)
-  const formatTime = (dateString: string | Date) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  // 1. Loading State Skeleton[cite: 1, 11]
   if (isLoading) {
     return (
-      <div className="bg-muted/10 py-6 border-b border-border">
-        <div className="container max-w-7xl mx-auto px-4">
-          <div className="h-4 w-48 bg-muted rounded animate-pulse mb-4" />
-          <div className="flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-shrink-0 w-80 h-32 bg-muted rounded-xl animate-pulse" />
-            ))}
+      <div className="bg-muted/30 py-4 border-b border-border">
+        <div className="container">
+          <div className="h-32 flex items-center justify-center bg-card rounded-lg border border-border">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </div>
       </div>
     );
   }
 
-  // 2. Error State[cite: 1]
-  if (isError) {
+  if (safeGames.length === 0) {
     return (
-      <div className="bg-destructive/5 py-6 border-b border-destructive/20">
-        <div className="container max-w-7xl mx-auto px-4 flex flex-col items-center justify-center text-center">
-          <AlertCircle className="h-6 w-6 text-destructive mb-2" />
-          <p className="text-sm text-foreground font-medium mb-3">
-            {language === "en" ? "Failed to load upcoming games." : "Impossible de charger les matchs à venir."}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            {language === "en" ? "Retry" : "Réessayer"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Empty State[cite: 11]
-  if (!games || games.length === 0) {
-    return (
-      <div className="bg-muted/10 py-8 border-b border-border">
-        <div className="container max-w-7xl mx-auto px-4">
+      <div className="bg-muted/30 py-6 border-b border-border">
+        <div className="container">
           <p className="text-center text-muted-foreground font-medium">
             {language === "en" 
               ? "No games scheduled in the next 2 weeks." 
@@ -97,90 +54,90 @@ export default function UpcomingGamesSlider() {
     );
   }
 
-  // 4. Main Component Render[cite: 11]
   return (
-    <div className="bg-muted/10 py-6 border-b border-border relative group">
-      <div className="container max-w-7xl mx-auto px-4">
-        
-        {/* Header & Language Toggle */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-bold tracking-wider text-foreground uppercase">
-            {language === "en" ? "Upcoming Games (14-Day Forecast)" : "Matchs à Venir (Prévisions 14 Jours)"}
+    <div className="bg-muted/30 py-4 border-b border-border">
+      <div className="container">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">
+            {language === "en" ? "Upcoming Games" : "Matchs à Venir"}
           </h3>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setLanguage(language === "en" ? "fr" : "en")}
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            {language === "en" ? "FR" : "EN"}
-          </Button>
         </div>
-
+        
         <div className="relative">
-          {/* Left Navigation Arrow */}
+          {/* Left Scroll Button */}
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex disabled:opacity-0"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background border border-border shadow-sm"
             onClick={() => scroll("left")}
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft size={20} />
           </Button>
 
-          {/* Scrollable Container */}
+          {/* Games Slider */}
           <div
-            ref={sliderRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth pb-4 snap-x snap-mandatory hide-scrollbar"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            id="games-slider"
+            className="flex gap-4 overflow-x-auto scroll-smooth pb-4 pt-1 px-8 no-scrollbar"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {games.map((game: any) => (
+            {safeGames.map((game: any) => (
               <div
                 key={game.id}
-                className="snap-start flex-shrink-0 w-[300px] sm:w-[320px] bg-card border border-border rounded-xl p-5 hover:border-accent/50 hover:shadow-lg transition-all duration-200"
+                className="flex-shrink-0 w-80 bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition"
               >
-                {/* Card Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-1 rounded-sm uppercase">
-                    {language === "en" ? "Scheduled" : "Prévu"}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded uppercase">
+                    {game.status === "completed" 
+                      ? (language === "en" ? "FINAL" : "TERMINÉ") 
+                      : (language === "en" ? "SCHEDULED" : "PRÉVU")}
                   </span>
-                  <span className="text-xs font-medium text-muted-foreground capitalize">
-                    {formatDate(game.date)}
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {new Date(game.date).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" })}
                   </span>
                 </div>
 
-                {/* Matchup Layout */}
-                <div className="flex items-center justify-between mb-4 bg-muted/30 p-3 rounded-lg border border-border/50">
-                  <div className="flex-1 text-right pr-3 truncate">
-                    <p className="font-bold text-sm text-foreground truncate">{game.teamAName}</p>
-                  </div>
-                  <div className="text-center shrink-0 w-8">
-                    <p className="text-xs font-bold text-muted-foreground uppercase">
-                      {language === "en" ? "vs" : "c."}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex-1 text-right pr-3">
+                    <p className="font-bold text-sm leading-tight text-foreground">
+                      {game.teamAName || game.homeTeam}
                     </p>
                   </div>
-                  <div className="flex-1 text-left pl-3 truncate">
-                    <p className="font-bold text-sm text-foreground truncate">{game.teamBName}</p>
+                  <div className="text-center min-w-[3rem]">
+                    {game.status === "completed" ? (
+                      <p className="font-bold text-lg bg-muted border border-border px-2 py-1 rounded">
+                        {game.teamAScore ?? game.homeScore} - {game.teamBScore ?? game.awayScore}
+                      </p>
+                    ) : (
+                      <p className="text-xs font-bold text-muted-foreground px-2 py-1 bg-muted/50 rounded">VS</p>
+                    )}
+                  </div>
+                  <div className="flex-1 text-left pl-3">
+                    <p className="font-bold text-sm leading-tight text-foreground">
+                      {game.teamBName || game.awayTeam}
+                    </p>
                   </div>
                 </div>
 
-                {/* Card Footer */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-3">
-                  <span className="font-medium">{formatTime(game.date)}</span>
-                  <span className="truncate pl-2">{game.venueName || "TBD"}</span>
+                <div className="text-xs text-muted-foreground flex justify-between items-center bg-muted/50 px-3 py-2 rounded-md border border-border/50">
+                  <span className="font-medium flex items-center gap-1">
+                    {game.time || "TBD"}
+                  </span>
+                  <span className="truncate max-w-[140px] text-right">
+                    {game.venueName || game.venue || "TBA"}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Right Navigation Arrow */}
+          {/* Right Scroll Button */}
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 hover:bg-background border border-border shadow-sm"
             onClick={() => scroll("right")}
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight size={20} />
           </Button>
         </div>
       </div>

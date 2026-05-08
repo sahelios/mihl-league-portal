@@ -1,4 +1,4 @@
-import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
+import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
 import { getDb } from '../db';
 import { refereeApplications } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -25,8 +25,19 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       
+      // Explicitly mapping the input to strictly match the Drizzle MySQL schema types
       await db.insert(refereeApplications).values({
-        ...input,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        interacEmail: input.interacEmail,
+        role: input.role,
+        certificationStatus: input.isCertified ? 'certified' : 'uncertified',
+        // Transforming array of strings to the required JSON array of objects
+        certifications: input.certifications.map(c => ({ type: c, year: new Date().getFullYear() })),
+        yearsExperience: input.yearsOfExperience,
+        hockeyLevels: input.hockeyLevels,
         status: 'pending',
         selectedGames: [],
         createdAt: new Date(),
@@ -43,12 +54,14 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      // Assuming user email matches application email
-      const app = await db.query.refereeApplications.findFirst({
-        where: eq(refereeApplications.email, ctx.user.email)
-      });
+      // Using db.select().from() to avoid the 'Aliased' typing error found in db.query
+      const apps = await db
+        .select()
+        .from(refereeApplications)
+        .where(eq(refereeApplications.email, ctx.user.email))
+        .limit(1);
       
-      return app;
+      return apps[0] || null;
     }),
 
   selectGameAvailability: protectedProcedure
@@ -59,14 +72,19 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      const app = await db.query.refereeApplications.findFirst({
-        where: eq(refereeApplications.email, ctx.user.email)
-      });
+      const apps = await db
+        .select()
+        .from(refereeApplications)
+        .where(eq(refereeApplications.email, ctx.user.email))
+        .limit(1);
+
+      const app = apps[0];
 
       if (!app || app.status !== 'approved') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Application not approved.' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Application not found or not approved.' });
       }
 
+      // First argument inside .where() MUST be the column reference, not the value
       await db.update(refereeApplications)
         .set({ selectedGames: input.selectedGameIds, updatedAt: new Date() })
         .where(eq(refereeApplications.id, app.id));
