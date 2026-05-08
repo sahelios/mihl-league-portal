@@ -1,94 +1,76 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Standing {
-  rank: number;
-  team: string;
-  wins: number;
-  losses: number;
-  ties: number;
-  points: number;
-  goalsFor: number;
-  goalsAgainst: number;
-}
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Languages, Shield, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export default function Standings() {
-  const standings: Standing[] = [
-    { rank: 1, team: "Iron Lions", wins: 8, losses: 2, ties: 0, points: 16, goalsFor: 45, goalsAgainst: 28 },
-    { rank: 2, team: "Golan Guards", wins: 7, losses: 3, ties: 0, points: 14, goalsFor: 42, goalsAgainst: 32 },
-    { rank: 3, team: "H Hammers", wins: 6, losses: 4, ties: 0, points: 12, goalsFor: 38, goalsAgainst: 35 },
-    { rank: 4, team: "Schvitz Saints", wins: 5, losses: 5, ties: 0, points: 10, goalsFor: 35, goalsAgainst: 38 },
-  ];
+  const [language, setLanguage] = useState<"en" | "fr">("en");
+  const { data: standings, isLoading } = trpc.league.getTeamStandings.useQuery();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container py-12">
-        <h1 className="text-4xl font-bold mb-12 text-foreground">Standings</h1>
+      <div className="container py-12 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
+              <Shield className="h-8 w-8 text-accent" />
+              {language === "en" ? "League Standings" : "Classement de la Ligue"}
+            </h1>
+            <p className="text-muted-foreground mt-1">{language === "en" ? "2026 Summer Season" : "Saison d'Été 2026"}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setLanguage(language === "en" ? "fr" : "en")}>
+            <Languages className="mr-2 h-4 w-4" />{language === "en" ? "Français" : "English"}
+          </Button>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>2026 Summer Season</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">#</th>
-                    <th className="text-left py-3 px-4 font-semibold text-foreground">Team</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">W</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">L</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">T</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">PTS</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">GF</th>
-                    <th className="text-center py-3 px-4 font-semibold text-foreground">GA</th>
+        <Card className="border-border overflow-hidden">
+          <CardContent className="p-0 overflow-x-auto">
+            {isLoading ? (
+              <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="py-4 px-6 font-semibold w-16 text-center">#</th>
+                    <th className="py-4 px-6 font-semibold">{language === "en" ? "Team" : "Équipe"}</th>
+                    <th className="py-4 px-4 font-semibold text-center">GP</th>
+                    <th className="py-4 px-4 font-semibold text-center">W</th>
+                    <th className="py-4 px-4 font-semibold text-center">L</th>
+                    <th className="py-4 px-4 font-semibold text-center">T</th>
+                    <th className="py-4 px-4 font-semibold text-center text-accent bg-accent/5">PTS</th>
+                    <th className="py-4 px-4 font-semibold text-center">GF</th>
+                    <th className="py-4 px-4 font-semibold text-center">GA</th>
+                    <th className="py-4 px-4 font-semibold text-center">DIFF</th>
+                    <th className="py-4 px-6 font-semibold text-center">WIN%</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {standings.map((standing) => (
-                    <tr key={standing.rank} className="border-b border-border hover:bg-muted/50 transition">
-                      <td className="py-3 px-4 font-bold text-accent">{standing.rank}</td>
-                      <td className="py-3 px-4 font-semibold text-foreground">{standing.team}</td>
-                      <td className="text-center py-3 px-4 text-foreground">{standing.wins}</td>
-                      <td className="text-center py-3 px-4 text-foreground">{standing.losses}</td>
-                      <td className="text-center py-3 px-4 text-foreground">{standing.ties}</td>
-                      <td className="text-center py-3 px-4 font-bold text-accent">{standing.points}</td>
-                      <td className="text-center py-3 px-4 text-foreground">{standing.goalsFor}</td>
-                      <td className="text-center py-3 px-4 text-foreground">{standing.goalsAgainst}</td>
+                <tbody className="divide-y divide-border">
+                  {standings?.map((team, idx) => (
+                    <tr key={team.id} className={`hover:bg-muted/50 transition-colors ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"}`}>
+                      <td className="py-4 px-6 text-center font-bold text-muted-foreground">{idx + 1}</td>
+                      <td className="py-4 px-6 font-semibold flex items-center gap-3">
+                        <img src={team.logo} alt={team.name} className="w-8 h-8 object-contain rounded-full bg-muted/50 p-1" />
+                        <span className="text-foreground">{team.name}</span>
+                      </td>
+                      <td className="py-4 px-4 text-center">{team.gp}</td>
+                      <td className="py-4 px-4 text-center">{team.w}</td>
+                      <td className="py-4 px-4 text-center">{team.l}</td>
+                      <td className="py-4 px-4 text-center">{team.t}</td>
+                      <td className="py-4 px-4 text-center font-bold text-accent bg-accent/5 text-lg">{team.pts}</td>
+                      <td className="py-4 px-4 text-center text-muted-foreground">{team.gf}</td>
+                      <td className="py-4 px-4 text-center text-muted-foreground">{team.ga}</td>
+                      <td className={`py-4 px-4 text-center font-semibold ${team.gd > 0 ? "text-green-500" : team.gd < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                        {team.gd > 0 ? `+${team.gd}` : team.gd}
+                      </td>
+                      <td className="py-4 px-6 text-center text-muted-foreground">{team.winPct}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Legend */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-sm">
-            <p className="text-muted-foreground">W</p>
-            <p className="font-semibold text-foreground">Wins</p>
-          </div>
-          <div className="text-sm">
-            <p className="text-muted-foreground">L</p>
-            <p className="font-semibold text-foreground">Losses</p>
-          </div>
-          <div className="text-sm">
-            <p className="text-muted-foreground">T</p>
-            <p className="font-semibold text-foreground">Ties</p>
-          </div>
-          <div className="text-sm">
-            <p className="text-muted-foreground">PTS</p>
-            <p className="font-semibold text-foreground">Points</p>
-          </div>
-          <div className="text-sm">
-            <p className="text-muted-foreground">GF</p>
-            <p className="font-semibold text-foreground">Goals For</p>
-          </div>
-          <div className="text-sm">
-            <p className="text-muted-foreground">GA</p>
-            <p className="font-semibold text-foreground">Goals Against</p>
-          </div>
-        </div>
       </div>
     </div>
   );

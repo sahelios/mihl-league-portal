@@ -400,3 +400,26 @@ export const auditLogs = mysqlTable("auditLogs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+export const refereeApplications = mysqlTable("refereeApplications", {
+  id: int("id").autoincrement().primaryKey(),
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  lastName: varchar("lastName", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  interacEmail: varchar("interacEmail", { length: 320 }).notNull(),
+  role: mysqlEnum("role", ["referee", "scorekeeper"]).notNull(),
+  isCertified: boolean("isCertified").default(false).notNull(),
+  certifications: json("certifications"), // Array of {type, year}
+  yearsOfExperience: int("yearsOfExperience").notNull(),
+  hockeyLevels: json("hockeyLevels"), // Array of levels: U15, U18, Junior, Beer League, Other
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  approvalDate: timestamp("approvalDate"),
+  paymentAmount: decimal("paymentAmount", { precision: 10, scale: 2 }),
+  selectedGames: json("selectedGames"), // Array of game IDs they're available for
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RefereeApplication = typeof refereeApplications.$inferSelect;
+export type InsertRefereeApplication = typeof refereeApplications.$inferInsert;

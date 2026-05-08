@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "wouter";
 
 interface NewsItem {
   id: number;
@@ -46,6 +47,7 @@ interface StarPlayer {
 }
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const [newsIndex, setNewsIndex] = useState(0);
   const [blogIndex, setBlogIndex] = useState(0);
   const [starsIndex, setStarsIndex] = useState(0);
@@ -210,10 +212,17 @@ export default function Home() {
             A recreational ice hockey league dedicated to community, competition, and camaraderie.
           </p>
           <div className="flex gap-4">
-            <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+            <Button 
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              onClick={() => setLocation("/register")}
+            >
               Register Now
             </Button>
-            <Button variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
+            <Button 
+              variant="outline" 
+              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => setLocation("/league-rules")}
+            >
               Learn More
             </Button>
           </div>
