@@ -7,8 +7,8 @@ import { eq, and, sql, or } from 'drizzle-orm';
 
 // Evaluation game dates and capacity
 const EVALUATION_DATES = [
-  { date: '2026-06-24', label: 'Tuesday, June 24, 2026', venue: 'Samuel Moscovitch Arena', time: '9:30 PM' },
-  { date: '2026-06-26', label: 'Thursday, June 26, 2026', venue: 'Outremont Arena', time: '10:00 PM' },
+  { date: '2026-06-23', label: 'Sunday, June 23, 2026', venue: 'Samuel Moscovitch Arena', time: '9:30 PM' },
+  { date: '2026-06-25', label: 'Tuesday, June 25, 2026', venue: 'Outremont Arena', time: '10:00 PM' },
 ];
 const MAX_PLAYERS_PER_DATE = 24;
 const MAX_GOALIES_PER_DATE = 2;
