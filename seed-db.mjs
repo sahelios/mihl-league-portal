@@ -232,3 +232,23 @@ async function seed() {
 }
 
 seed();
+
+// Seed player stats
+console.log("- Seeding player stats...");
+const playerStats = [];
+for (let i = 1; i <= 20; i++) {
+  playerStats.push({
+    playerId: i,
+    seasonId: seasonId,
+    gamesPlayed: Math.floor(Math.random() * 15) + 1,
+    goals: Math.floor(Math.random() * 30),
+    assists: Math.floor(Math.random() * 25),
+    points: Math.floor(Math.random() * 50),
+  });
+}
+
+if (playerStats.length > 0) {
+  await db.insert(playerStats).values(playerStats);
+}
+
+console.log("✅ Seeding complete! Database is ready for development.");

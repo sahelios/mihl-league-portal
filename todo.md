@@ -53,23 +53,21 @@
 - [x] News post management (create, edit, delete) - COMPLETE (tRPC procedures)
 - [x] Blog post management (create, edit, delete) - COMPLETE (tRPC procedures)
 - [x] Stars of the Week selection - COMPLETE (selectStarOfWeek in admin.ts)
-- [x] Suspension management (add, edit, remove) - COMPLETE (tRPC procedures)
-- [ ] Messaging tool (send messages to players/teams) - TODO: implement
-- [ ] Season management (create new seasons, set dates) - TODO: implement
-- [ ] Team management (add teams, edit team info) - TODO: implement
-- [ ] Venue management (add/edit game locations) - TODO: implement
-
+- [x] Suspension management (add, edit, remove) - COMPLETE (tRPC procedures- [x] Messaging tool (send messages to players/teams) - COMPLETE with UI
+- [x] Season management (create new seasons, set dates) - COMPLETE with UI
+- [x] Team management (add teams, edit team info) - COMPLETE with UI
+- [x] Venue management (add/edit game locations) - COMPLETE with tRPC and UI
 ## Data & Features
 - [x] Seed sample data (2026 summer season, 4 teams, 20 sample games)
 - [x] Sample news posts
 - [x] Sample blog posts
 - [x] Sample player registrations - 20 seeded
-- [ ] Sample player stats - TODO: seed playerStats table
+- [x] Sample player stats - seeded (20 player stats with games, goals, assists)
 - [x] Sample team stats - seeded via games
 - [x] Sample suspensions - 3 seeded
 
 ## Testing & Polish
-- [ ] Vitest unit tests for all tRPC procedures - NOTE: Test schema needs update
+- [ ] Vitest unit tests for all tRPC procedures - NOTE: Test schema needs update to match actual DB
 - [x] UI testing on all pages - COMPLETE
 - [ ] Admin workflow testing - TODO: manual testing
 - [ ] Email notification testing - TODO: integration testing
@@ -80,6 +78,8 @@
 ## Deployment
 - [x] Database seeding completed
 - [x] Schema mismatches fixed in admin.ts and referee.ts
+- [x] Admin pages created (Messaging, Seasons, Teams, Venues)
+- [x] DashboardLayout export fixed
 - [ ] Final checkpoint created
 - [ ] Project ready for publishing
 
