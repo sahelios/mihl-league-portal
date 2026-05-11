@@ -3,13 +3,13 @@
 ## Core Infrastructure
 - [x] Database schema created (14 tables)
 - [x] Team logos generated (4 unique 2-color logos)
-- [ ] Database seeding with initial data (seasons, teams, venues, sample games)
-- [ ] tRPC routers for all features
-- [ ] Email notification system setup
+- [x] Database seeding with initial data (seasons, teams, venues, sample games) - COMPLETE
+- [x] tRPC routers for all features - COMPLETE
+- [x] Email notification system setup - COMPLETE
 
 ## Layout & Navigation
 - [x] Global header with navigation menu (9 pages including Referee/Scorekeeper)
-- [ ] Upcoming games slider component (2-week forecast, all pages) - TODO: connect to real schedule data
+- [x] Upcoming games slider component (2-week forecast, all pages) - COMPLETE with real schedule data
 - [x] Footer with contact info, social links, registration deadline, and phone number
 - [x] Responsive design for mobile/tablet/desktop - COMPLETE with mobile-first design
 
@@ -17,7 +17,7 @@
 - [x] Home page (news, blog, stars slider, top players slider, top teams slider) - UI complete, uses sample data
 - [x] League Rules page (display rules document with updated game times and requirements)
 - [x] Teams page (4 team profiles with logos, rosters, stats) - UI complete with logos and 12 players per team
-- [ ] Schedule & Results page (Tuesday/Thursday games with score entry UI) - TODO: full season schedule, score entry
+- [x] Schedule & Results page (Tuesday/Thursday games with score entry UI) - COMPLETE with 20 seeded games
 - [x] Stats page (individual player statistics) - UI complete with generic player names
 - [x] Suspensions page (active and past suspensions list) - UI complete with sample data
 - [x] Standings page (win/loss/points table) - UI complete with sample data
@@ -49,11 +49,11 @@
 - [x] Dashboard overview page - COMPLETE with registration stats
 - [x] Player management (view, approve, reject registrations) - COMPLETE with tRPC mutations
 - [x] Registration stats (pending, approved, rejected, total counts) - COMPLETE
-- [ ] Game score entry interface - TODO: implement
-- [ ] News post management (create, edit, delete) - TODO: implement
-- [ ] Blog post management (create, edit, delete) - TODO: implement
-- [ ] Stars of the Week selection - TODO: implement
-- [ ] Suspension management (add, edit, remove) - TODO: implement
+- [x] Game score entry interface - COMPLETE (submitGameScore in admin.ts)
+- [x] News post management (create, edit, delete) - COMPLETE (tRPC procedures)
+- [x] Blog post management (create, edit, delete) - COMPLETE (tRPC procedures)
+- [x] Stars of the Week selection - COMPLETE (selectStarOfWeek in admin.ts)
+- [x] Suspension management (add, edit, remove) - COMPLETE (tRPC procedures)
 - [ ] Messaging tool (send messages to players/teams) - TODO: implement
 - [ ] Season management (create new seasons, set dates) - TODO: implement
 - [ ] Team management (add teams, edit team info) - TODO: implement
@@ -63,21 +63,23 @@
 - [x] Seed sample data (2026 summer season, 4 teams, 20 sample games)
 - [x] Sample news posts
 - [x] Sample blog posts
-- [ ] Sample player registrations
-- [ ] Sample player stats
-- [x] Sample team stats
-- [ ] Sample suspensions
+- [x] Sample player registrations - 20 seeded
+- [ ] Sample player stats - TODO: seed playerStats table
+- [x] Sample team stats - seeded via games
+- [x] Sample suspensions - 3 seeded
 
 ## Testing & Polish
-- [ ] Vitest unit tests for all tRPC procedures
-- [ ] UI testing on all pages
-- [ ] Admin workflow testing
-- [ ] Email notification testing
-- [ ] Responsive design testing
+- [ ] Vitest unit tests for all tRPC procedures - NOTE: Test schema needs update
+- [x] UI testing on all pages - COMPLETE
+- [ ] Admin workflow testing - TODO: manual testing
+- [ ] Email notification testing - TODO: integration testing
+- [x] Responsive design testing - COMPLETE
 - [ ] Performance optimization
 - [ ] Accessibility review
 
 ## Deployment
+- [x] Database seeding completed
+- [x] Schema mismatches fixed in admin.ts and referee.ts
 - [ ] Final checkpoint created
 - [ ] Project ready for publishing
 

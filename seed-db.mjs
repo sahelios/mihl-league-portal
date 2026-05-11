@@ -1,4 +1,3 @@
-// /home/ubuntu/mihl-league-portal/seed-db.mjs
 import mysql from 'mysql2/promise';
 import { URL } from 'url';
 
@@ -35,150 +34,198 @@ async function seed() {
     if (shouldClear) {
       console.log("Clearing existing data...");
       await connection.query('DELETE FROM suspensions');
-      await connection.query('DELETE FROM game_results');
-      await connection.query('DELETE FROM player_registrations');
+      await connection.query('DELETE FROM starsOfWeek');
+      await connection.query('DELETE FROM blogPosts');
+      await connection.query('DELETE FROM newsPosts');
+      await connection.query('DELETE FROM games');
+      await connection.query('DELETE FROM playerRegistrations');
       await connection.query('DELETE FROM teams');
-      await connection.query('DELETE FROM venues');
+      await connection.query('DELETE FROM gameVenues');
       await connection.query('DELETE FROM seasons');
-      await connection.query('DELETE FROM news_posts');
     }
 
     // 1. Seed Seasons
     const [seasonResult] = await connection.query(
-      `INSERT INTO seasons (name, startDate, endDate) VALUES ?`,
-      [[['Summer 2026', '2026-05-01', '2026-08-31']]]
+      `INSERT INTO seasons (name, startDate, endDate, isActive) VALUES ?`,
+      [[['Summer 2026', '2026-06-23', '2026-08-25', true]]]
     );
     const seasonId = seasonResult.insertId;
     console.log(`- Inserted Season (ID: ${seasonId}).`);
 
     // 2. Seed Teams
     const teamsData = [
-      ['Iron Lions', '#B22222', '#FFFFFF'],
-      ['Golan Guards', '#000080', '#FFFFFF'],
-      ['H Hammers', '#4B0082', '#FFD700'],
-      ['Schvitz Saints', '#006400', '#FFFFFF'] // Community favorite
+      ['Iron Lions', null, seasonId],
+      ['Golan Guards', null, seasonId],
+      ['H Hammers', null, seasonId],
+      ['Schvitz Saints', null, seasonId]
     ];
     await connection.query(
-      `INSERT INTO teams (name, primaryColor, secondaryColor) VALUES ?`,
+      `INSERT INTO teams (name, logoUrl, seasonId) VALUES ?`,
       [teamsData]
     );
+    const [teamsResult] = await connection.query('SELECT id FROM teams WHERE seasonId = ?', [seasonId]);
+    const teamIds = teamsResult.map(t => t.id);
     console.log(`- Inserted 4 Teams.`);
 
     // 3. Seed Venues
     const venuesData = [
-      ['Samuel Moscovitch Arena', '6985 Mackle Rd', 'Côte Saint-Luc', 500],
-      ['Outremont Arena', '999 McEachran Ave', 'Outremont', 300]
+      ['Samuel Moscovitch Arena', '6985 Mackle Rd, Côte Saint-Luc'],
+      ['Outremont Arena', '999 McEachran Ave, Outremont']
     ];
     await connection.query(
-      `INSERT INTO venues (name, address, city, capacity) VALUES ?`,
+      `INSERT INTO gameVenues (name, address) VALUES ?`,
       [venuesData]
     );
+    const [venuesResult] = await connection.query('SELECT id FROM gameVenues');
+    const venueIds = venuesResult.map(v => v.id);
     console.log(`- Inserted 2 Venues.`);
 
     // 4. Seed Player Registrations (20 total)
     const players = [];
-    const types = ['individual', 'spare', 'referee', 'scorekeeper'];
-    const statuses = ['pending', 'approved', 'rejected'];
-    const positions = ['forward', 'defenseman', 'goalie'];
 
     for (let i = 1; i <= 20; i++) {
       let regType = 'individual';
-      if (i > 10 && i <= 15) regType = 'spare';
-      if (i > 15 && i <= 18) regType = 'referee';
-      if (i > 18) regType = 'scorekeeper';
+      if (i > 10 && i <= 15) regType = 'team';
 
       players.push([
-        `First${i}`,
+        `Player${i}`,
         `Last${i}`,
         `player${i}@example.com`,
         `514-555-00${i.toString().padStart(2, '0')}`,
+        teamIds[i % teamIds.length],
+        seasonId,
+        false,
         regType,
-        regType === 'referee' || regType === 'scorekeeper' ? null : positions[i % 3],
-        regType === 'referee' || regType === 'scorekeeper' ? null : Math.floor(Math.random() * 10) + 1,
-        'approved', // Keep most approved so they show in Admin tools
-        'paid',
-        '2026-05-15',
-        seasonId
+        'approved',
+        true,
+        true
       ]);
     }
 
     const [regResult] = await connection.query(
-      `INSERT INTO player_registrations 
-      (firstName, lastName, email, phone, registrationType, position, playerRating, status, paymentStatus, evaluationDate, seasonId) 
+      `INSERT INTO playerRegistrations 
+      (firstName, lastName, email, phone, teamId, seasonId, isFirstTime, registrationType, status, paymentConfirmed, jerseyOrderConfirmed) 
       VALUES ?`,
       [players]
     );
     console.log(`- Inserted ${regResult.affectedRows} player registrations.`);
 
     // 5. Seed Games (20 Games: 10 Completed, 10 Scheduled)
-    const teams = ['Iron Lions', 'Golan Guards', 'H Hammers', 'Schvitz Saints'];
     const games = [];
-    
-    // Past completed games
+    const teamCombos = [
+      [teamIds[0], teamIds[1]],
+      [teamIds[1], teamIds[2]],
+      [teamIds[2], teamIds[3]],
+      [teamIds[3], teamIds[0]],
+      [teamIds[0], teamIds[2]],
+      [teamIds[1], teamIds[3]]
+    ];
+
+    // Past completed games (May 2026)
     for (let i = 1; i <= 10; i++) {
+      const combo = teamCombos[i % teamCombos.length];
+      const homeScore = Math.floor(Math.random() * 6);
+      const awayScore = Math.floor(Math.random() * 6);
       games.push([
-        teams[i % 4],
-        teams[(i + 1) % 4],
-        Math.floor(Math.random() * 6),
-        Math.floor(Math.random() * 6),
+        seasonId,
+        combo[0],
+        combo[1],
+        venueIds[i % venueIds.length],
         `2026-05-${(10 + i).toString().padStart(2, '0')}`,
-        '9:30 PM',
-        venuesData[i % 2][0],
+        i % 2 === 0 ? '9:30 PM' : '10:00 PM',
+        homeScore,
+        awayScore,
         'completed'
       ]);
     }
 
-    // Future scheduled games (For the upcoming games slider)
-    const futureDate = new Date(); // To ensure they always render dynamically
+    // Future scheduled games (June-August 2026)
+    let gameDate = new Date('2026-06-23');
     for (let i = 1; i <= 10; i++) {
-      futureDate.setDate(futureDate.getDate() + 2); 
+      const combo = teamCombos[i % teamCombos.length];
       games.push([
-        teams[i % 4],
-        teams[(i + 2) % 4],
-        0, 
-        0, 
-        futureDate.toISOString().split('T')[0],
+        seasonId,
+        combo[0],
+        combo[1],
+        venueIds[i % venueIds.length],
+        gameDate.toISOString().split('T')[0],
         i % 2 === 0 ? '9:30 PM' : '10:00 PM',
-        venuesData[i % 2][0],
+        null,
+        null,
         'scheduled'
       ]);
+      gameDate.setDate(gameDate.getDate() + 3);
     }
 
     const [gameResult] = await connection.query(
-      `INSERT INTO game_results (teamAName, teamBName, teamAScore, teamBScore, date, time, venueName, status) VALUES ?`,
+      `INSERT INTO games (seasonId, homeTeamId, awayTeamId, venueId, gameDate, gameTime, homeScore, awayScore, status) VALUES ?`,
       [games]
     );
-    console.log(`- Inserted ${gameResult.affectedRows} game results (10 past, 10 future).`);
+    console.log(`- Inserted ${gameResult.affectedRows} games (10 past, 10 future).`);
 
-    // 6. Seed Suspensions
-    const [rows] = await connection.query('SELECT id, firstName, lastName FROM player_registrations LIMIT 3');
-    const suspensions = [
-      [rows[0].id, `${rows[0].firstName} ${rows[0].lastName}`, "Fighting", 2, true],
-      [rows[1].id, `${rows[1].firstName} ${rows[1].lastName}`, "Unsportsmanlike conduct", 3, true],
-      [rows[2].id, `${rows[2].firstName} ${rows[2].lastName}`, "Too many penalties", 1, true]
-    ];
+    // 6. Seed Suspensions (3 active)
+    const [playerRows] = await connection.query('SELECT id, firstName, lastName FROM playerRegistrations LIMIT 3');
+    const suspensions = [];
+    const reasons = ['Fighting', 'Unsportsmanlike conduct', 'Too many penalties'];
+    playerRows.forEach((player, idx) => {
+      suspensions.push([
+        null,
+        `${player.firstName} ${player.lastName}`,
+        null,
+        seasonId,
+        reasons[idx],
+        '2026-06-23',
+        null,
+        true
+      ]);
+    });
 
     await connection.query(
-      `INSERT INTO suspensions (playerId, playerName, reason, gamesRemaining, active) VALUES ?`,
+      `INSERT INTO suspensions (playerTeamId, playerName, teamId, seasonId, reason, startDate, endDate, isActive) VALUES ?`,
       [suspensions]
     );
-    console.log(`- Inserted 3 active suspensions.`);
+    console.log(`- Inserted ${suspensions.length} active suspensions.`);
 
-    // 7. Seed News Posts
+    // 7. Seed News Posts (3 posts)
     const newsData = [
-      ['Welcome to MIHL Summer 2026', 'Registration is now open! Sign up today to secure your spot in the league.', null, true],
-      ['Schvitz Saints Unveil New Jerseys', 'The Saints will be rocking green and white this season. Come see them opening night.', null, true],
-      ['Rule Changes for Goalies', 'Please note the new crease violations guidelines uploaded to the portal.', null, true]
+      ['Welcome to MIHL Summer 2026', 'Registration is now open! Sign up today to secure your spot in the league.', null, null, seasonId],
+      ['Schvitz Saints Unveil New Jerseys', 'The Saints will be rocking green and white this season. Come see them opening night.', null, null, seasonId],
+      ['Rule Changes for Goalies', 'Please note the new crease violations guidelines uploaded to the portal.', null, null, seasonId]
     ];
     await connection.query(
-      `INSERT INTO news_posts (title, content, imageUrl, published) VALUES ?`,
+      `INSERT INTO newsPosts (title, content, imageUrl, authorId, seasonId) VALUES ?`,
       [newsData]
     );
-    console.log(`- Inserted 3 news posts.`);
+    console.log(`- Inserted ${newsData.length} news posts.`);
 
-    console.log("Seeding complete! Ready for local development.");
+    // 8. Seed Blog Posts (3 posts)
+    const blogData = [
+      ['Summer League Tips', 'Here are some tips for getting the most out of your summer league experience.', null, null, seasonId],
+      ['Player Spotlight: Top Scorers', 'Meet the top scorers from last season and see who will lead the charge this year.', null, null, seasonId],
+      ['Referee Certification Requirements', 'All referees must maintain current certification. Check the requirements here.', null, null, seasonId]
+    ];
+    await connection.query(
+      `INSERT INTO blogPosts (title, content, imageUrl, authorId, seasonId) VALUES ?`,
+      [blogData]
+    );
+    console.log(`- Inserted ${blogData.length} blog posts.`);
+
+    // 9. Seed Stars of the Week (3 stars)
+    const starsData = [
+      [null, 'Player1', teamIds[0], seasonId, 1, 9],
+      [null, 'Player2', teamIds[1], seasonId, 2, 8],
+      [null, 'Player3', teamIds[2], seasonId, 3, 9]
+    ];
+    await connection.query(
+      `INSERT INTO starsOfWeek (playerTeamId, playerName, teamId, seasonId, weekNumber, rating) VALUES ?`,
+      [starsData]
+    );
+    console.log(`- Inserted ${starsData.length} stars of the week.`);
+
+    console.log("\n✅ Seeding complete! Database is ready for development.");
   } catch (error) {
-    console.error("Seeding failed:", error.message);
+    console.error("❌ Seeding failed:", error.message);
+    process.exit(1);
   } finally {
     await connection.end();
   }

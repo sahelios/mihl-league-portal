@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from '../_core/trpc';
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import {
   playerRegistrations,
   games,
   newsPosts,
+  blogPosts,
   starsOfWeek,
   suspensions,
   teams,
@@ -65,22 +66,22 @@ export const adminRouter = router({
 
   // ============ SETTINGS: VENUES ============
   createVenue: adminProcedure
-    .input(z.object({ name: z.string().min(1), address: z.string().min(1), city: z.string().min(1), capacity: z.number().min(1) }))
+    .input(z.object({ name: z.string().min(1), address: z.string().min(1) }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.insert(gameVenues).values({ name: input.name, address: input.address, city: input.city, capacity: input.capacity } as any);
+      await db.insert(gameVenues).values({ name: input.name, address: input.address });
       return { success: true, message: "Venue created" };
     }),
 
   updateVenue: adminProcedure
-    .input(z.object({ id: z.number(), name: z.string().min(1), address: z.string().min(1), city: z.string().min(1), capacity: z.number().min(1) }))
+    .input(z.object({ id: z.number(), name: z.string().min(1), address: z.string().min(1) }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(gameVenues).set({ name: input.name, address: input.address, city: input.city, capacity: input.capacity } as any).where(eq(gameVenues.id, input.id));
+      await db.update(gameVenues).set({ name: input.name, address: input.address }).where(eq(gameVenues.id, input.id));
       return { success: true, message: "Venue updated" };
     }),
 
@@ -96,25 +97,25 @@ export const adminRouter = router({
 
   // ============ GAME MANAGEMENT ============
   submitGameScore: adminProcedure
-    .input(z.object({ gameId: z.number(), teamAScore: z.number(), teamBScore: z.number() }))
+    .input(z.object({ gameId: z.number(), homeScore: z.number(), awayScore: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(games).set({ teamAScore: input.teamAScore, teamBScore: input.teamBScore, status: 'completed' } as any).where(eq(games.id, input.gameId));
+      await db.update(games).set({ homeScore: input.homeScore, awayScore: input.awayScore, status: 'completed' }).where(eq(games.id, input.gameId));
       return { success: true };
     }),
 
   getUpcomingGames: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(games).where(eq(games.status as any, 'scheduled'));
+    return await db.select().from(games).where(eq(games.status, 'scheduled'));
   }),
 
   getRecentGames: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(games).where(eq(games.status as any, 'completed'));
+    return await db.select().from(games).where(eq(games.status, 'completed'));
   }),
 
   // ============ REFEREE APPLICATIONS ============
@@ -147,7 +148,7 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(playerRegistrations).set({ status: 'approved', paymentAmount: input.paymentAmount.toString() } as any).where(eq(playerRegistrations.id, input.id));
+      await db.update(playerRegistrations).set({ status: 'approved', paymentAmount: input.paymentAmount.toString() }).where(eq(playerRegistrations.id, input.id));
       return { success: true };
     }),
 
@@ -161,12 +162,11 @@ export const adminRouter = router({
       return { success: true };
     }),
 
-  // ============ BLOG / NEWS MANAGEMENT ============
-  getBlogPosts: adminProcedure.query(async () => {
+  // ============ NEWS MANAGEMENT ============
+  getNewsPosts: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-    // Using newsPosts as the schema for both blog/news
     const result = await db.select().from(newsPosts).orderBy(sql`${newsPosts.createdAt} DESC`);
     
     return result.map(post => ({
@@ -175,29 +175,74 @@ export const adminRouter = router({
       content: post.content,
       imageUrl: post.imageUrl,
       author: "Admin",
-      category: "news",
-      published: post.published,
-      publishDate: post.createdAt.toISOString().split('T')[0]
+      createdAt: post.createdAt.toISOString().split('T')[0]
     }));
   }),
 
-  createBlogPost: adminProcedure
-    .input(z.object({ title: z.string().min(1), content: z.string().min(1), author: z.string().optional(), imageUrl: z.string().optional(), category: z.string().optional(), published: z.boolean().optional(), publishDate: z.string().optional() }))
-    .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-
-      await db.insert(newsPosts).values({ title: input.title, content: input.content, imageUrl: input.imageUrl || null, published: input.published || true } as any);
-      return { success: true };
-    }),
-
-  updateBlogPost: adminProcedure
-    .input(z.object({ id: z.number(), title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional(), published: z.boolean().optional() }))
+  createNewsPost: adminProcedure
+    .input(z.object({ title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(newsPosts).set({ title: input.title, content: input.content, imageUrl: input.imageUrl || null, published: input.published } as any).where(eq(newsPosts.id, input.id));
+      await db.insert(newsPosts).values({ title: input.title, content: input.content, imageUrl: input.imageUrl || null });
+      return { success: true };
+    }),
+
+  updateNewsPost: adminProcedure
+    .input(z.object({ id: z.number(), title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(newsPosts).set({ title: input.title, content: input.content, imageUrl: input.imageUrl || null }).where(eq(newsPosts.id, input.id));
+      return { success: true };
+    }),
+
+  deleteNewsPost: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.delete(newsPosts).where(eq(newsPosts.id, input.id));
+      return { success: true };
+    }),
+
+  // ============ BLOG MANAGEMENT ============
+  getBlogPosts: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const result = await db.select().from(blogPosts).orderBy(sql`${blogPosts.createdAt} DESC`);
+    
+    return result.map(post => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      imageUrl: post.imageUrl,
+      author: "Admin",
+      createdAt: post.createdAt.toISOString().split('T')[0]
+    }));
+  }),
+
+  createBlogPost: adminProcedure
+    .input(z.object({ title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.insert(blogPosts).values({ title: input.title, content: input.content, imageUrl: input.imageUrl || null });
+      return { success: true };
+    }),
+
+  updateBlogPost: adminProcedure
+    .input(z.object({ id: z.number(), title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(blogPosts).set({ title: input.title, content: input.content, imageUrl: input.imageUrl || null }).where(eq(blogPosts.id, input.id));
       return { success: true };
     }),
 
@@ -207,7 +252,64 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.delete(newsPosts).where(eq(newsPosts.id, input.id));
+      await db.delete(blogPosts).where(eq(blogPosts.id, input.id));
+      return { success: true };
+    }),
+
+  // ============ STARS OF THE WEEK ============
+  getStarsOfWeek: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    return await db.select().from(starsOfWeek).orderBy(sql`${starsOfWeek.weekNumber} DESC`);
+  }),
+
+  selectStarOfWeek: adminProcedure
+    .input(z.object({ weekNumber: z.number(), playerName: z.string(), teamId: z.number(), rating: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.insert(starsOfWeek).values({
+        playerName: input.playerName,
+        teamId: input.teamId,
+        weekNumber: input.weekNumber,
+        rating: input.rating,
+      });
+      return { success: true };
+    }),
+
+  // ============ SUSPENSIONS ============
+  getActiveSuspensions: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    return await db.select().from(suspensions).where(eq(suspensions.isActive, true));
+  }),
+
+  addSuspension: adminProcedure
+    .input(z.object({ playerName: z.string(), reason: z.string(), startDate: z.string(), teamId: z.number().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.insert(suspensions).values({
+        playerName: input.playerName,
+        reason: input.reason,
+        startDate: new Date(input.startDate),
+        teamId: input.teamId || null,
+        isActive: true,
+      });
+      return { success: true };
+    }),
+
+  removeSuspension: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(suspensions).set({ isActive: false }).where(eq(suspensions.id, input.id));
       return { success: true };
     }),
 });

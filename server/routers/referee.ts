@@ -25,7 +25,7 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
       
-      // Explicitly mapping the input to strictly match the Drizzle MySQL schema types
+      // Map input to match the actual refereeApplications schema
       await db.insert(refereeApplications).values({
         firstName: input.firstName,
         lastName: input.lastName,
@@ -33,15 +33,13 @@ export const refereeRouter = router({
         phone: input.phone,
         interacEmail: input.interacEmail,
         role: input.role,
-        certificationStatus: input.isCertified ? 'certified' : 'uncertified',
-        // Transforming array of strings to the required JSON array of objects
+        isCertified: input.isCertified,
+        // Transform array of strings to array of objects with type and year
         certifications: input.certifications.map(c => ({ type: c, year: new Date().getFullYear() })),
-        yearsExperience: input.yearsOfExperience,
+        yearsOfExperience: input.yearsOfExperience,
         hockeyLevels: input.hockeyLevels,
         status: 'pending',
         selectedGames: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
       
       return { success: true };
@@ -54,7 +52,6 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      // Using db.select().from() to avoid the 'Aliased' typing error found in db.query
       const apps = await db
         .select()
         .from(refereeApplications)
@@ -77,16 +74,15 @@ export const refereeRouter = router({
         .from(refereeApplications)
         .where(eq(refereeApplications.email, ctx.user.email))
         .limit(1);
-
+      
       const app = apps[0];
 
       if (!app || app.status !== 'approved') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Application not found or not approved.' });
       }
 
-      // First argument inside .where() MUST be the column reference, not the value
       await db.update(refereeApplications)
-        .set({ selectedGames: input.selectedGameIds, updatedAt: new Date() })
+        .set({ selectedGames: input.selectedGameIds })
         .where(eq(refereeApplications.id, app.id));
 
       return { success: true };
