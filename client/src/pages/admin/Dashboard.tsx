@@ -9,7 +9,7 @@ import { Users, FileText, Trophy, AlertCircle, Settings, MessageSquare } from "l
 
 export default function AdminDashboard() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
-  const [, navigate] = useRouter();
+  const [location, navigate] = useRouter();
   const { user } = useAuth();
 
   // Redirect non-admins
