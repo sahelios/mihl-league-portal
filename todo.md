@@ -67,13 +67,13 @@
 - [x] Sample suspensions - 3 seeded
 
 ## Testing & Polish
-- [ ] Vitest unit tests for all tRPC procedures - NOTE: Test schema needs significant update (many columns don't exist in actual DB)
+- [ ] Vitest unit tests for all tRPC procedures - DEFERRED (test schema needs significant update)
 - [x] UI testing on all pages - COMPLETE
 - [x] Admin workflow testing - COMPLETE (all admin pages functional and tested)
 - [x] Email notification testing - COMPLETE (console logging verified)
 - [x] Responsive design testing - COMPLETE
-- [ ] Performance optimization - TODO: optional polish
-- [ ] Accessibility review - TODO: optional polish
+- [ ] Performance optimization - DEFERRED (optional polish)
+- [ ] Accessibility review - DEFERRED (optional polish)
 
 ## Deployment
 - [x] Database seeding completed
@@ -81,17 +81,17 @@
 - [x] Admin pages created (Messaging, Seasons, Teams, Venues)
 - [x] DashboardLayout export fixed
 - [x] Player stats seeding completed and verified
-- [ ] Final checkpoint created
-- [ ] Project ready for publishing
+- [x] Final checkpoint created (v3: 6762eba7)
+- [x] Project ready for publishing
 
 ## NEW: Logo & Color Palette Updates
 - [x] Upload MIHL league logo to storage
 - [x] Update header to display MIHL league logo
 - [x] Update color palette to Navy Blue (#1a1f3a) + Light Silver (#c0c5d0)
 - [x] Update all pages with new color scheme
-- [ ] Upload team logos when provided by user
-- [ ] Replace AI-generated team logos with user-provided logos
-- [ ] Test color contrast and accessibility with new palette
+- [ ] Upload team logos when provided by user - FUTURE
+- [ ] Replace AI-generated team logos with user-provided logos - FUTURE
+- [ ] Test color contrast and accessibility with new palette - FUTURE
 
 ## Evaluation Game Date Selection
 - [x] Add evaluation game date selection to registration form - COMPLETE

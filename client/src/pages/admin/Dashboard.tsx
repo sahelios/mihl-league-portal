@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRouter } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -9,7 +9,7 @@ import { Users, FileText, Trophy, AlertCircle, Settings, MessageSquare } from "l
 
 export default function AdminDashboard() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
-  const [location, navigate] = useRouter();
+  const [, navigate] = useLocation();
   const { user } = useAuth();
 
   // Redirect non-admins
