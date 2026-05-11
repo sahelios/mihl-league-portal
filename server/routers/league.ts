@@ -18,7 +18,7 @@ export const leagueRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      return await db.select().from(games).where(eq(games.status as any, 'scheduled'));
+      return await db.select().from(games).where(eq(games.status, 'scheduled'));
     }),
 
   getTeams: publicProcedure.query(async () => {
@@ -45,9 +45,9 @@ export const leagueRouter = router({
       id: t.id,
       name: t.name,
       logo: t.logoUrl || "https://placehold.co/100x100?text=Logo",
-      gp: (t as any).wins + (t as any).losses || 0,
-      w: (t as any).wins || 0,
-      l: (t as any).losses || 0,
+      gp: (t.wins || 0) + (t.losses || 0),
+      w: t.wins || 0,
+      l: t.losses || 0,
       t: 0,
       pts: ((t as any).wins || 0) * 2,
       gf: Math.floor(Math.random() * 30), // Placeholder stats for display
