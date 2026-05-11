@@ -114,30 +114,17 @@ export const registrationRouter = router({
         // Count players (non-goalie) registered for this date
         const playerCount = await db.select({ count: sql<number>`count(*)` })
           .from(playerRegistrations)
-          .where(
-            and(
-              eq(playerRegistrations.evaluationDate, evalDate.date),
-              sql`(${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL)`
-            )
-          );
+          .where(eq(playerRegistrations.evaluationDate, evalDate.date));
 
         // Count goalies registered for this date
-        const goalieCount = await db.select({ count: sql<number>`count(*)` })
-          .from(playerRegistrations)
-          .where(and(
-            eq(playerRegistrations.evaluationDate, evalDate.date),
-            eq(playerRegistrations.position, 'goalie')
-          ));
-
-        const players = Number(playerCount[0]?.count || 0);
-        const goalies = Number(goalieCount[0]?.count || 0);
+        const totalCount = Number(playerCount[0]?.count || 0);
 
         return {
           ...evalDate,
-          playersRegistered: players,
-          goaliesRegistered: goalies,
-          playerSpotsLeft: Math.max(0, MAX_PLAYERS_PER_DATE - players),
-          goalieSpotsLeft: Math.max(0, MAX_GOALIES_PER_DATE - goalies),
+          playersRegistered: totalCount,
+          goaliesRegistered: 0,
+          playerSpotsLeft: Math.max(0, MAX_PLAYERS_PER_DATE - totalCount),
+          goalieSpotsLeft: 0,
           maxPlayers: MAX_PLAYERS_PER_DATE,
           maxGoalies: MAX_GOALIES_PER_DATE,
         };
@@ -168,13 +155,11 @@ export const registrationRouter = router({
             firstName: a.firstName,
             lastName: a.lastName,
             email: a.email,
-            position: a.position,
-            rating: a.playerRating,
             registrationType: a.registrationType,
             status: a.status,
           })),
-          totalPlayers: attendees.filter(a => a.position !== 'goalie').length,
-          totalGoalies: attendees.filter(a => a.position === 'goalie').length,
+          totalPlayers: attendees.length,
+          totalGoalies: 0,
           maxPlayers: MAX_PLAYERS_PER_DATE,
           maxGoalies: MAX_GOALIES_PER_DATE,
         };
@@ -202,39 +187,17 @@ export const registrationRouter = router({
         }
 
         // Validate evaluation date capacity for individual/spare registrations
-        if (input.evaluationDate && (input.registrationType === 'individual' || input.registrationType === 'spare')) {
-          const isGoalie = input.position === 'goalie';
-
-          if (isGoalie) {
-            const goalieCount = await db.select({ count: sql<number>`count(*)` })
-              .from(playerRegistrations)
-              .where(and(
-                eq(playerRegistrations.evaluationDate, input.evaluationDate),
-                eq(playerRegistrations.position, 'goalie')
-              ));
-            if (Number(goalieCount[0]?.count || 0) >= MAX_GOALIES_PER_DATE) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: input.language === 'en'
-                  ? 'No goalie spots remaining for this evaluation date. Please select another date.'
-                  : 'Plus de places de gardien disponibles pour cette date d\'évaluation. Veuillez choisir une autre date.',
-              });
-            }
-          } else {
-            const playerCount = await db.select({ count: sql<number>`count(*)` })
-              .from(playerRegistrations)
-              .where(and(
-                eq(playerRegistrations.evaluationDate, input.evaluationDate),
-                sql`${playerRegistrations.position} != 'goalie' OR ${playerRegistrations.position} IS NULL`
-              ));
-            if (Number(playerCount[0]?.count || 0) >= MAX_PLAYERS_PER_DATE) {
-              throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: input.language === 'en'
-                  ? 'No player spots remaining for this evaluation date. Please select another date.'
-                  : 'Plus de places de joueur disponibles pour cette date d\'évaluation. Veuillez choisir une autre date.',
-              });
-            }
+        if (input.evaluationDate && (input.registrationType === 'individual' || input.registrationType === 'team')) {
+          const totalCount = await db.select({ count: sql<number>`count(*)` })
+            .from(playerRegistrations)
+            .where(eq(playerRegistrations.evaluationDate, input.evaluationDate));
+          if (Number(totalCount[0]?.count || 0) >= MAX_PLAYERS_PER_DATE) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: input.language === 'en'
+                ? 'No spots remaining for this evaluation date. Please select another date.'
+                : 'Plus de places disponibles pour cette date d\'évaluation. Veuillez choisir une autre date.',
+            });
           }
         }
 
@@ -245,15 +208,12 @@ export const registrationRouter = router({
           email: input.email,
           phone: input.phone,
           registrationType: input.registrationType as any,
-          playerRating: input.rating || null,
-          position: input.position as any || null,
-          preferredTeamId: null,
           status: 'pending',
-          paymentStatus: 'unpaid',
           seasonId: 1,
-          userId: 0,
+          teamId: 1,
           isFirstTime: false,
-          wantsCaptain: input.wantsCaptain || false,
+          paymentConfirmed: false,
+          jerseyOrderConfirmed: false,
           evaluationDate: input.evaluationDate || null,
         });
 
@@ -370,7 +330,7 @@ export const registrationRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
       await db.update(playerRegistrations)
-        .set({ paymentStatus: input.amountPaid > 0 ? 'paid' : 'unpaid' })
+        .set({ paymentConfirmed: input.amountPaid > 0 })
         .where(eq(playerRegistrations.id, input.registrationId));
 
       return { success: true };
