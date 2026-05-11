@@ -222,6 +222,26 @@ async function seed() {
     );
     console.log(`- Inserted ${starsData.length} stars of the week.`);
 
+    // 10. Seed Player Stats (20 stats)
+    const playerStatsData = [];
+    for (let i = 1; i <= 20; i++) {
+      playerStatsData.push([
+        i,
+        seasonId,
+        Math.floor(Math.random() * 30),
+        Math.floor(Math.random() * 25),
+        Math.floor(Math.random() * 50),
+        Math.floor(Math.random() * 15) + 1
+      ]);
+    }
+    if (playerStatsData.length > 0) {
+      await connection.query(
+        `INSERT INTO playerStats (playerTeamId, seasonId, goals, assists, points, gamesPlayed) VALUES ?`,
+        [playerStatsData]
+      );
+      console.log(`- Inserted ${playerStatsData.length} player stats.`);
+    }
+
     console.log("\n✅ Seeding complete! Database is ready for development.");
   } catch (error) {
     console.error("❌ Seeding failed:", error.message);
@@ -232,23 +252,3 @@ async function seed() {
 }
 
 seed();
-
-// Seed player stats
-console.log("- Seeding player stats...");
-const playerStats = [];
-for (let i = 1; i <= 20; i++) {
-  playerStats.push({
-    playerId: i,
-    seasonId: seasonId,
-    gamesPlayed: Math.floor(Math.random() * 15) + 1,
-    goals: Math.floor(Math.random() * 30),
-    assists: Math.floor(Math.random() * 25),
-    points: Math.floor(Math.random() * 50),
-  });
-}
-
-if (playerStats.length > 0) {
-  await db.insert(playerStats).values(playerStats);
-}
-
-console.log("✅ Seeding complete! Database is ready for development.");
