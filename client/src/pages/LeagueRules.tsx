@@ -103,16 +103,6 @@ export default function LeagueRules() {
                   <p className="text-2xl font-bold text-accent mb-2">$40</p>
                   <p className="text-sm">Per game when filling roster gaps</p>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Referee</h3>
-                  <p className="text-2xl font-bold text-accent mb-2">$40-50</p>
-                  <p className="text-sm">Per game (depending on location & experience)</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-2">Scorekeeper</h3>
-                  <p className="text-2xl font-bold text-accent mb-2">$25</p>
-                  <p className="text-sm">Per game</p>
-                </div>
               </div>
               <div className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20">
                 <p className="text-sm text-foreground"><strong>Note:</strong> Jersey & Socks Set - Coming Soon! We're currently polling players on their preferences. This will be available to add to your registration costs soon.</p>

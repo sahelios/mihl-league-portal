@@ -130,3 +130,4 @@
 ## NEW: Content Updates (May 12, 2026)
 - [x] Update Player Eligibility section in LeagueRules.tsx with complete text
 - [x] Update Playoff Format section in LeagueRules.tsx with simplified text
+- [x] Remove Referee and Scorekeeper pricing sections from Registration & Fees card
