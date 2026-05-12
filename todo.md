@@ -124,3 +124,4 @@
 - [x] Update player registration cost to $350 everywhere - COMPLETE
 - [x] Remove $300 option from referee/scorekeeper dropdowns - COMPLETE
 - [x] Fix missing registration.register tRPC procedure - COMPLETE
+- [x] Fix registration submission error (enum mapping) - COMPLETE

@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from '../_core/trpc';
+import { router, protectedProcedure, publicProcedure } from '../_core/trpc';
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
@@ -280,7 +280,7 @@ export const adminRouter = router({
     }),
 
   // ============ SUSPENSIONS ============
-  getActiveSuspensions: adminProcedure.query(async () => {
+  getActiveSuspensions: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
