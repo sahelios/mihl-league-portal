@@ -297,7 +297,10 @@ export async function createUser(data: {
   if (!db) throw new Error("Database not available");
   
   try {
+    const openId = `email_${data.email}_${Date.now()}`;
+    
     const result = await db.insert(users).values({
+      openId,
       email: data.email,
       passwordHash: data.passwordHash,
       name: data.name,
@@ -306,7 +309,6 @@ export async function createUser(data: {
       lastSignedIn: new Date(),
     });
     
-    // Return the created user
     const createdUser = await getUserByEmail(data.email);
     if (!createdUser) throw new Error("Failed to retrieve created user");
     

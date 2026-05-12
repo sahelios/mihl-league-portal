@@ -11,6 +11,9 @@ import * as bcrypt from "bcryptjs";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 
+const COOKIE_NAME = "session";
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -51,19 +54,17 @@ export const appRouter = router({
             emailVerified: true,
           });
 
-          // Create session
+          // Create session token
           const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
             name: user.name || '',
             expiresInMs: ONE_YEAR_MS,
           });
 
+          // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-          return {
-            success: true,
-            user: { id: user.id, email: user.email, name: user.name },
-          };
+          return { success: true };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
           throw new TRPCError({
@@ -97,19 +98,17 @@ export const appRouter = router({
             });
           }
 
-          // Create session
+          // Create session token
           const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
             name: user.name || '',
             expiresInMs: ONE_YEAR_MS,
           });
 
+          // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-          return {
-            success: true,
-            user: { id: user.id, email: user.email, name: user.name },
-          };
+          return { success: true };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
           throw new TRPCError({
