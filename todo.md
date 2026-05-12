@@ -121,6 +121,6 @@
 
 
 ## NEW: Pricing Updates
-- [ ] Update player registration cost to $350 everywhere
-- [ ] Remove $300 option from referee/scorekeeper dropdowns
-- [ ] Fix missing registration.register tRPC procedure
+- [x] Update player registration cost to $350 everywhere - COMPLETE
+- [x] Remove $300 option from referee/scorekeeper dropdowns - COMPLETE
+- [x] Fix missing registration.register tRPC procedure - COMPLETE

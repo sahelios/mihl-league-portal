@@ -202,12 +202,21 @@ export const registrationRouter = router({
         }
 
         // Create registration record
+        // Map form values to database enum values (database only has 'individual' and 'team')
+        const typeMap: Record<string, 'individual' | 'team'> = {
+          'individual': 'individual',
+          'team': 'team',
+          'spare': 'individual',
+          'referee': 'individual',
+          'scorekeeper': 'individual',
+        };
+
         const result = await db.insert(playerRegistrations).values({
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
           phone: input.phone,
-          registrationType: input.registrationType as any,
+          registrationType: typeMap[input.registrationType],
           status: 'pending',
           seasonId: 1,
           teamId: 1,
