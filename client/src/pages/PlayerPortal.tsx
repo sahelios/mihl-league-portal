@@ -105,7 +105,18 @@ export default function PlayerPortal() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">Your Rating</p>
+                  <TrendingUp size={20} className="text-amber-500" />
+                </div>
+                <p className="text-2xl font-bold">{playerReg?.playerRating || 'N/A'}/10</p>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">

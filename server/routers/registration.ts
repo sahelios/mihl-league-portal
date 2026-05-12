@@ -224,6 +224,7 @@ export const registrationRouter = router({
           paymentConfirmed: false,
           jerseyOrderConfirmed: false,
           evaluationDate: input.evaluationDate || null,
+          playerRating: input.rating || null,
         });
 
         // Send admin notification

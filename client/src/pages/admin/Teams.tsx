@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { useRouter } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -7,29 +9,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Edit2, Trash2 } from "lucide-react";
+import { Users, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Team {
   id: number;
   name: string;
-  logoUrl: string;
+  seasonId: number;
+  captainId: number | null;
+  colors: string | null;
+  createdAt: Date;
 }
-
-const SAMPLE_TEAMS: Team[] = [
-  { id: 1, name: "Iron Lions", logoUrl: "/team-logos/iron-lions.png" },
-  { id: 2, name: "Golan Guards", logoUrl: "/team-logos/golan-guards.png" },
-  { id: 3, name: "H Hammers", logoUrl: "/team-logos/h-hammers.png" },
-  { id: 4, name: "Schvitz Saints", logoUrl: "/team-logos/schvitz-saints.png" },
-];
 
 export default function AdminTeams() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [, navigate] = useRouter();
   const { user } = useAuth();
   
-  const [teams, setTeams] = useState<Team[]>(SAMPLE_TEAMS);
   const [teamName, setTeamName] = useState("");
+  const [teamColors, setTeamColors] = useState("");
+  const [seasonId, setSeasonId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -39,67 +38,97 @@ export default function AdminTeams() {
     return null;
   }
 
+  // Fetch teams and seasons
+  const { data: teams = [], isLoading: teamsLoading, refetch: refetchTeams } = trpc.admin.getTeams.useQuery();
+  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
+  
+  // Create team mutation
+  const createTeamMutation = trpc.admin.createTeam.useMutation({
+    onSuccess: () => {
+      toast.success(labels.teamAdded);
+      setTeamName("");
+      setTeamColors("");
+      setSeasonId(null);
+      setOpen(false);
+      refetchTeams();
+    },
+    onError: (error) => {
+      toast.error(labels.error);
+      console.error("Error creating team:", error);
+    },
+  });
+
+  // Delete team mutation
+  const deleteTeamMutation = trpc.admin.deleteTeam.useMutation({
+    onSuccess: () => {
+      toast.success(labels.teamDeleted);
+      refetchTeams();
+    },
+    onError: (error) => {
+      toast.error(labels.error);
+      console.error("Error deleting team:", error);
+    },
+  });
+
   const t = {
     en: {
       teams: "Team Management",
       addTeam: "Add New Team",
       teamName: "Team Name",
+      teamColors: "Team Colors",
+      season: "Season",
       add: "Add",
       cancel: "Cancel",
       teamAdded: "Team added successfully",
       error: "Error adding team",
       fillAllFields: "Please fill in all fields",
-      edit: "Edit",
       delete: "Delete",
       teamDeleted: "Team deleted successfully",
+      noTeams: "No teams created yet",
+      selectSeason: "Select a season",
     },
     fr: {
       teams: "Gestion des Équipes",
       addTeam: "Ajouter une Nouvelle Équipe",
       teamName: "Nom de l'Équipe",
+      teamColors: "Couleurs de l'Équipe",
+      season: "Saison",
       add: "Ajouter",
       cancel: "Annuler",
       teamAdded: "Équipe ajoutée avec succès",
       error: "Erreur lors de l'ajout de l'équipe",
       fillAllFields: "Veuillez remplir tous les champs",
-      edit: "Modifier",
       delete: "Supprimer",
       teamDeleted: "Équipe supprimée avec succès",
+      noTeams: "Aucune équipe créée",
+      selectSeason: "Sélectionner une saison",
     },
   };
 
   const labels = t[language];
 
   const handleAddTeam = async () => {
-    if (!teamName) {
+    if (!teamName || !seasonId) {
       toast.error(labels.fillAllFields);
       return;
     }
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const newTeam: Team = {
-        id: Math.max(...teams.map(t => t.id), 0) + 1,
+      await createTeamMutation.mutateAsync({
         name: teamName,
-        logoUrl: "/team-logos/default.png",
-      };
-      setTeams([...teams, newTeam]);
-      
-      toast.success(labels.teamAdded);
-      setTeamName("");
-      setOpen(false);
-    } catch (error) {
-      toast.error(labels.error);
+        seasonId,
+        colors: teamColors || null,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteTeam = (id: number) => {
-    setTeams(teams.filter(t => t.id !== id));
-    toast.success(labels.teamDeleted);
+    if (confirm("Are you sure?")) {
+      deleteTeamMutation.mutate({ teamId: id });
+    }
   };
 
   return (
@@ -134,6 +163,22 @@ export default function AdminTeams() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
+                <label className="text-sm font-medium">{labels.season}</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={seasonId || ""}
+                  onChange={(e) => setSeasonId(e.target.value ? parseInt(e.target.value) : null)}
+                >
+                  <option value="">{labels.selectSeason}</option>
+                  {seasons.map((season: any) => (
+                    <option key={season.id} value={season.id}>
+                      {season.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-sm font-medium">{labels.teamName}</label>
                 <Input
                   type="text"
@@ -143,10 +188,20 @@ export default function AdminTeams() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{labels.teamColors}</label>
+                <Input
+                  type="text"
+                  placeholder="e.g., Blue & White"
+                  value={teamColors}
+                  onChange={(e) => setTeamColors(e.target.value)}
+                />
+              </div>
+
               <div className="flex gap-2 pt-4">
                 <Button
                   onClick={handleAddTeam}
-                  disabled={isLoading}
+                  disabled={isLoading || createTeamMutation.isPending}
                 >
                   {labels.add}
                 </Button>
@@ -162,47 +217,39 @@ export default function AdminTeams() {
         </Dialog>
 
         {/* Teams List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {teams.map((team) => (
-            <Card key={team.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle>{team.name}</CardTitle>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toast.info("Edit feature coming soon")}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteTeam(team.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+        <div className="grid gap-4">
+          {teamsLoading ? (
+            <div className="text-center py-8">Loading teams...</div>
+          ) : teams && teams.length > 0 ? (
+            teams.map((team: Team) => (
+              <Card key={team.id}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg">{team.name}</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteTeam(team.id)}
+                    disabled={deleteTeamMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-gray-600">
+                    {team.colors && <p>Colors: {team.colors}</p>}
+                    <p>Season ID: {team.seasonId}</p>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">ID: {team.id}</p>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-center text-gray-500">{labels.noTeams}</p>
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
-
-        {/* Info */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900">
-              {language === "en"
-                ? "Manage teams in the league. Add, edit, or remove teams as needed."
-                : "Gérez les équipes de la ligue. Ajoutez, modifiez ou supprimez des équipes selon les besoins."}
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

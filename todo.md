@@ -142,8 +142,14 @@
 ## NEW: Bug Fixes (May 12, 2026 - 24hr Launch)
 - [x] Fix /register page submission error "Failed to submit registration" (fixed mutation name and data format)
 - [x] Fix /admin/players teams query error (SELECT columns issue)
-- [ ] Remove registration stats from admin dashboard
-- [ ] Fix team dropdown in player assignment (teams not loading)
-- [ ] Add player rating (1-10) to registration schema and form
-- [ ] Allow admins to edit player rating, players can only view
-- [ ] Display player rating in player management page
+- [x] Remove registration stats from admin dashboard
+- [x] Fix team dropdown in player assignment (teams not loading)
+- [x] Add player rating (1-10) to registration schema and form
+- [x] Allow admins to edit player rating, players can only view
+- [x] Display player rating in player management page
+
+## URGENT: 24-Hour Launch - Critical Gaps (FIXED)
+- [x] Fix admin team creation 404 error (wired Teams page to backend API)
+- [x] Fix player rating field name mismatch (client vs server)
+- [x] Add player rating display to Player Portal
+- [x] Verify team dropdown loads created teams
