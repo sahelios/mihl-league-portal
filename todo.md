@@ -81,8 +81,9 @@
 - [x] Admin pages created (Messaging, Seasons, Teams, Venues)
 - [x] DashboardLayout export fixed
 - [x] Player stats seeding completed and verified
-- [x] Final checkpoint created (v3: 6762eba7)
+- [x] Final checkpoint created (v4: 973ab589)
 - [x] Project ready for publishing
+- [x] Schema mismatches fixed (removed isEvaluationGame column)
 
 ## NEW: Logo & Color Palette Updates
 - [x] Upload MIHL league logo to storage
@@ -92,6 +93,14 @@
 - [ ] Upload team logos when provided by user - FUTURE
 - [ ] Replace AI-generated team logos with user-provided logos - FUTURE
 - [ ] Test color contrast and accessibility with new palette - FUTURE
+
+## Bug Fixes
+- [x] Fixed useRouter hook error in Dashboard.tsx
+- [x] Fixed header layout text overlap on desktop
+- [x] Fixed getUpcomingGames query with fallback error handling
+- [x] Fixed schema mismatch - removed isEvaluationGame column
+- [x] Fixed evaluation dates (JUN 23 & JUN 25)
+- [x] Fixed admin/players page query errors
 
 ## Evaluation Game Date Selection
 - [x] Add evaluation game date selection to registration form - COMPLETE (JUN 23 @ 9:30 PM & JUN 25 @ 10:00 PM)

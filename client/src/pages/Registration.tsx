@@ -20,6 +20,57 @@ export default function Registration() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Individual/Spare/Referee/Scorekeeper Form
+  const [playerForm, setPlayerForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    rating: 5,
+    position: "forward" as "forward" | "defenseman" | "goalie",
+    preferredTeam: "",
+    friendRequests: "",
+    wantsCaptain: false,
+    emergencyName: "",
+    emergencyPhone: "",
+    emergencyRelationship: "",
+    waiverSigned: false,
+    waiverSignature: "",
+    evaluationDate: "",
+  });
+
+  // Team Form
+  const [teamForm, setTeamForm] = useState({
+    teamName: "",
+    captainFirstName: "",
+    captainLastName: "",
+    captainEmail: "",
+    captainPhone: "",
+    players: [
+      { firstName: "", lastName: "", email: "", phone: "", position: "forward" as const, rating: 5 },
+    ],
+    emergencyName: "",
+    emergencyPhone: "",
+    emergencyRelationship: "",
+    waiverSigned: false,
+    waiverSignature: "",
+  });
+
+  // Fetch evaluation game capacity
+  const { data: evaluationCapacity } = trpc.registration.getEvaluationCapacity.useQuery();
+
+  const submitRegistration = trpc.registration.submit.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      resetForms();
+      setIsSubmitting(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Registration failed");
+      setIsSubmitting(false);
+    },
+  });
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -43,57 +94,6 @@ export default function Registration() {
   if (!isAuthenticated) {
     return null;
   }
-
-  // Individual/Spare/Referee/Scorekeeper Form
-  const [playerForm, setPlayerForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    rating: 5,
-    position: "forward" as "forward" | "defenseman" | "goalie",
-    preferredTeam: "",
-    friendRequests: "",
-    wantsCaptain: false,
-    emergencyName: "",
-    emergencyPhone: "",
-    emergencyRelationship: "",
-    waiverSigned: false,
-    waiverSignature: "",
-    evaluationDate: "",
-  });
-
-  // Fetch evaluation game capacity
-  const { data: evaluationCapacity } = trpc.registration.getEvaluationCapacity.useQuery();
-
-  // Team Form
-  const [teamForm, setTeamForm] = useState({
-    teamName: "",
-    captainFirstName: "",
-    captainLastName: "",
-    captainEmail: "",
-    captainPhone: "",
-    players: [
-      { firstName: "", lastName: "", email: "", phone: "", position: "forward" as const, rating: 5 },
-    ],
-    emergencyName: "",
-    emergencyPhone: "",
-    emergencyRelationship: "",
-    waiverSigned: false,
-    waiverSignature: "",
-  });
-
-  const submitRegistration = trpc.registration.submit.useMutation({
-    onSuccess: (data) => {
-      toast.success(data.message);
-      resetForms();
-      setIsSubmitting(false);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Registration failed");
-      setIsSubmitting(false);
-    },
-  });
 
   const resetForms = () => {
     setPlayerForm({
