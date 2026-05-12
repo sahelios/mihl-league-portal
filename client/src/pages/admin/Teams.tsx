@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "wouter";
+import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -23,7 +23,7 @@ interface Team {
 
 export default function AdminTeams() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
-  const [, navigate] = useRouter();
+  const [, navigate] = useLocation();
   const { user } = useAuth();
   
   const [teamName, setTeamName] = useState("");
