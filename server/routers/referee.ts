@@ -55,7 +55,7 @@ export const refereeRouter = router({
       const apps = await db
         .select()
         .from(refereeApplications)
-        .where(eq(refereeApplications.email, ctx.user.email))
+        .where(eq(refereeApplications.email, ctx.user?.email || ""))
         .limit(1);
       
       return apps[0] || null;
@@ -72,7 +72,7 @@ export const refereeRouter = router({
       const apps = await db
         .select()
         .from(refereeApplications)
-        .where(eq(refereeApplications.email, ctx.user.email))
+        .where(eq(refereeApplications.email, ctx.user?.email || ""))
         .limit(1);
       
       const app = apps[0];

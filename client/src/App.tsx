@@ -29,12 +29,16 @@ import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
 import EvaluationGames from "./pages/admin/EvaluationGames";
 import RefereeApplications from "./pages/admin/RefereeApplications";
+import StaffApplications from "./pages/admin/StaffApplications";
 import GameScheduler from "./pages/admin/GameScheduler";
 
 // Referee Pages
 import RefereeScorekeeperLanding from "./pages/RefereeScorekeeperLanding";
 import RefereeScorekeeperApplication from "./pages/RefereeScorekeeperApplication";
 import RefereeGameSelection from "./pages/RefereeGameSelection";
+
+// Player Portal
+import PlayerPortal from "./pages/PlayerPortal";
 
 import NotFound from "./pages/NotFound";
 
@@ -53,6 +57,7 @@ function Router() {
       <Route path="/referee-scorekeeper" component={RefereeScorekeeperLanding} />
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />
       <Route path="/referee-game-selection" component={RefereeGameSelection} />
+      <Route path="/player-portal" component={PlayerPortal} />
 
       {/* Admin Pages */}
       <Route path="/admin" component={AdminDashboard} />
@@ -65,6 +70,7 @@ function Router() {
       <Route path="/admin/messages" component={Messages} />
       <Route path="/admin/settings" component={Settings} />
       <Route path="/admin/referee-applications" component={RefereeApplications} />
+      <Route path="/admin/staff-applications" component={StaffApplications} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
 
       {/* 404 Fallback */}

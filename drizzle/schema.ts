@@ -416,3 +416,65 @@ export const refereeApplications = mysqlTable("refereeApplications", {
 
 export type RefereeApplication = typeof refereeApplications.$inferSelect;
 export type InsertRefereeApplication = typeof refereeApplications.$inferInsert;
+
+// Player Availability - track which games each player can play
+export const playerAvailability = mysqlTable("playerAvailability", {
+  id: int("id").autoincrement().primaryKey(),
+  playerTeamId: int("playerTeamId").notNull(),
+  gameId: int("gameId").notNull(),
+  isAvailable: boolean("isAvailable").default(true).notNull(),
+  reason: varchar("reason", { length: 200 }), // e.g., "injured", "work", etc.
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PlayerAvailability = typeof playerAvailability.$inferSelect;
+export type InsertPlayerAvailability = typeof playerAvailability.$inferInsert;
+
+// Staff Game Assignments - assign referees/scorekeepers to games
+export const staffGameAssignments = mysqlTable("staffGameAssignments", {
+  id: int("id").autoincrement().primaryKey(),
+  refereeApplicationId: int("refereeApplicationId").notNull(),
+  gameId: int("gameId").notNull(),
+  role: mysqlEnum("role", ["referee", "scorekeeper"]).notNull(),
+  status: mysqlEnum("status", ["assigned", "confirmed", "declined", "completed"]).default("assigned").notNull(),
+  paymentAmount: decimal("paymentAmount", { precision: 10, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffGameAssignment = typeof staffGameAssignments.$inferSelect;
+export type InsertStaffGameAssignment = typeof staffGameAssignments.$inferInsert;
+
+// Staff Payments - track payments made to referees/scorekeepers
+export const staffPayments = mysqlTable("staffPayments", {
+  id: int("id").autoincrement().primaryKey(),
+  refereeApplicationId: int("refereeApplicationId").notNull(),
+  gameId: int("gameId").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "cancelled"]).default("pending").notNull(),
+  paidDate: timestamp("paidDate"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffPayment = typeof staffPayments.$inferSelect;
+export type InsertStaffPayment = typeof staffPayments.$inferInsert;
+
+// Notifications - track portal and email notifications
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  recipientId: int("recipientId").notNull(), // User ID or Registration ID
+  recipientType: mysqlEnum("recipientType", ["user", "player", "staff"]).notNull(),
+  type: mysqlEnum("type", ["game_assignment", "availability_change", "payment", "approval", "rejection"]).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  relatedId: int("relatedId"), // Game ID, Registration ID, etc.
+  isRead: boolean("isRead").default(false).notNull(),
+  emailSent: boolean("emailSent").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

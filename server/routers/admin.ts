@@ -13,6 +13,10 @@ import {
   teams,
   seasons,
   gameVenues,
+  refereeApplications,
+  staffGameAssignments,
+  staffPayments,
+  notifications,
 } from "../../drizzle/schema";
 
 // Helper to ensure admin access
@@ -137,7 +141,7 @@ export const adminRouter = router({
       phone: app.phone,
       role: app.registrationType,
       interacEmail: app.email,
-      yearsOfExperience: app.playerRating || 0,
+      yearsOfExperience: 0,
       hockeyLevels: ["Adult League"],
     }));
   }),
@@ -148,7 +152,7 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(playerRegistrations).set({ status: 'approved', paymentAmount: input.paymentAmount.toString() }).where(eq(playerRegistrations.id, input.id));
+      await db.update(playerRegistrations).set({ status: 'approved' }).where(eq(playerRegistrations.id, input.id));
       return { success: true };
     }),
 
@@ -443,6 +447,85 @@ export const adminRouter = router({
       } catch (error: any) {
         console.error('Error creating team:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create team" });
+      }
+    }),
+
+  // ============ STAFF APPLICATIONS ============
+  getAllStaffApplications: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return await db.select().from(refereeApplications).orderBy(refereeApplications.createdAt);
+  }),
+
+  approveStaffApplication: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      paymentAmount: z.number().positive(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.update(refereeApplications)
+          .set({
+            status: "approved",
+            paymentAmount: input.paymentAmount.toString(),
+            approvalDate: new Date(),
+          })
+          .where(eq(refereeApplications.id, input.id));
+        return { success: true, message: "Staff application approved" };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  rejectStaffApplication: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      reason: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.update(refereeApplications)
+          .set({ status: "rejected" })
+          .where(eq(refereeApplications.id, input.id));
+        return { success: true, message: "Staff application rejected" };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  // ============ STAFF GAME ASSIGNMENTS ============
+  assignStaffToGame: adminProcedure
+    .input(z.object({
+      refereeApplicationId: z.number(),
+      gameId: z.number(),
+      role: z.enum(["referee", "scorekeeper"]),
+      paymentAmount: z.number().positive(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.insert(staffGameAssignments).values({
+          refereeApplicationId: input.refereeApplicationId,
+          gameId: input.gameId,
+          role: input.role,
+          paymentAmount: input.paymentAmount.toString(),
+          status: "assigned",
+        });
+        // Create payment record
+        await db.insert(staffPayments).values({
+          refereeApplicationId: input.refereeApplicationId,
+          gameId: input.gameId,
+          amount: input.paymentAmount.toString(),
+          status: "pending",
+        });
+        return { success: true, message: "Staff assigned to game" };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
 });
