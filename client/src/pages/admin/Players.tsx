@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function AdminPlayers() {
   const { user } = useAuth();
@@ -21,30 +22,32 @@ export default function AdminPlayers() {
   // Check admin access
   if (user?.role !== "admin") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <AlertCircle className="mx-auto text-red-500" size={48} />
-            <p className="text-foreground font-semibold">Access Denied</p>
-            <p className="text-muted-foreground text-sm">Only administrators can access this page.</p>
-            <Button onClick={() => navigate("/")} className="w-full">
-              Return to Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6 text-center space-y-4">
+              <AlertCircle className="mx-auto text-red-500" size={48} />
+              <p className="text-foreground font-semibold">Access Denied</p>
+              <p className="text-muted-foreground text-sm">Only administrators can access this page.</p>
+              <Button onClick={() => navigate("/")} className="w-full">
+                Return to Home
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
     );
   }
 
-  // Fetch all registrations by status
-  const { data: pendingData, isLoading: pendingLoading } = trpc.registration.getPending.useQuery();
+  // Fetch all registrations (not just pending)
+  const { data: allRegistrations = [], isLoading: allLoading } = trpc.registration.getAll.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
 
   // Mutations
   const approveMutation = trpc.registration.approve.useMutation({
     onSuccess: () => {
       toast.success("Registration approved!");
-      utils.registration.getPending.invalidate();
+      utils.registration.getAll.invalidate();
       utils.registration.getStats.invalidate();
     },
     onError: (error) => {
@@ -55,7 +58,7 @@ export default function AdminPlayers() {
   const rejectMutation = trpc.registration.reject.useMutation({
     onSuccess: () => {
       toast.success("Registration rejected!");
-      utils.registration.getPending.invalidate();
+      utils.registration.getAll.invalidate();
       utils.registration.getStats.invalidate();
       setRejectionReason({});
     },
@@ -67,7 +70,7 @@ export default function AdminPlayers() {
   const markPaidMutation = trpc.registration.markPaid.useMutation({
     onSuccess: () => {
       toast.success("Payment marked!");
-      utils.registration.getPending.invalidate();
+      utils.registration.getAll.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to mark payment");
@@ -97,6 +100,11 @@ export default function AdminPlayers() {
     };
     return prices[type] || 0;
   };
+
+  // Filter registrations by status
+  const pendingRegistrations = allRegistrations.filter((r: any) => r.status === "pending");
+  const approvedRegistrations = allRegistrations.filter((r: any) => r.status === "approved");
+  const rejectedRegistrations = allRegistrations.filter((r: any) => r.status === "rejected");
 
   const RegistrationCard = ({ registration, showActions = true }: { registration: any; showActions?: boolean }) => (
     <Card className="hover:shadow-md transition">
@@ -204,61 +212,66 @@ export default function AdminPlayers() {
                 </DialogContent>
               </Dialog>
 
-              {registration.status === "pending" && (
-                <>
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => handleApprove(registration.id)}
-                    disabled={approveMutation.isPending}
-                  >
-                    {approveMutation.isPending ? (
-                      <Loader2 size={16} className="mr-1 animate-spin" />
-                    ) : (
-                      <CheckCircle size={16} className="mr-1" />
-                    )}
-                    Approve
-                  </Button>
+              {/* Approve button - available for pending and rejected */}
+              {(registration.status === "pending" || registration.status === "rejected") && (
+                <Button
+                  size="sm"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={() => handleApprove(registration.id)}
+                  disabled={approveMutation.isPending}
+                >
+                  {approveMutation.isPending ? (
+                    <Loader2 size={16} className="mr-1 animate-spin" />
+                  ) : (
+                    <CheckCircle size={16} className="mr-1" />
+                  )}
+                  {registration.status === "rejected" ? "Re-approve" : "Approve"}
+                </Button>
+              )}
 
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="destructive" className="flex-1">
-                        <XCircle size={16} className="mr-1" /> Reject
+              {/* Reject button - available for pending and approved */}
+              {(registration.status === "pending" || registration.status === "approved") && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="destructive" className="flex-1">
+                      <XCircle size={16} className="mr-1" /> {registration.status === "approved" ? "Revoke" : "Reject"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {registration.status === "approved" ? "Revoke Approval" : "Reject Registration"}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Provide a reason for {registration.status === "approved" ? "revoking" : "rejecting"}{" "}
+                        {registration.firstName}'s {registration.status === "approved" ? "approval" : "registration"}:
+                      </p>
+                      <Input
+                        placeholder="Reason..."
+                        value={rejectionReason[registration.id] || ""}
+                        onChange={(e) =>
+                          setRejectionReason({
+                            ...rejectionReason,
+                            [registration.id]: e.target.value,
+                          })
+                        }
+                      />
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          handleReject(registration.id);
+                        }}
+                        disabled={rejectMutation.isPending}
+                        className="w-full"
+                      >
+                        {rejectMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                        Confirm
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Reject Registration</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                          Provide a reason for rejecting {registration.firstName}'s registration:
-                        </p>
-                        <Input
-                          placeholder="Reason for rejection..."
-                          value={rejectionReason[registration.id] || ""}
-                          onChange={(e) =>
-                            setRejectionReason({
-                              ...rejectionReason,
-                              [registration.id]: e.target.value,
-                            })
-                          }
-                        />
-                        <Button
-                          variant="destructive"
-                          onClick={() => {
-                            handleReject(registration.id);
-                          }}
-                          disabled={rejectMutation.isPending}
-                          className="w-full"
-                        >
-                          {rejectMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-                          Confirm Rejection
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
 
               {registration.paymentStatus === "unpaid" && registration.status === "approved" && (
@@ -279,119 +292,96 @@ export default function AdminPlayers() {
     </Card>
   );
 
-  const pending = pendingData || [];
-  const approved = statsData?.approved || 0;
-  const rejected = statsData?.rejected || 0;
-  const total = statsData?.total || 0;
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-4 text-foreground">Player Management</h1>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-3xl font-bold text-accent">{pending.length}</p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Player Management</h1>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-orange-600">{statsData?.pending || 0}</p>
                 <p className="text-sm text-muted-foreground">Pending</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-3xl font-bold text-green-600">{approved}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{statsData?.approved || 0}</p>
                 <p className="text-sm text-muted-foreground">Approved</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-3xl font-bold text-red-600">{rejected}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">{statsData?.rejected || 0}</p>
                 <p className="text-sm text-muted-foreground">Rejected</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-3xl font-bold text-foreground">{total}</p>
-                <p className="text-sm text-muted-foreground">Total</p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Tabs for different statuses */}
+        {/* Tabs */}
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <Clock size={16} />
-              Pending ({pending.length})
-            </TabsTrigger>
-            <TabsTrigger value="approved" className="flex items-center gap-2">
-              <CheckCircle size={16} />
-              Approved ({approved})
-            </TabsTrigger>
-            <TabsTrigger value="rejected" className="flex items-center gap-2">
-              <XCircle size={16} />
-              Rejected ({rejected})
-            </TabsTrigger>
+            <TabsTrigger value="pending">Pending ({pendingRegistrations.length})</TabsTrigger>
+            <TabsTrigger value="approved">Approved ({approvedRegistrations.length})</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected ({rejectedRegistrations.length})</TabsTrigger>
           </TabsList>
 
-          {/* Pending Registrations */}
-          <TabsContent value="pending" className="mt-6">
-            {pendingLoading ? (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <Loader2 className="mx-auto animate-spin" />
-                </CardContent>
-              </Card>
-            ) : pending.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pending.map((reg: any) => (
-                  <RegistrationCard key={reg.id} registration={reg} showActions={true} />
-                ))}
+          <TabsContent value="pending" className="space-y-4">
+            {allLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin" size={32} />
               </div>
-            ) : (
+            ) : pendingRegistrations.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center text-muted-foreground">
-                  No pending registrations.
+                  No pending registrations
                 </CardContent>
               </Card>
+            ) : (
+              pendingRegistrations.map((reg: any) => <RegistrationCard key={reg.id} registration={reg} />)
             )}
           </TabsContent>
 
-          {/* Approved Registrations */}
-          <TabsContent value="approved" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {approved > 0 ? (
-                pending
-                  .filter((reg: any) => reg.status === "approved")
-                  .map((reg: any) => <RegistrationCard key={reg.id} registration={reg} showActions={true} />)
-              ) : (
-                <Card>
-                  <CardContent className="pt-6 text-center text-muted-foreground">
-                    No approved registrations yet.
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+          <TabsContent value="approved" className="space-y-4">
+            {allLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin" size={32} />
+              </div>
+            ) : approvedRegistrations.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  No approved registrations
+                </CardContent>
+              </Card>
+            ) : (
+              approvedRegistrations.map((reg: any) => <RegistrationCard key={reg.id} registration={reg} />)
+            )}
           </TabsContent>
 
-          {/* Rejected Registrations */}
-          <TabsContent value="rejected" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {rejected > 0 ? (
-                pending
-                  .filter((reg: any) => reg.status === "rejected")
-                  .map((reg: any) => <RegistrationCard key={reg.id} registration={reg} showActions={false} />)
-              ) : (
-                <Card>
-                  <CardContent className="pt-6 text-center text-muted-foreground">
-                    No rejected registrations.
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+          <TabsContent value="rejected" className="space-y-4">
+            {allLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin" size={32} />
+              </div>
+            ) : rejectedRegistrations.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  No rejected registrations
+                </CardContent>
+              </Card>
+            ) : (
+              rejectedRegistrations.map((reg: any) => <RegistrationCard key={reg.id} registration={reg} />)
+            )}
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
