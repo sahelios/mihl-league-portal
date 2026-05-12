@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Users, Whistle, BarChart3, DollarSign, Calendar, ArrowRight } from "lucide-react";
+import { Users, Award, BarChart3, DollarSign, Calendar, ArrowRight } from "lucide-react";
 
 export default function RefereeScorekeeperLanding() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
@@ -45,7 +45,7 @@ export default function RefereeScorekeeperLanding() {
           <Card className="bg-gradient-to-br from-blue-50 to-blue-5 border-blue-200 hover:shadow-lg transition">
             <CardContent className="pt-8">
               <div className="flex items-start gap-4 mb-6">
-                <Whistle className="text-blue-600 mt-1" size={40} />
+                <Award className="text-blue-600 mt-1" size={40} />
                 <div>
                   <h2 className="text-3xl font-bold text-foreground mb-2">
                     {language === "en" ? "Become a Referee" : "Devenez Arbitre"}
