@@ -382,4 +382,67 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create games" });
       }
     }),
+
+  // ============ SEASON MANAGEMENT ============
+  getSeasons: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return await db.select().from(seasons).orderBy(seasons.startDate);
+  }),
+
+  createSeason: adminProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      startDate: z.string(),
+      endDate: z.string(),
+      registrationDeadline: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        await db.insert(seasons).values({
+          name: input.name,
+          startDate: new Date(input.startDate),
+          endDate: new Date(input.endDate),
+          registrationDeadline: input.registrationDeadline ? new Date(input.registrationDeadline) : null,
+          isActive: false,
+        });
+        return { success: true, message: "Season created successfully" };
+      } catch (error: any) {
+        console.error('Error creating season:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create season" });
+      }
+    }),
+
+  // ============ TEAM MANAGEMENT ============
+  getTeams: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return await db.select().from(teams);
+  }),
+
+  createTeam: adminProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      seasonId: z.number(),
+      colors: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        await db.insert(teams).values({
+          name: input.name,
+          seasonId: input.seasonId,
+          colors: input.colors || null,
+        });
+        return { success: true, message: "Team created successfully" };
+      } catch (error: any) {
+        console.error('Error creating team:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create team" });
+      }
+    }),
 });
