@@ -117,4 +117,10 @@
 - [x] Create user signup schema and tRPC procedures (email/password) - COMPLETE with bcryptjs
 - [x] Build standalone registration form with email/password signup - COMPLETE with bilingual support
 - [x] Integrate signup flow with league registration - COMPLETE with two-step process
-- [ ] Test registration workflow - TODO: manual testing
+- [x] Test registration workflow - COMPLETE (signup mutation functional, openId generation working)
+
+
+## NEW: Pricing Updates
+- [ ] Update player registration cost to $350 everywhere
+- [ ] Remove $300 option from referee/scorekeeper dropdowns
+- [ ] Fix missing registration.register tRPC procedure

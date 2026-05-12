@@ -261,9 +261,9 @@ export default function Registration() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="player">{language === "en" ? "Player ($250)" : "Joueur ($250)"}</SelectItem>
-                    <SelectItem value="referee">{language === "en" ? "Referee ($300)" : "Arbitre ($300)"}</SelectItem>
-                    <SelectItem value="scorekeeper">{language === "en" ? "Scorekeeper ($300)" : "Gardien de Pointage ($300)"}</SelectItem>
+                    <SelectItem value="player">{language === "en" ? "Player ($350)" : "Joueur ($350)"}</SelectItem>
+                    <SelectItem value="referee">{language === "en" ? "Referee" : "Arbitre"}</SelectItem>
+                    <SelectItem value="scorekeeper">{language === "en" ? "Scorekeeper" : "Gardien de Pointage"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

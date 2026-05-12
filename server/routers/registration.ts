@@ -356,4 +356,41 @@ export const registrationRouter = router({
         total: pending.length + approved.length + rejected.length,
       };
     }),
+
+  register: publicProcedure
+    .input(z.object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string(),
+      evaluationDate: z.date(),
+      isFirstTime: z.boolean().optional(),
+      registrationType: z.enum(['player', 'referee', 'scorekeeper']),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      try {
+        const result = await db.insert(playerRegistrations).values({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          phone: input.phone,
+          registrationType: input.registrationType as any,
+          status: 'pending',
+          seasonId: 1,
+          teamId: 1,
+          isFirstTime: input.isFirstTime || false,
+          paymentConfirmed: false,
+          jerseyOrderConfirmed: false,
+          evaluationDate: input.evaluationDate.toISOString().split('T')[0],
+        });
+
+        return { success: true, registrationId: (result as any).insertId || 0 };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to submit registration' });
+      }
+    }),
 });
