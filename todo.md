@@ -141,3 +141,4 @@
 
 ## NEW: Bug Fixes (May 12, 2026 - 24hr Launch)
 - [x] Fix /register page submission error "Failed to submit registration" (fixed mutation name and data format)
+- [ ] Fix /admin/players teams query error (SELECT columns issue)

@@ -424,7 +424,14 @@ export const adminRouter = router({
   getTeams: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(teams);
+    return await db.select({
+      id: teams.id,
+      name: teams.name,
+      seasonId: teams.seasonId,
+      captainId: teams.captainId,
+      colors: teams.colors,
+      createdAt: teams.createdAt,
+    }).from(teams);
   }),
 
   createTeam: adminProcedure
