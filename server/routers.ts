@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { leagueRouter } from "./routers/league";
@@ -6,9 +6,12 @@ import { registrationRouter } from "./routers/registration";
 import { adminRouter } from "./routers/admin";
 import { refereeRouter } from "./routers/referee";
 import { publicProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import * as bcrypt from "bcryptjs";
+import * as db from "./db";
+import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -19,6 +22,102 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    signup: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Check if email already exists
+          const existingUser = await db.getUserByEmail(input.email);
+          if (existingUser) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'Email already registered',
+            });
+          }
+
+          // Hash password
+          const passwordHash = await bcrypt.hash(input.password, 10);
+
+          // Create user
+          const user = await db.createUser({
+            email: input.email,
+            passwordHash,
+            name: input.name || null,
+            loginMethod: 'email',
+            emailVerified: true,
+          });
+
+          // Create session
+          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
+            name: user.name || '',
+            expiresInMs: ONE_YEAR_MS,
+          });
+
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+          return {
+            success: true,
+            user: { id: user.id, email: user.email, name: user.name },
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Signup failed',
+          });
+        }
+      }),
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Find user by email
+          const user = await db.getUserByEmail(input.email);
+          if (!user || !user.passwordHash) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: 'Invalid email or password',
+            });
+          }
+
+          // Verify password
+          const isValid = await bcrypt.compare(input.password, user.passwordHash);
+          if (!isValid) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: 'Invalid email or password',
+            });
+          }
+
+          // Create session
+          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
+            name: user.name || '',
+            expiresInMs: ONE_YEAR_MS,
+          });
+
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+          return {
+            success: true,
+            user: { id: user.id, email: user.email, name: user.name },
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Login failed',
+          });
+        }
+      }),
   }),
   league: leagueRouter,
   registration: registrationRouter,

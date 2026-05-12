@@ -93,6 +93,9 @@
 - [ ] Upload team logos when provided by user - FUTURE
 - [ ] Replace AI-generated team logos with user-provided logos - FUTURE
 - [ ] Test color contrast and accessibility with new palette - FUTURE
+- [ ] Vitest unit tests (deferred - requires schema updates)
+- [ ] Performance optimization (optional polish)
+- [ ] Accessibility review (optional polish)
 
 ## Bug Fixes
 - [x] Fixed useRouter hook error in Dashboard.tsx
@@ -101,9 +104,17 @@
 - [x] Fixed schema mismatch - removed isEvaluationGame column
 - [x] Fixed evaluation dates (JUN 23 & JUN 25)
 - [x] Fixed admin/players page query errors
+- [x] Fixed React hooks error in Registration component (moved hooks before conditional returns)
 
 ## Evaluation Game Date Selection
 - [x] Add evaluation game date selection to registration form - COMPLETE (JUN 23 @ 9:30 PM & JUN 25 @ 10:00 PM)
 - [x] Cap capacity: 2 goalies + 24 players per evaluation date - COMPLETE
 - [x] Show remaining spots for each evaluation date - COMPLETE
 - [x] Auto-populate admin portal with evaluation game attendance - COMPLETE
+
+
+## NEW: Standalone User Registration (In Progress)
+- [ ] Create user signup schema and tRPC procedures (email/password)
+- [ ] Build standalone registration form with email/password signup
+- [ ] Integrate signup flow with league registration
+- [ ] Test registration workflow

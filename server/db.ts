@@ -265,3 +265,67 @@ export async function updateSuspension(id: number, data: Partial<InsertSuspensio
   
   return await db.update(suspensions).set(data).where(eq(suspensions.id, id));
 }
+
+
+// Email/Password Authentication Functions
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting user by email:", error);
+    return null;
+  }
+}
+
+export async function createUser(data: {
+  email: string;
+  passwordHash: string;
+  name: string | null;
+  loginMethod: string;
+  emailVerified: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const result = await db.insert(users).values({
+      email: data.email,
+      passwordHash: data.passwordHash,
+      name: data.name,
+      loginMethod: data.loginMethod,
+      emailVerified: data.emailVerified,
+      lastSignedIn: new Date(),
+    });
+    
+    // Return the created user
+    const createdUser = await getUserByEmail(data.email);
+    if (!createdUser) throw new Error("Failed to retrieve created user");
+    
+    return createdUser;
+  } catch (error) {
+    console.error("[Database] Error creating user:", error);
+    throw error;
+  }
+}
+
+export async function updateUserLastSignedIn(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  try {
+    await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Error updating last signed in:", error);
+    return false;
+  }
+}
