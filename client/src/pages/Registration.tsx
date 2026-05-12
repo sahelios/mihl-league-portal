@@ -30,7 +30,7 @@ export default function Registration() {
   const [phone, setPhone] = useState("");
   const [evaluationDate, setEvaluationDate] = useState("");
   const [isFirstTime, setIsFirstTime] = useState(false);
-  const [registrationType, setRegistrationType] = useState("player");
+  const [registrationType, setRegistrationType] = useState("individual");
   const [agreeToWaiver, setAgreeToWaiver] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,7 @@ export default function Registration() {
   
   // tRPC mutations
   const signupMutation = trpc.auth.signup.useMutation();
-  const registerMutation = trpc.registration.register.useMutation();
+  const registerMutation = trpc.registration.submit.useMutation();
   const evaluationCapacityQuery = trpc.registration.getEvaluationCapacity.useQuery();
   
   const handleSignup = async (e: React.FormEvent) => {
@@ -88,13 +88,18 @@ export default function Registration() {
     setIsLoading(true);
     try {
       await registerMutation.mutateAsync({
+        registrationType: registrationType as "individual" | "team" | "spare" | "referee" | "scorekeeper",
         firstName,
         lastName,
         email: user?.email || email,
         phone,
-        evaluationDate: new Date(evaluationDate),
-        isFirstTime,
-        registrationType: registrationType as "player" | "referee" | "scorekeeper",
+        evaluationDate,
+        emergencyName: "",
+        emergencyPhone: "",
+        emergencyRelationship: "",
+        waiverSigned: agreeToWaiver,
+        waiverSignature: "",
+        language,
       });
       
       toast.success(language === "en" ? "Registration complete! You will receive a confirmation email shortly." : "Inscription complète! Vous recevrez un e-mail de confirmation bientôt.");
@@ -105,7 +110,7 @@ export default function Registration() {
       setPhone("");
       setEvaluationDate("");
       setIsFirstTime(false);
-      setRegistrationType("player");
+      setRegistrationType("individual");
       setAgreeToWaiver(false);
     } catch (error: any) {
       toast.error(error.message || (language === "en" ? "Registration failed" : "L'inscription a échoué"));
