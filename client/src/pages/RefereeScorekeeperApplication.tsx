@@ -15,7 +15,8 @@ export default function RefereeScorekeeperApplication() {
     firstName: "", lastName: "", email: "", phone: "", interacEmail: "",
     role: "referee" as "referee" | "scorekeeper",
     isCertified: false, certifications: [] as string[],
-    yearsOfExperience: 0, hockeyLevels: [] as string[]
+    yearsOfExperience: 0, hockeyLevels: [] as string[],
+    desiredPayPerGame: "" as string
   });
 
   const mutation = trpc.referee.submitApplication.useMutation({
@@ -24,7 +25,8 @@ export default function RefereeScorekeeperApplication() {
       setForm({
         firstName: "", lastName: "", email: "", phone: "", interacEmail: "",
         role: "referee", isCertified: false, certifications: [],
-        yearsOfExperience: 0, hockeyLevels: []
+        yearsOfExperience: 0, hockeyLevels: [],
+        desiredPayPerGame: ""
       });
     },
     onError: (error) => {
@@ -44,7 +46,7 @@ export default function RefereeScorekeeperApplication() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email || !form.interacEmail) {
+    if (!form.firstName || !form.lastName || !form.email || !form.interacEmail || !form.desiredPayPerGame) {
       toast.error(language === "en" ? "Please fill all required fields" : "Veuillez remplir tous les champs");
       return;
     }
@@ -137,6 +139,17 @@ export default function RefereeScorekeeperApplication() {
                   )}
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label>{language === "en" ? "Desired Payment Per Game" : "Rémunération souhaitée par match"} *</Label>
+                <Input 
+                  type="text" 
+                  placeholder={language === "en" ? "e.g., $40-50" : "ex. 40-50 $"}
+                  value={form.desiredPayPerGame} 
+                  onChange={e => setForm({...form, desiredPayPerGame: e.target.value})} 
+                  required
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label>{language === "en" ? "Experience Levels" : "Niveaux d'expérience"}</Label>
