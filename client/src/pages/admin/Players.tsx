@@ -19,7 +19,11 @@ export default function AdminPlayers() {
   const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
   const utils = trpc.useUtils();
 
-  // Check admin access
+  // Fetch all registrations (not just pending)
+  const { data: allRegistrations = [], isLoading: allLoading } = trpc.registration.getAll.useQuery();
+  const { data: statsData } = trpc.registration.getStats.useQuery();
+
+  // Check admin access - AFTER all hooks
   if (user?.role !== "admin") {
     return (
       <DashboardLayout>
@@ -38,10 +42,6 @@ export default function AdminPlayers() {
       </DashboardLayout>
     );
   }
-
-  // Fetch all registrations (not just pending)
-  const { data: allRegistrations = [], isLoading: allLoading } = trpc.registration.getAll.useQuery();
-  const { data: statsData } = trpc.registration.getStats.useQuery();
 
   // Mutations
   const approveMutation = trpc.registration.approve.useMutation({
