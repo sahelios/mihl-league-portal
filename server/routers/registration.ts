@@ -402,4 +402,29 @@ export const registrationRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to submit registration' });
       }
     }),
+
+  // Assign player to team (admin only)
+  assignTeam: protectedProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      teamId: z.number(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user?.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      try {
+        await db.update(playerRegistrations)
+          .set({ teamId: input.teamId })
+          .where(eq(playerRegistrations.id, input.registrationId));
+        return { success: true, message: 'Player assigned to team' };
+      } catch (error: any) {
+        console.error('Error assigning team:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message || 'Failed to assign team' });
+      }
+    }),
 });

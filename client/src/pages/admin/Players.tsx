@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, XCircle, Clock, AlertCircle, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -16,12 +17,13 @@ export default function AdminPlayers() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [rejectionReason, setRejectionReason] = useState<Record<number, string>>({});
-  const [selectedRegistration, setSelectedRegistration] = useState<any>(null);
+  const [teamAssignments, setTeamAssignments] = useState<Record<number, number>>({});
   const utils = trpc.useUtils();
 
   // Fetch all registrations (not just pending)
   const { data: allRegistrations = [], isLoading: allLoading } = trpc.registration.getAll.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
+  const { data: teams = [] } = trpc.admin.getTeams.useQuery();
 
   // Check admin access - AFTER all hooks
   if (user?.role !== "admin") {
@@ -77,6 +79,17 @@ export default function AdminPlayers() {
     },
   });
 
+  const assignTeamMutation = trpc.registration.assignTeam.useMutation({
+    onSuccess: () => {
+      toast.success("Player assigned to team!");
+      utils.registration.getAll.invalidate();
+      setTeamAssignments({});
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to assign team");
+    },
+  });
+
   const handleApprove = (id: number) => {
     approveMutation.mutate({ registrationId: id, language: "en" });
   };
@@ -88,6 +101,15 @@ export default function AdminPlayers() {
 
   const handleMarkPaid = (id: number) => {
     markPaidMutation.mutate({ registrationId: id, amountPaid: 1 });
+  };
+
+  const handleAssignTeam = (registrationId: number) => {
+    const teamId = teamAssignments[registrationId];
+    if (!teamId) {
+      toast.error("Please select a team");
+      return;
+    }
+    assignTeamMutation.mutate({ registrationId, teamId });
   };
 
   const getRegistrationPrice = (type: string) => {
@@ -268,6 +290,55 @@ export default function AdminPlayers() {
                       >
                         {rejectMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
                         Confirm
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Team Assignment - for pending and approved */}
+              {(registration.status === "pending" || registration.status === "approved") && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="flex-1">
+                      Assign Team
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Assign Player to Team</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Select a team for {registration.firstName} {registration.lastName}:
+                      </p>
+                      <Select
+                        value={(teamAssignments[registration.id] || "").toString()}
+                        onValueChange={(value) =>
+                          setTeamAssignments({
+                            ...teamAssignments,
+                            [registration.id]: parseInt(value),
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teams.map((team: any) => (
+                            <SelectItem key={team.id} value={team.id.toString()}>
+                              {team.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        className="w-full"
+                        onClick={() => handleAssignTeam(registration.id)}
+                        disabled={assignTeamMutation.isPending}
+                      >
+                        {assignTeamMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                        Assign
                       </Button>
                     </div>
                   </DialogContent>
