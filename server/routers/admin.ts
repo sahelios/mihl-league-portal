@@ -421,15 +421,20 @@ export const adminRouter = router({
     }),
 
   // ============ TEAM MANAGEMENT ============
-  getTeams: adminProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    try {
-      return await db.select().from(teams);
-    } catch (error: any) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
-    }
-  }),
+  getTeams: adminProcedure
+    .input(z.object({ seasonId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        if (input.seasonId) {
+          return await db.select().from(teams).where(eq(teams.seasonId, input.seasonId));
+        }
+        return await db.select().from(teams);
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
 
   createTeam: adminProcedure
     .input(z.object({
@@ -545,6 +550,30 @@ export const adminRouter = router({
         return { success: true, message: "Team deleted" };
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  copyTeam: adminProcedure
+    .input(z.object({
+      teamId: z.number(),
+      newSeasonId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const sourceTeam = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+        if (!sourceTeam.length) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+        
+        await db.insert(teams).values({
+          name: sourceTeam[0].name,
+          seasonId: input.newSeasonId,
+          colors: sourceTeam[0].colors,
+        });
+        return { success: true, message: "Team copied successfully" };
+      } catch (error: any) {
+        console.error('Error copying team:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to copy team" });
       }
     }),
 });

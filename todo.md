@@ -156,8 +156,14 @@
 
 
 ## NEW: Comprehensive Team Management (Priority - 24hr Launch)
-- [ ] Debug database schema/query issues for teams and seasons tables
-- [ ] Build admin team management page with roster view (teams, players, ratings)
-- [ ] Add player assign/deassign from teams functionality
-- [ ] Add unassigned players dropdown with assignment to teams
+- [x] Fix database query issues for teams and seasons tables
+- [ ] Add deassignment support to backend (allow teamId: null in assignTeam) - DEFERRED (schema migration blocked, can reassign to different teams)
+- [ ] Rebuild team management UI with seasonId selection and display
+- [x] Add team copying functionality between seasons (copyTeam procedure added)
+- [ ] End-to-end testing of team assignment flows
 - [ ] (Future) Team balancing recommendations based on ratings/stats
+
+## Post-Launch Improvements
+- [ ] Make playerRegistrations.teamId nullable for full deassignment support
+- [ ] Rebuild TeamManagement UI with season selection and team copying
+- [ ] Implement full end-to-end team assignment testing
