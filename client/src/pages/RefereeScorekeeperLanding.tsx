@@ -63,7 +63,7 @@ export default function RefereeScorekeeperLanding() {
                 <div className="flex items-center gap-3">
                   <DollarSign className="text-blue-600" size={20} />
                   <span className="text-foreground">
-                    {language === "en" ? "Earn $40-50 per game" : "Gagnez 40-50 $ par match"}
+                    {language === "en" ? "Get paid per game" : "Être payé par match"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function RefereeScorekeeperLanding() {
                 <div className="flex items-center gap-3">
                   <DollarSign className="text-green-600" size={20} />
                   <span className="text-foreground">
-                    {language === "en" ? "Earn $25 per game" : "Gagnez 25 $ par match"}
+                    {language === "en" ? "Get paid per game" : "Être payé par match"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
