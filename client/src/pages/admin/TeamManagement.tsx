@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Trash2, UserPlus, UserMinus } from "lucide-react";
+import { Users, Plus, Trash2, UserPlus, UserMinus, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 interface Team {
@@ -40,20 +40,25 @@ export default function TeamManagement() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [teamName, setTeamName] = useState("");
   const [teamColors, setTeamColors] = useState("");
-  const [seasonId, setSeasonId] = useState<number | null>(null);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [unassignedPlayers, setUnassignedPlayers] = useState<PlayerWithTeam[]>([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [showAssignPlayer, setShowAssignPlayer] = useState(false);
+  const [showCopyTeam, setShowCopyTeam] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithTeam | null>(null);
   const [selectedPlayerTeam, setSelectedPlayerTeam] = useState<number | null>(null);
+  const [copyTargetSeasonId, setCopyTargetSeasonId] = useState<number | null>(null);
 
   // Fetch teams and seasons
-  const { data: fetchedTeams = [], isLoading: teamsLoading, refetch: refetchTeams } = trpc.admin.getTeams.useQuery(undefined, {
-    onError: (error) => {
-      console.error("Error loading teams:", error);
-      toast.error("Failed to load teams");
-    },
-  });
+  const { data: fetchedTeams = [], isLoading: teamsLoading, refetch: refetchTeams } = trpc.admin.getTeams.useQuery(
+    selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
+    {
+      onError: (error) => {
+        console.error("Error loading teams:", error);
+        toast.error("Failed to load teams");
+      },
+    }
+  );
 
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery(undefined, {
     onError: (error) => {
@@ -91,6 +96,19 @@ export default function TeamManagement() {
     },
     onError: (error) => {
       toast.error(language === "en" ? "Failed to delete team" : "Erreur lors de la suppression de l'équipe");
+    },
+  });
+
+  // Copy team mutation
+  const copyTeamMutation = trpc.admin.copyTeam.useMutation({
+    onSuccess: () => {
+      toast.success(language === "en" ? "Team copied successfully" : "Équipe copiée avec succès");
+      setShowCopyTeam(false);
+      setCopyTargetSeasonId(null);
+      refetchTeams();
+    },
+    onError: (error) => {
+      toast.error(language === "en" ? "Failed to copy team" : "Erreur lors de la copie de l'équipe");
     },
   });
 
@@ -189,6 +207,10 @@ export default function TeamManagement() {
       assign: "Assign",
       noTeams: "No teams created yet",
       noPlayers: "No players on this team",
+      copyTeam: "Copy Team",
+      selectSeason: "Select Season",
+      copy: "Copy",
+      season: "Season",
     },
     fr: {
       teamManagement: "Gestion des équipes",
@@ -208,6 +230,10 @@ export default function TeamManagement() {
       assign: "Assigner",
       noTeams: "Aucune équipe créée",
       noPlayers: "Aucun joueur dans cette équipe",
+      copyTeam: "Copier l'équipe",
+      selectSeason: "Sélectionner une saison",
+      copy: "Copier",
+      season: "Saison",
     },
   };
 
@@ -219,6 +245,18 @@ export default function TeamManagement() {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">{l.teamManagement}</h1>
           <div className="flex gap-2">
+            <Select value={selectedSeasonId?.toString() || ""} onValueChange={(val) => setSelectedSeasonId(parseInt(val))}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={l.selectSeason} />
+              </SelectTrigger>
+              <SelectContent>
+                {seasons.map((season: any) => (
+                  <SelectItem key={season.id} value={season.id.toString()}>
+                    {season.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <button
               onClick={() => setLanguage(language === "en" ? "fr" : "en")}
               className="px-3 py-1 text-sm border rounded"
@@ -348,6 +386,45 @@ export default function TeamManagement() {
                               disabled={assignPlayerMutation.isPending || !selectedPlayer}
                             >
                               {l.assign}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Dialog open={showCopyTeam} onOpenChange={setShowCopyTeam}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>{l.copyTeam}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <Select value={copyTargetSeasonId?.toString() || ""} onValueChange={(val) => setCopyTargetSeasonId(parseInt(val))}>
+                              <SelectTrigger>
+                                <SelectValue placeholder={l.selectSeason} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {seasons.map((season: any) => (
+                                  <SelectItem key={season.id} value={season.id.toString()}>
+                                    {season.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={() => {
+                                if (selectedTeamId && copyTargetSeasonId) {
+                                  copyTeamMutation.mutate({
+                                    teamId: selectedTeamId,
+                                    newSeasonId: copyTargetSeasonId,
+                                  });
+                                }
+                              }}
+                              disabled={copyTeamMutation.isPending || !copyTargetSeasonId}
+                            >
+                              {l.copy}
                             </Button>
                           </div>
                         </DialogContent>

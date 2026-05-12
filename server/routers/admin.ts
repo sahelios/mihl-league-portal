@@ -388,7 +388,9 @@ export const adminRouter = router({
     }),
 
   // ============ SEASON MANAGEMENT ============
-  getSeasons: adminProcedure.query(async () => {
+  getSeasons: adminProcedure
+    .input(z.void().optional())
+    .query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     return await db.select().from(seasons).orderBy(seasons.startDate);
@@ -422,16 +424,17 @@ export const adminRouter = router({
 
   // ============ TEAM MANAGEMENT ============
   getTeams: adminProcedure
-    .input(z.object({ seasonId: z.number().optional() }))
+    .input(z.object({ seasonId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        if (input.seasonId) {
+        if (input?.seasonId) {
           return await db.select().from(teams).where(eq(teams.seasonId, input.seasonId));
         }
         return await db.select().from(teams);
       } catch (error: any) {
+        console.error('Error fetching teams:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
