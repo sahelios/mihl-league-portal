@@ -153,3 +153,11 @@
 - [x] Fix player rating field name mismatch (client vs server)
 - [x] Add player rating display to Player Portal
 - [x] Verify team dropdown loads created teams
+
+
+## NEW: Comprehensive Team Management (Priority - 24hr Launch)
+- [ ] Debug database schema/query issues for teams and seasons tables
+- [ ] Build admin team management page with roster view (teams, players, ratings)
+- [ ] Add player assign/deassign from teams functionality
+- [ ] Add unassigned players dropdown with assignment to teams
+- [ ] (Future) Team balancing recommendations based on ratings/stats

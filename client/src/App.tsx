@@ -32,6 +32,7 @@ import RefereeApplications from "./pages/admin/RefereeApplications";
 import StaffApplications from "./pages/admin/StaffApplications";
 import GameScheduler from "./pages/admin/GameScheduler";
 import AdminTeams from "./pages/admin/Teams";
+import TeamManagement from "./pages/admin/TeamManagement";
 
 // Referee Pages
 import RefereeScorekeeperLanding from "./pages/RefereeScorekeeperLanding";
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/admin/staff-applications" component={StaffApplications} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
       <Route path="/admin/teams" component={AdminTeams} />
+      <Route path="/admin/team-management" component={TeamManagement} />
 
       {/* 404 Fallback */}
       <Route path="/404" component={NotFound} />
