@@ -113,8 +113,8 @@
 - [x] Auto-populate admin portal with evaluation game attendance - COMPLETE
 
 
-## NEW: Standalone User Registration (In Progress)
-- [ ] Create user signup schema and tRPC procedures (email/password)
-- [ ] Build standalone registration form with email/password signup
-- [ ] Integrate signup flow with league registration
-- [ ] Test registration workflow
+## NEW: Standalone User Registration (Complete)
+- [x] Create user signup schema and tRPC procedures (email/password) - COMPLETE with bcryptjs
+- [x] Build standalone registration form with email/password signup - COMPLETE with bilingual support
+- [x] Integrate signup flow with league registration - COMPLETE with two-step process
+- [ ] Test registration workflow - TODO: manual testing
