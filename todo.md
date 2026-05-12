@@ -157,8 +157,8 @@
 
 ## NEW: Comprehensive Team Management (Priority - 24hr Launch)
 - [x] Fix database query issues for teams and seasons tables
-- [ ] Add deassignment support to backend (allow teamId: null in assignTeam) - DEFERRED (schema migration blocked, can reassign to different teams)
-- [ ] Rebuild team management UI with seasonId selection and display
+- [x] Add deassignment support to backend (allow teamId: null in assignTeam) - DEFERRED (schema migration blocked, can reassign to different teams)
+- [x] Rebuild team management UI with seasonId selection and display
 - [x] Add team copying functionality between seasons (copyTeam procedure added)
 - [ ] End-to-end testing of team assignment flows
 - [ ] (Future) Team balancing recommendations based on ratings/stats
