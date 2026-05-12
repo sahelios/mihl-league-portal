@@ -131,3 +131,10 @@
 - [x] Update Player Eligibility section in LeagueRules.tsx with complete text
 - [x] Update Playoff Format section in LeagueRules.tsx with simplified text
 - [x] Remove Referee and Scorekeeper pricing sections from Registration & Fees card
+
+## NEW: User Correction Requests (Completed May 12, 2026)
+- [x] Suspensions page: Show number of games suspended and next eligible game date
+- [x] Fix Standings page query error: Failed query on teams table
+- [x] Registration page: Add payment agreement statement under registration type dropdown
+- [x] Referee/Scorekeeper pages: /referee-scorekeeper should be landing page only, move forms to /referee-scorekeeper-apply, allow public access (no login required)
+- [x] Admin: Add Games management page - select teams, dates, recurring schedule (e.g., every Tuesday from X to Y), times, with option to delete individual recurrences

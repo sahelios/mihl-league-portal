@@ -15,6 +15,7 @@ interface Suspension {
   endDate?: string | Date | null;
   isActive: boolean;
   gamesRemaining?: number | null;
+  nextEligibleGame?: string | null;
 }
 
 export default function Suspensions() {
@@ -94,12 +95,23 @@ export default function Suspensions() {
               </div>
             )}
 
-            {suspension.gamesRemaining !== undefined && suspension.gamesRemaining !== null && suspension.isActive && (
-              <div className="sm:col-span-2 mt-1">
-                <span className="font-semibold text-muted-foreground mr-2">
-                  {language === "en" ? "Games Remaining:" : "Matchs Restants :"}
-                </span>
-                <span className="font-bold text-destructive">{suspension.gamesRemaining}</span>
+            {suspension.isActive && (
+              <div className="sm:col-span-2 mt-2 p-3 bg-destructive/10 rounded border border-destructive/20">
+                <p className="font-semibold text-destructive mb-2">
+                  {language === "en" ? "Suspension Details:" : "Détails de la Suspension :"}
+                </p>
+                <p className="text-sm text-foreground">
+                  {language === "en" 
+                    ? `Player is suspended for ${suspension.gamesRemaining || "unknown"} game(s).` 
+                    : `Le joueur est suspendu pour ${suspension.gamesRemaining || "inconnu"} match(s).`}
+                </p>
+                {suspension.nextEligibleGame && (
+                  <p className="text-sm text-foreground mt-1">
+                    {language === "en" 
+                      ? `Next eligible game: ${suspension.nextEligibleGame}` 
+                      : `Prochain match autorisé : ${suspension.nextEligibleGame}`}
+                  </p>
+                )}
               </div>
             )}
           </div>

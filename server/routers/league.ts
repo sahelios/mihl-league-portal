@@ -47,23 +47,57 @@ export const leagueRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     
-    const allTeams = await db.select().from(teams);
-    
-    // Transform raw teams into standings format
-    return allTeams.map(t => ({
-      id: t.id,
-      name: t.name,
-      logo: t.logoUrl || "https://placehold.co/100x100?text=Logo",
-      gp: (t.wins || 0) + (t.losses || 0),
-      w: t.wins || 0,
-      l: t.losses || 0,
-      t: 0,
-      pts: ((t as any).wins || 0) * 2,
-      gf: Math.floor(Math.random() * 30), // Placeholder stats for display
-      ga: Math.floor(Math.random() * 30),
-      gd: 0,
-      winPct: "0.000"
-    })).sort((a, b) => b.pts - a.pts);
+    try {
+      const allTeams = await db.select().from(teams);
+      const allGames = await db.select().from(games).where(eq(games.status, 'completed'));
+      
+      // Calculate standings for each team
+      const standings = allTeams.map(team => {
+        let wins = 0, losses = 0, ties = 0, gf = 0, ga = 0;
+        
+        // Process games where this team participated
+        allGames.forEach(game => {
+          if (game.homeTeamId === team.id) {
+            gf += game.homeScore || 0;
+            ga += game.awayScore || 0;
+            if ((game.homeScore || 0) > (game.awayScore || 0)) wins++;
+            else if ((game.homeScore || 0) < (game.awayScore || 0)) losses++;
+            else ties++;
+          } else if (game.awayTeamId === team.id) {
+            gf += game.awayScore || 0;
+            ga += game.homeScore || 0;
+            if ((game.awayScore || 0) > (game.homeScore || 0)) wins++;
+            else if ((game.awayScore || 0) < (game.homeScore || 0)) losses++;
+            else ties++;
+          }
+        });
+        
+        const gp = wins + losses + ties;
+        const pts = wins * 2 + ties;
+        const gd = gf - ga;
+        const winPct = gp > 0 ? (wins / gp).toFixed(3) : "0.000";
+        
+        return {
+          id: team.id,
+          name: team.name,
+          logo: team.logoUrl || "https://placehold.co/100x100?text=Logo",
+          gp,
+          w: wins,
+          l: losses,
+          t: ties,
+          pts,
+          gf,
+          ga,
+          gd,
+          winPct
+        };
+      });
+      
+      return standings.sort((a, b) => b.pts - a.pts);
+    } catch (error) {
+      console.error('Error fetching standings:', error);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch standings" });
+    }
   }),
 
   // Missing Leaderboard Logic for Public Stats.tsx

@@ -284,7 +284,33 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-    return await db.select().from(suspensions).where(eq(suspensions.isActive, true));
+    try {
+      const allSuspensions = await db.select().from(suspensions);
+      const completedGames = await db.select().from(games).where(eq(games.status, 'completed'));
+      
+      return allSuspensions.map(suspension => {
+        const gamesAfterStart = completedGames.filter(g => {
+          const gameDate = new Date(g.gameDate);
+          const suspensionStart = new Date(suspension.startDate);
+          return gameDate >= suspensionStart;
+        }).length;
+        
+        const nextEligibleGameNumber = gamesAfterStart + 1;
+        const nextEligibleGame = completedGames.length > 0 
+          ? `After game ${nextEligibleGameNumber}`
+          : null;
+        
+        return {
+          ...suspension,
+          gamesRemaining: Math.max(0, nextEligibleGameNumber - gamesAfterStart),
+          nextEligibleGame,
+          teamName: suspension.teamId ? `Team ${suspension.teamId}` : undefined,
+        };
+      }).filter(s => s.isActive);
+    } catch (error) {
+      console.error('Error fetching suspensions:', error);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch suspensions" });
+    }
   }),
 
   addSuspension: adminProcedure
@@ -303,13 +329,57 @@ export const adminRouter = router({
       return { success: true };
     }),
 
-  removeSuspension: adminProcedure
+   removeSuspension: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-
       await db.update(suspensions).set({ isActive: false }).where(eq(suspensions.id, input.id));
       return { success: true };
+    }),
+
+  getVenues: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    return await db.select().from(gameVenues);
+  }),
+
+  createGames: adminProcedure
+    .input(z.object({
+      games: z.array(z.object({
+        homeTeamId: z.number(),
+        awayTeamId: z.number(),
+        venueId: z.number(),
+        gameDate: z.string(),
+        gameTime: z.string(),
+      }))
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        const seasons_data = await db.select().from(seasons).where(eq(seasons.isActive, true));
+        if (seasons_data.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No active season found" });
+        }
+        const seasonId = seasons_data[0].id;
+
+        const gamesToInsert = input.games.map(game => ({
+          seasonId,
+          homeTeamId: game.homeTeamId,
+          awayTeamId: game.awayTeamId,
+          venueId: game.venueId,
+          gameDate: new Date(game.gameDate),
+          gameTime: game.gameTime,
+          status: "scheduled" as const,
+        }));
+
+        await db.insert(games).values(gamesToInsert);
+        return { success: true, message: `Created ${gamesToInsert.length} games` };
+      } catch (error: any) {
+        console.error('Error creating games:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create games" });
+      }
     }),
 });

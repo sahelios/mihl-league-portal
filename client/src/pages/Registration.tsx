@@ -268,6 +268,15 @@ export default function Registration() {
                 </Select>
               </div>
               
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <h3 className="font-semibold text-sm mb-2 text-amber-900">{language === "en" ? "Payment Agreement" : "Accord de Paiement"}</h3>
+                <p className="text-sm text-amber-800 mb-3">
+                  {language === "en" 
+                    ? "I agree to make my payment via e-transfer to payments@mihl.ca in the next 48 hours or will forfeit my spot in the league. For payment arrangements call the league at 514-965-2842 or send an email to registration@mihl.ca"
+                    : "J'accepte de faire mon paiement par virement electronique a payments@mihl.ca dans les 48 prochaines heures ou je perdrai ma place dans la ligue. Pour les arrangements de paiement, appelez la ligue au 514-965-2842 ou envoyez un e-mail a registration@mihl.ca"}
+                </p>
+              </div>
+              
               {registrationType === "player" && (
                 <>
                   <div>
