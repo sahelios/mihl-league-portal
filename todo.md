@@ -125,3 +125,8 @@
 - [x] Remove $300 option from referee/scorekeeper dropdowns - COMPLETE
 - [x] Fix missing registration.register tRPC procedure - COMPLETE
 - [x] Fix registration submission error (enum mapping) - COMPLETE
+- [x] Fix admin access error (made getActiveSuspensions public) - COMPLETE
+
+## NEW: Content Updates (May 12, 2026)
+- [x] Update Player Eligibility section in LeagueRules.tsx with complete text
+- [x] Update Playoff Format section in LeagueRules.tsx with simplified text

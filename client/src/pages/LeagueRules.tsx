@@ -29,7 +29,7 @@ export default function LeagueRules() {
 
               <section>
                 <h3 className="font-semibold text-foreground mb-2">4. Player Eligibility</h3>
-                <p>All players must be registered with the league and approved by league management before participating in games. Players must be at least 18 years old.</p>
+                <p>All players must be registered with the league and approved by league management before participating in games. Players must be at least 18 years old. Any player not approved by the league for play will be asked to leave immediately. If an eligible player is found to have played a game, the team will have forfeited the game 7-0 and standings updated accordingly.</p>
               </section>
 
               <section>
@@ -62,7 +62,7 @@ export default function LeagueRules() {
 
               <section>
                 <h3 className="font-semibold text-foreground mb-2">9. Playoff Format</h3>
-                <p>The top teams at the end of the regular season will qualify for playoffs. Playoff format and seeding will be determined by league management.</p>
+                <p>Playoff format and seeding will be determined by league management.</p>
               </section>
 
               <section>
