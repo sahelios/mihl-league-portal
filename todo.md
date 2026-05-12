@@ -94,7 +94,7 @@
 - [ ] Test color contrast and accessibility with new palette - FUTURE
 
 ## Evaluation Game Date Selection
-- [x] Add evaluation game date selection to registration form - COMPLETE
+- [x] Add evaluation game date selection to registration form - COMPLETE (JUN 23 @ 9:30 PM & JUN 25 @ 10:00 PM)
 - [x] Cap capacity: 2 goalies + 24 players per evaluation date - COMPLETE
 - [x] Show remaining spots for each evaluation date - COMPLETE
 - [x] Auto-populate admin portal with evaluation game attendance - COMPLETE

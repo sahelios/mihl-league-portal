@@ -70,13 +70,14 @@ export const games = mysqlTable("games", {
   homeScore: int("homeScore"),
   awayScore: int("awayScore"),
   status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled").notNull(),
-  isEvaluationGame: boolean("isEvaluationGame").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Game = typeof games.$inferSelect;
 export type InsertGame = typeof games.$inferInsert;
+
+// Note: isEvaluationGame column does not exist in the actual database
 
 export const playerRegistrations = mysqlTable("playerRegistrations", {
   id: int("id").autoincrement().primaryKey(),

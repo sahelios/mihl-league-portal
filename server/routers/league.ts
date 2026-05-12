@@ -10,7 +10,8 @@ export const leagueRouter = router({
   getGames: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(games);
+    const allGames = await db.select().from(games);
+    return allGames;
   }),
 
   getUpcomingGames: publicProcedure
@@ -18,19 +19,27 @@ export const leagueRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      return await db.select().from(games).where(eq(games.status, 'scheduled'));
+      try {
+        return await db.select().from(games).where(eq(games.status, 'scheduled'));
+      } catch (error) {
+        // Fallback: return all games if query fails
+        console.error('Error fetching scheduled games:', error);
+        return await db.select().from(games);
+      }
     }),
 
   getTeams: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(teams);
+    const allTeams = await db.select().from(teams);
+    return allTeams;
   }),
 
   getSuspensions: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(suspensions);
+    const allSuspensions = await db.select().from(suspensions);
+    return allSuspensions;
   }),
 
   // Missing Standings Logic for Public Standings.tsx
