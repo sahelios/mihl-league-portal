@@ -57,6 +57,7 @@ export const gameVenues = mysqlTable("gameVenues", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   address: text("address"),
+  city: varchar("city", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

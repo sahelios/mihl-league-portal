@@ -14,11 +14,12 @@ interface Venue {
   id: number;
   name: string;
   address: string;
+  city?: string;
 }
 
 const SAMPLE_VENUES: Venue[] = [
-  { id: 1, name: "Samuel Moscovitch Arena", address: "5555 Av. Casgrain, Montreal, QC" },
-  { id: 2, name: "Outremont Arena", address: "1000 Av. Van Horne, Montreal, QC" },
+  { id: 1, name: "Samuel Moscovitch Arena", address: "5555 Av. Casgrain", city: "Montreal, QC" },
+  { id: 2, name: "Outremont Arena", address: "1000 Av. Van Horne", city: "Montreal, QC" },
 ];
 
 export default function AdminVenues() {
@@ -29,6 +30,7 @@ export default function AdminVenues() {
   const [venues, setVenues] = useState<Venue[]>(SAMPLE_VENUES);
   const [venueName, setVenueName] = useState("");
   const [venueAddress, setVenueAddress] = useState("");
+  const [venueCity, setVenueCity] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -44,6 +46,7 @@ export default function AdminVenues() {
       addVenue: "Add New Venue",
       venueName: "Venue Name",
       address: "Address",
+      city: "City",
       add: "Add",
       cancel: "Cancel",
       venueAdded: "Venue added successfully",
@@ -52,12 +55,14 @@ export default function AdminVenues() {
       edit: "Edit",
       delete: "Delete",
       venueDeleted: "Venue deleted successfully",
+      viewOnMap: "View on Map",
     },
     fr: {
       venues: "Gestion des Arénas",
       addVenue: "Ajouter un Nouvel Aréna",
       venueName: "Nom de l'Aréna",
       address: "Adresse",
+      city: "Ville",
       add: "Ajouter",
       cancel: "Annuler",
       venueAdded: "Aréna ajouté avec succès",
@@ -66,13 +71,14 @@ export default function AdminVenues() {
       edit: "Modifier",
       delete: "Supprimer",
       venueDeleted: "Aréna supprimé avec succès",
+      viewOnMap: "Voir sur la carte",
     },
   };
 
   const labels = t[language];
 
   const handleAddVenue = async () => {
-    if (!venueName || !venueAddress) {
+    if (!venueName || !venueAddress || !venueCity) {
       toast.error(labels.fillAllFields);
       return;
     }
@@ -85,12 +91,14 @@ export default function AdminVenues() {
         id: Math.max(...venues.map(v => v.id), 0) + 1,
         name: venueName,
         address: venueAddress,
+        city: venueCity,
       };
       setVenues([...venues, newVenue]);
       
       toast.success(labels.venueAdded);
       setVenueName("");
       setVenueAddress("");
+      setVenueCity("");
       setOpen(false);
     } catch (error) {
       toast.error(labels.error);
@@ -155,6 +163,16 @@ export default function AdminVenues() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{labels.city}</label>
+                <Input
+                  type="text"
+                  placeholder="City, Province"
+                  value={venueCity}
+                  onChange={(e) => setVenueCity(e.target.value)}
+                />
+              </div>
+
               <div className="flex gap-2 pt-4">
                 <Button
                   onClick={handleAddVenue}
@@ -180,8 +198,18 @@ export default function AdminVenues() {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>{venue.name}</CardTitle>
+                    <button
+                      onClick={() => {
+                        const fullAddress = `${venue.address}, ${venue.city}`;
+                        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`;
+                        window.open(mapsUrl, '_blank');
+                      }}
+                      className="text-lg font-bold text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {venue.name}
+                    </button>
                     <p className="text-sm text-muted-foreground mt-1">{venue.address}</p>
+                    <p className="text-sm text-muted-foreground">{venue.city}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
