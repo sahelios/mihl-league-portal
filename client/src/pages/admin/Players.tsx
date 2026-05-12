@@ -18,6 +18,7 @@ export default function AdminPlayers() {
   const [, navigate] = useLocation();
   const [rejectionReason, setRejectionReason] = useState<Record<number, string>>({});
   const [teamAssignments, setTeamAssignments] = useState<Record<number, number>>({});
+  const [playerRatings, setPlayerRatings] = useState<Record<number, number>>({});
   const utils = trpc.useUtils();
 
   // Fetch all registrations (not just pending)
@@ -90,6 +91,17 @@ export default function AdminPlayers() {
     },
   });
 
+  const updateRatingMutation = trpc.registration.updatePlayerRating.useMutation({
+    onSuccess: () => {
+      toast.success("Player rating updated!");
+      utils.registration.getAll.invalidate();
+      setPlayerRatings({});
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update rating");
+    },
+  });
+
   const handleApprove = (id: number) => {
     approveMutation.mutate({ registrationId: id, language: "en" });
   };
@@ -110,6 +122,15 @@ export default function AdminPlayers() {
       return;
     }
     assignTeamMutation.mutate({ registrationId, teamId });
+  };
+
+  const handleUpdateRating = (registrationId: number) => {
+    const rating = playerRatings[registrationId];
+    if (!rating || rating < 1 || rating > 10) {
+      toast.error("Please select a valid rating (1-10)");
+      return;
+    }
+    updateRatingMutation.mutate({ registrationId, rating });
   };
 
   const getRegistrationPrice = (type: string) => {
@@ -165,9 +186,9 @@ export default function AdminPlayers() {
                 {registration.paymentStatus}
               </Badge>
             </p>
-            {registration.playerRating && (
+            {registration.registrationType === "individual" && (
               <p>
-                <strong>Rating:</strong> {registration.playerRating}/10
+                <strong>Rating:</strong> {registration.playerRating || "Not set"}/10
               </p>
             )}
             {registration.position && (
@@ -322,23 +343,76 @@ export default function AdminPlayers() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a team" />
+                          <SelectValue placeholder={teams.length === 0 ? "No teams available" : "Select a team"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {teams.map((team: any) => (
-                            <SelectItem key={team.id} value={team.id.toString()}>
-                              {team.name}
+                          {teams.length === 0 ? (
+                            <div className="p-2 text-sm text-muted-foreground">No teams created yet</div>
+                          ) : (
+                            teams.map((team: any) => (
+                              <SelectItem key={team.id} value={team.id.toString()}>
+                                {team.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        className="w-full"
+                        onClick={() => handleAssignTeam(registration.id)}
+                        disabled={assignTeamMutation.isPending || teams.length === 0}
+                      >
+                        {assignTeamMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                        Assign
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Player Rating Edit - for individual registrations */}
+              {registration.registrationType === "individual" && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="flex-1">
+                      Edit Rating
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Player Rating</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Set skill rating for {registration.firstName} {registration.lastName}:
+                      </p>
+                      <Select
+                        value={(playerRatings[registration.id] || registration.playerRating || "").toString()}
+                        onValueChange={(value) =>
+                          setPlayerRatings({
+                            ...playerRatings,
+                            [registration.id]: parseInt(value),
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select rating (1-10)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                            <SelectItem key={rating} value={rating.toString()}>
+                              {rating}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <Button
                         className="w-full"
-                        onClick={() => handleAssignTeam(registration.id)}
-                        disabled={assignTeamMutation.isPending}
+                        onClick={() => handleUpdateRating(registration.id)}
+                        disabled={updateRatingMutation.isPending}
                       >
-                        {assignTeamMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-                        Assign
+                        {updateRatingMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+                        Update Rating
                       </Button>
                     </div>
                   </DialogContent>

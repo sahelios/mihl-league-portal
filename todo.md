@@ -141,4 +141,9 @@
 
 ## NEW: Bug Fixes (May 12, 2026 - 24hr Launch)
 - [x] Fix /register page submission error "Failed to submit registration" (fixed mutation name and data format)
-- [ ] Fix /admin/players teams query error (SELECT columns issue)
+- [x] Fix /admin/players teams query error (SELECT columns issue)
+- [ ] Remove registration stats from admin dashboard
+- [ ] Fix team dropdown in player assignment (teams not loading)
+- [ ] Add player rating (1-10) to registration schema and form
+- [ ] Allow admins to edit player rating, players can only view
+- [ ] Display player rating in player management page

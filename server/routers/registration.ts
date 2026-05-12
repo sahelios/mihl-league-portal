@@ -427,4 +427,29 @@ export const registrationRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message || 'Failed to assign team' });
       }
     }),
+
+  // Update player rating (admin only)
+  updatePlayerRating: protectedProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      rating: z.number().min(1).max(10),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user?.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      try {
+        await db.update(playerRegistrations)
+          .set({ playerRating: input.rating })
+          .where(eq(playerRegistrations.id, input.registrationId));
+        return { success: true, message: 'Player rating updated' };
+      } catch (error: any) {
+        console.error('Error updating rating:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message || 'Failed to update rating' });
+      }
+    }),
 });

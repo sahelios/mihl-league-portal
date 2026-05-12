@@ -31,6 +31,7 @@ export default function Registration() {
   const [evaluationDate, setEvaluationDate] = useState("");
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [registrationType, setRegistrationType] = useState("individual");
+  const [playerRating, setPlayerRating] = useState("");
   const [agreeToWaiver, setAgreeToWaiver] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +76,7 @@ export default function Registration() {
   const handleLeagueRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firstName || !lastName || !phone || !evaluationDate) {
+    if (!firstName || !lastName || !phone || !evaluationDate || (registrationType === "individual" && !playerRating)) {
       toast.error(language === "en" ? "Please fill in all required fields" : "Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -94,6 +95,7 @@ export default function Registration() {
         email: user?.email || email,
         phone,
         evaluationDate,
+        playerRating: registrationType === "individual" ? parseInt(playerRating) : undefined,
         emergencyName: "",
         emergencyPhone: "",
         emergencyRelationship: "",
@@ -109,6 +111,7 @@ export default function Registration() {
       setLastName("");
       setPhone("");
       setEvaluationDate("");
+      setPlayerRating("");
       setIsFirstTime(false);
       setRegistrationType("individual");
       setAgreeToWaiver(false);
@@ -293,6 +296,20 @@ export default function Registration() {
                       <SelectContent>
                         <SelectItem value="2026-06-23">JUN 23 @ 9:30 PM - Samuel Moscovitch Arena</SelectItem>
                         <SelectItem value="2026-06-25">JUN 25 @ 10:00 PM - Outremont Arena</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="playerRating">{language === "en" ? "Player Rating (1-10)" : "Classement du Joueur (1-10)"} *</Label>
+                    <Select value={playerRating} onValueChange={setPlayerRating}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={language === "en" ? "Select your rating" : "Sélectionner votre classement"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                          <SelectItem key={rating} value={rating.toString()}>{rating}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

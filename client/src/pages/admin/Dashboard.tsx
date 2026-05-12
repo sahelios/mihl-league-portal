@@ -18,8 +18,7 @@ export default function AdminDashboard() {
     return null;
   }
 
-  // Fetch registration stats
-  const { data: stats } = trpc.admin.getRegistrationStats.useQuery();
+  // Stats removed - now displayed in Player Management page
 
   const t = {
     en: {
@@ -81,49 +80,7 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
-        {/* Registration Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {labels.pending}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.pending || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {labels.approved}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.approved || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {labels.rejected}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.rejected || 0}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {labels.total}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.total || 0}</div>
-            </CardContent>
-          </Card>
-        </div>
+
 
         {/* Management Sections */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
