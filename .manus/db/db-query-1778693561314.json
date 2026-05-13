@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, name, startDate, endDate FROM seasons LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, name, startDate, endDate FROM seasons LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "2026 Summer Season",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "30001",
+      "name": "Summer 2026",
+      "startDate": "2026-05-01",
+      "endDate": "2026-08-31"
+    },
+    {
+      "id": "60001",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "60002",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "60003",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "60004",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "90001",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    },
+    {
+      "id": "90002",
+      "name": "Summer 2026",
+      "startDate": "2026-06-23",
+      "endDate": "2026-08-25"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tstartDate\tendDate\n1\t2026 Summer Season\t2026-06-23\t2026-08-25\n30001\tSummer 2026\t2026-05-01\t2026-08-31\n60001\tSummer 2026\t2026-06-23\t2026-08-25\n60002\tSummer 2026\t2026-06-23\t2026-08-25\n60003\tSummer 2026\t2026-06-23\t2026-08-25\n60004\tSummer 2026\t2026-06-23\t2026-08-25\n90001\tSummer 2026\t2026-06-23\t2026-08-25\n90002\tSummer 2026\t2026-06-23\t2026-08-25\n",
+  "stderr": "",
+  "execution_time_ms": 579
+}

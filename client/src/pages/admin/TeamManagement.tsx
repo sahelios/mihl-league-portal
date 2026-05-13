@@ -163,7 +163,7 @@ export default function TeamManagement() {
         setSelectedTeamId((fetchedTeams[0] as Team).id);
       }
     }
-  }, [fetchedTeams, selectedTeamId]);
+  }, [fetchedTeams]);
 
   // Update players when registrations fetched
   useEffect(() => {

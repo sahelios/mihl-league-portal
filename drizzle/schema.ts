@@ -32,7 +32,6 @@ export const seasons = mysqlTable("seasons", {
   name: varchar("name", { length: 100 }).notNull(),
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
-  registrationDeadline: date("registrationDeadline"),
   isActive: boolean("isActive").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

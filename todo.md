@@ -169,8 +169,21 @@
 - [x] All admin features working (delete buttons visible and functional)
 - [x] Add New Team dialog functional with season selection
 - [x] Bilingual support (EN/FR) for team management
+- [x] Fix TeamManagement component error (removed teamColors references)
 
 ## Post-Launch Improvements
 - [ ] Make playerRegistrations.teamId nullable for full deassignment support
 - [ ] Rebuild TeamManagement UI with season selection and team copying
 - [ ] Implement full end-to-end team assignment testing
+
+## NEW: Game Scheduler Portal (May 13, 2026)
+- [ ] Fix season selector in /admin/team-management (getSeasons query not returning data)
+- [ ] Create /admin/game-scheduler portal
+- [ ] Build season creation form (name, start date, end date)
+- [ ] Build game creation form with:
+  - Team selection (home/away)
+  - Venue/arena selection
+  - Date and time selection
+  - Recurring game support (e.g., every Tuesday/Thursday)
+- [ ] Display created games in a calendar or table view
+- [ ] Test game scheduler end-to-end
