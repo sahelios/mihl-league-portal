@@ -166,7 +166,9 @@
 ## NEW: Teams Schema Fix (May 13, 2026)
 - [x] Fix teams schema mismatch (removed non-existent colors column)
 - [x] Teams from public /teams page now display on /admin/teams
-- [x] All admin features working (delete, copy, assign players)
+- [x] All admin features working (delete buttons visible and functional)
+- [x] Add New Team dialog functional with season selection
+- [x] Bilingual support (EN/FR) for team management
 
 ## Post-Launch Improvements
 - [ ] Make playerRegistrations.teamId nullable for full deassignment support

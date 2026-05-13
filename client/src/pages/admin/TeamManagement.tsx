@@ -75,7 +75,6 @@ export default function TeamManagement() {
     onSuccess: () => {
       toast.success(language === "en" ? "Team created successfully" : "Équipe créée avec succès");
       setTeamName("");
-      setTeamColors("");
       setShowCreateTeam(false);
       refetchTeams();
     },
@@ -193,8 +192,7 @@ export default function TeamManagement() {
       rating: "Rating",
       createTeam: "Create Team",
       teamName: "Team Name",
-      teamColors: "Team Colors",
-      create: "Create",
+      season: "Season",
       delete: "Delete",
       assignPlayer: "Assign Player",
       removePlayer: "Remove Player",
@@ -216,9 +214,7 @@ export default function TeamManagement() {
       rating: "Évaluation",
       createTeam: "Créer une équipe",
       teamName: "Nom de l'équipe",
-      teamColors: "Couleurs de l'équipe",
-      create: "Créer",
-      delete: "Supprimer",
+      season: "Saison",      delete: "Supprimer",
       assignPlayer: "Assigner un joueur",
       removePlayer: "Retirer le joueur",
       unassignedPlayers: "Joueurs non assignés",
@@ -285,11 +281,6 @@ export default function TeamManagement() {
                           placeholder={l.teamName}
                           value={teamName}
                           onChange={(e) => setTeamName(e.target.value)}
-                        />
-                        <Input
-                          placeholder={l.teamColors}
-                          value={teamColors}
-                          onChange={(e) => setTeamColors(e.target.value)}
                         />
                         <Button
                           onClick={() => {
