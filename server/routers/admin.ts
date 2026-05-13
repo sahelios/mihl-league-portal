@@ -393,7 +393,13 @@ export const adminRouter = router({
     .query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-    return await db.select().from(seasons).orderBy(seasons.startDate);
+    const result = await db.select().from(seasons).orderBy(seasons.startDate);
+    return result.map(season => ({
+      ...season,
+      startDate: season.startDate instanceof Date ? season.startDate.toISOString().split('T')[0] : season.startDate,
+      endDate: season.endDate instanceof Date ? season.endDate.toISOString().split('T')[0] : season.endDate,
+      createdAt: season.createdAt instanceof Date ? season.createdAt.toISOString() : season.createdAt,
+    }));
   }),
 
   createSeason: adminProcedure
@@ -412,7 +418,7 @@ export const adminRouter = router({
           name: input.name,
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
-          registrationDeadline: input.registrationDeadline ? new Date(input.registrationDeadline) : null,
+          // registrationDeadline removed - column doesn't exist in database
           isActive: false,
         });
         return { success: true, message: "Season created successfully" };
