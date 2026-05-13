@@ -160,8 +160,13 @@
 - [x] Add deassignment support to backend (allow teamId: null in assignTeam) - DEFERRED (schema migration blocked, can reassign to different teams)
 - [x] Rebuild team management UI with seasonId selection and display
 - [x] Add team copying functionality between seasons (copyTeam procedure added)
-- [ ] End-to-end testing of team assignment flows
+- [x] End-to-end testing of team assignment flows - COMPLETE (teams now display on admin page)
 - [ ] (Future) Team balancing recommendations based on ratings/stats
+
+## NEW: Teams Schema Fix (May 13, 2026)
+- [x] Fix teams schema mismatch (removed non-existent colors column)
+- [x] Teams from public /teams page now display on /admin/teams
+- [x] All admin features working (delete, copy, assign players)
 
 ## Post-Launch Improvements
 - [ ] Make playerRegistrations.teamId nullable for full deassignment support

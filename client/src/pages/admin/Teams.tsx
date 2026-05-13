@@ -16,8 +16,6 @@ interface Team {
   id: number;
   name: string;
   seasonId: number;
-  captainId: number | null;
-  colors: string | null;
   createdAt: Date;
 }
 
@@ -27,7 +25,6 @@ export default function AdminTeams() {
   const { user } = useAuth();
   
   const [teamName, setTeamName] = useState("");
-  const [teamColors, setTeamColors] = useState("");
   const [seasonId, setSeasonId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -47,7 +44,6 @@ export default function AdminTeams() {
     onSuccess: () => {
       toast.success(labels.teamAdded);
       setTeamName("");
-      setTeamColors("");
       setSeasonId(null);
       setOpen(false);
       refetchTeams();
@@ -75,7 +71,6 @@ export default function AdminTeams() {
       teams: "Team Management",
       addTeam: "Add New Team",
       teamName: "Team Name",
-      teamColors: "Team Colors",
       season: "Season",
       add: "Add",
       cancel: "Cancel",
@@ -91,7 +86,6 @@ export default function AdminTeams() {
       teams: "Gestion des Équipes",
       addTeam: "Ajouter une Nouvelle Équipe",
       teamName: "Nom de l'Équipe",
-      teamColors: "Couleurs de l'Équipe",
       season: "Saison",
       add: "Ajouter",
       cancel: "Annuler",
@@ -118,7 +112,6 @@ export default function AdminTeams() {
       await createTeamMutation.mutateAsync({
         name: teamName,
         seasonId,
-        colors: teamColors || null,
       });
     } finally {
       setIsLoading(false);
@@ -188,16 +181,6 @@ export default function AdminTeams() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{labels.teamColors}</label>
-                <Input
-                  type="text"
-                  placeholder="e.g., Blue & White"
-                  value={teamColors}
-                  onChange={(e) => setTeamColors(e.target.value)}
-                />
-              </div>
-
               <div className="flex gap-2 pt-4">
                 <Button
                   onClick={handleAddTeam}
@@ -236,7 +219,6 @@ export default function AdminTeams() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm text-gray-600">
-                    {team.colors && <p>Colors: {team.colors}</p>}
                     <p>Season ID: {team.seasonId}</p>
                   </div>
                 </CardContent>
