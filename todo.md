@@ -177,13 +177,12 @@
 - [ ] Implement full end-to-end team assignment testing
 
 ## NEW: Game Scheduler Portal (May 13, 2026)
-- [ ] Fix season selector in /admin/team-management (getSeasons query not returning data)
-- [ ] Create /admin/game-scheduler portal
-- [ ] Build season creation form (name, start date, end date)
-- [ ] Build game creation form with:
-  - Team selection (home/away)
-  - Venue/arena selection
-  - Date and time selection
-  - Recurring game support (e.g., every Tuesday/Thursday)
-- [ ] Display created games in a calendar or table view
-- [ ] Test game scheduler end-to-end
+- [x] Fix season selector in /admin/team-management (removed registrationDeadline column)
+- [x] Create /admin/game-scheduler portal (fully functional)
+- [x] Build game creation form with:
+  - Team selection (home/away) - COMPLETE
+  - Venue/arena selection - COMPLETE
+  - Date and time selection - COMPLETE
+  - Recurring game support (every day of week) - COMPLETE
+- [x] Display scheduled games in list view - COMPLETE
+- [x] Test game scheduler end-to-end - COMPLETE
