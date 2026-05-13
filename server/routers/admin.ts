@@ -466,6 +466,63 @@ export const adminRouter = router({
       }
     }),
 
+  updateTeam: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        await db.update(teams).set({ name: input.name }).where(eq(teams.id, input.id));
+        return { success: true, message: "Team updated successfully" };
+      } catch (error: any) {
+        console.error('Error updating team:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to update team" });
+      }
+    }),
+
+  updateSeason: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1),
+      startDate: z.string(),
+      endDate: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        await db.update(seasons).set({
+          name: input.name,
+          startDate: new Date(input.startDate),
+          endDate: new Date(input.endDate),
+        }).where(eq(seasons.id, input.id));
+        return { success: true, message: "Season updated successfully" };
+      } catch (error: any) {
+        console.error('Error updating season:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to update season" });
+      }
+    }),
+
+  deleteSeason: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        await db.delete(seasons).where(eq(seasons.id, input.id));
+        return { success: true, message: "Season deleted successfully" };
+      } catch (error: any) {
+        console.error('Error deleting season:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to delete season" });
+      }
+    }),
+
   // ============ STAFF APPLICATIONS ============
   getAllStaffApplications: adminProcedure.query(async () => {
     const db = await getDb();
@@ -546,17 +603,16 @@ export const adminRouter = router({
     }),
 
   deleteTeam: adminProcedure
-    .input(z.object({
-      teamId: z.number(),
-    }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        await db.delete(teams).where(eq(teams.id, input.teamId));
-        return { success: true, message: "Team deleted" };
+        await db.delete(teams).where(eq(teams.id, input.id));
+        return { success: true, message: "Team deleted successfully" };
       } catch (error: any) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        console.error('Error deleting team:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to delete team" });
       }
     }),
 

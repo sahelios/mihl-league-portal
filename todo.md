@@ -186,3 +186,9 @@
   - Recurring game support (every day of week) - COMPLETE
 - [x] Display scheduled games in list view - COMPLETE
 - [x] Test game scheduler end-to-end - COMPLETE
+
+
+## NEW: Admin Settings Page Fix (May 13, 2026)
+- [x] Fix React error "Objects are not valid as a React child" in /admin/settings
+- [x] Convert Date objects to ISO strings in getSeasons procedure
+- [x] Admin settings page now loads with seasons, teams, venues tabs functional
