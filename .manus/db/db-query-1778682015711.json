@@ -1,0 +1,52 @@
+{
+  "query": "SELECT * FROM teams LIMIT 5; SELECT * FROM seasons LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT * FROM teams LIMIT 5; SELECT * FROM seasons LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Iron Lions",
+      "logoUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/iron-lions-logo-fiEiAMaxLU9qYQBRDYwNns.webp",
+      "seasonId": "1",
+      "createdAt": "2026-05-01 19:59:29"
+    },
+    {
+      "id": "2",
+      "name": "Golan Guards",
+      "logoUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/golan-guards-logo-FbhtjKpEXATVoD9wpHyW2B.webp",
+      "seasonId": "1",
+      "createdAt": "2026-05-01 19:59:29"
+    },
+    {
+      "id": "3",
+      "name": "H Hammers",
+      "logoUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/h-hammers-logo-GXbHhx2YjSRs2NYyRT5gQn.webp",
+      "seasonId": "1",
+      "createdAt": "2026-05-01 19:59:29"
+    },
+    {
+      "id": "4",
+      "name": "Schvitz Saints",
+      "logoUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/schvitz-saints-logo-goQfhvsxxvmaJf3eho6a3J.webp",
+      "seasonId": "1",
+      "createdAt": "2026-05-01 19:59:29"
+    },
+    {
+      "id": "30001",
+      "name": "Iron Lions",
+      "logoUrl": "NULL",
+      "seasonId": "60002",
+      "createdAt": "2026-05-11 05:23:47"
+    }
+  ],
+  "messages": [
+    "id\tname\tstartDate\tendDate\tisActive\tcreatedAt",
+    "1\t2026 Summer Season\t2026-06-23\t2026-08-25\t1\t2026-05-01 19:59:28",
+    "30001\tSummer 2026\t2026-05-01\t2026-08-31\t0\t2026-05-11 05:19:34",
+    "60001\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:23:31",
+    "60002\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:23:47",
+    "60003\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:24:20"
+  ],
+  "stdout": "id\tname\tlogoUrl\tseasonId\tcreatedAt\n1\tIron Lions\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/iron-lions-logo-fiEiAMaxLU9qYQBRDYwNns.webp\t1\t2026-05-01 19:59:29\n2\tGolan Guards\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/golan-guards-logo-FbhtjKpEXATVoD9wpHyW2B.webp\t1\t2026-05-01 19:59:29\n3\tH Hammers\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/h-hammers-logo-GXbHhx2YjSRs2NYyRT5gQn.webp\t1\t2026-05-01 19:59:29\n4\tSchvitz Saints\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/schvitz-saints-logo-goQfhvsxxvmaJf3eho6a3J.webp\t1\t2026-05-01 19:59:29\n30001\tIron Lions\tNULL\t60002\t2026-05-11 05:23:47\nid\tname\tstartDate\tendDate\tisActive\tcreatedAt\n1\t2026 Summer Season\t2026-06-23\t2026-08-25\t1\t2026-05-01 19:59:28\n30001\tSummer 2026\t2026-05-01\t2026-08-31\t0\t2026-05-11 05:19:34\n60001\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:23:31\n60002\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:23:47\n60003\tSummer 2026\t2026-06-23\t2026-08-25\t1\t2026-05-11 05:24:20\n",
+  "stderr": "",
+  "execution_time_ms": 640
+}

@@ -16,8 +16,6 @@ interface Team {
   id: number;
   name: string;
   seasonId: number;
-  captainId: number | null;
-  colors: string | null;
   createdAt: Date;
 }
 
@@ -39,7 +37,6 @@ export default function TeamManagement() {
   const [players, setPlayers] = useState<PlayerWithTeam[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [teamName, setTeamName] = useState("");
-  const [teamColors, setTeamColors] = useState("");
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [unassignedPlayers, setUnassignedPlayers] = useState<PlayerWithTeam[]>([]);
   const [showCreateTeam, setShowCreateTeam] = useState(false);
@@ -300,7 +297,6 @@ export default function TeamManagement() {
                               createTeamMutation.mutate({
                                 name: teamName,
                                 seasonId,
-                                colors: teamColors || null,
                               });
                             } else {
                               toast.error("Please fill in all fields");

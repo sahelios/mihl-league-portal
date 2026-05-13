@@ -45,7 +45,6 @@ export const teams = mysqlTable("teams", {
   name: varchar("name", { length: 100 }).notNull(),
   logoUrl: text("logoUrl"),
   seasonId: int("seasonId").notNull(),
-  colors: varchar("colors", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

@@ -443,7 +443,6 @@ export const adminRouter = router({
     .input(z.object({
       name: z.string().min(1),
       seasonId: z.number(),
-      colors: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -453,7 +452,6 @@ export const adminRouter = router({
         await db.insert(teams).values({
           name: input.name,
           seasonId: input.seasonId,
-          colors: input.colors || null,
         });
         return { success: true, message: "Team created successfully" };
       } catch (error: any) {
@@ -571,7 +569,6 @@ export const adminRouter = router({
         await db.insert(teams).values({
           name: sourceTeam[0].name,
           seasonId: input.newSeasonId,
-          colors: sourceTeam[0].colors,
         });
         return { success: true, message: "Team copied successfully" };
       } catch (error: any) {
