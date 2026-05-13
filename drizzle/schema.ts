@@ -92,6 +92,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   isFirstTime: boolean("isFirstTime").default(false).notNull(),
   registrationType: mysqlEnum("registrationType", ["individual", "team"]).notNull(),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  waitingListStatus: mysqlEnum("waitingListStatus", ["none", "on_waiting_list", "promoted_from_waiting_list"]).default("none").notNull(),
   paymentConfirmed: boolean("paymentConfirmed").default(false).notNull(),
   jerseyOrderConfirmed: boolean("jerseyOrderConfirmed").default(false).notNull(),
   evaluationDate: varchar("evaluationDate", { length: 20 }),
@@ -476,3 +477,18 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// Waiting List - track players waiting for space in a season
+export const waitingList = mysqlTable("waitingList", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  seasonId: int("seasonId").notNull(),
+  position: int("position").notNull(), // Position in the queue
+  status: mysqlEnum("status", ["waiting", "promoted", "declined"]).default("waiting").notNull(),
+  promotedDate: timestamp("promotedDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WaitingList = typeof waitingList.$inferSelect;
+export type InsertWaitingList = typeof waitingList.$inferInsert;

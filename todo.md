@@ -192,3 +192,32 @@
 - [x] Fix React error "Objects are not valid as a React child" in /admin/settings
 - [x] Convert Date objects to ISO strings in getSeasons procedure
 - [x] Admin settings page now loads with seasons, teams, venues tabs functional
+
+
+## NEW: Admin Procedures Fix (May 13, 2026)
+- [x] Add missing deleteSeason procedure
+- [x] Add missing updateSeason procedure
+- [x] Add missing updateTeam procedure
+- [x] Fix deleteTeam procedure syntax
+- [x] Admin settings page now fully functional with all CRUD operations
+
+
+## NEW: Admin & Player Features (May 13, 2026)
+- [ ] Fix admin pagination (remove Page 1/Page 2 navigation links)
+- [ ] Implement waiting list system:
+  - [ ] Add waitingList table to database schema
+  - [ ] Create backend procedures for waiting list management
+  - [ ] Add waiting list status to player portal
+  - [ ] Show waiting list in admin dashboard
+- [ ] Enhance evaluation games:
+  - [ ] Display player ratings in evaluation game roster
+  - [ ] Add "Remove from game" button for each player
+  - [ ] Add White/Black team assignment for evaluation games only
+  - [ ] Store evaluation game team assignments separately from regular teams
+- [ ] Implement player notification system:
+  - [ ] Create notifications table in database
+  - [ ] Add in-app notification display in player portal
+  - [ ] Add email notification sending
+  - [ ] Notify on game assignment/removal
+  - [ ] Notify on team assignment
+  - [ ] Notify on waiting list status changes

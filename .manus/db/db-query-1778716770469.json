@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE playerRegistrations ADD COLUMN waitingListStatus ENUM('none', 'on_waiting_list', 'promoted_from_waiting_list') DEFAULT 'none' NOT NULL AFTER status;\n\nCREATE TABLE IF NOT EXISTS waitingList (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  registrationId INT NOT NULL,\n  seasonId INT NOT NULL,\n  position INT NOT NULL,\n  status ENUM('waiting', 'promoted', 'declined') DEFAULT 'waiting' NOT NULL,\n  promotedDate TIMESTAMP NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,\n  UNIQUE KEY unique_registration_season (registrationId, seasonId),\n  INDEX idx_season_position (seasonId, position)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute ALTER TABLE playerRegistrations ADD COLUMN waitingListStatus ENUM('none', 'on_waiting_list', 'promoted_from_waiting_list') DEFAULT 'none' NOT NULL AFTER status;\n\nCREATE TABLE IF NOT EXISTS waitingList (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  registrationId INT NOT NULL,\n  seasonId INT NOT NULL,\n  position INT NOT NULL,\n  status ENUM('waiting', 'promoted', 'declined') DEFAULT 'waiting' NOT NULL,\n  promotedDate TIMESTAMP NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,\n  UNIQUE KEY unique_registration_season (registrationId, seasonId),\n  INDEX idx_season_position (seasonId, position)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 901
+}
