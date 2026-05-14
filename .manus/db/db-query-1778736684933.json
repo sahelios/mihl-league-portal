@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, firstName, lastName, email, playerRating FROM playerRegistrations WHERE firstName = 'Simon' AND lastName = 'Arzouan' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, firstName, lastName, email, playerRating FROM playerRegistrations WHERE firstName = 'Simon' AND lastName = 'Arzouan' LIMIT 1;",
+  "rows": [
+    {
+      "id": "90001",
+      "firstName": "Simon",
+      "lastName": "Arzouan",
+      "email": "sarzouan@polytechaerosupport.com",
+      "playerRating": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\temail\tplayerRating\n90001\tSimon\tArzouan\tsarzouan@polytechaerosupport.com\t7\n",
+  "stderr": "",
+  "execution_time_ms": 625
+}

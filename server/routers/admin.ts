@@ -19,6 +19,12 @@ import {
   notifications,
   waitingList,
   evaluationGameAssignments,
+  playerTeams,
+  playerStats,
+  gameStats,
+  badges,
+  teamMessages,
+  adminMessages,
 } from "../../drizzle/schema";
 
 // Helper to ensure admin access
@@ -835,5 +841,67 @@ export const adminRouter = router({
         .limit(1);
       
       return result[0] || null;
+    }),
+
+  deletePlayer: adminProcedure
+    .input(z.object({ registrationId: z.number() }))
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        
+        // Delete all related data for this player
+        // 1. Delete evaluation game assignments
+        await db.delete(evaluationGameAssignments)
+          .where(eq(evaluationGameAssignments.registrationId, input.registrationId));
+        
+        // 2. Delete from waiting list if present
+        await db.delete(waitingList)
+          .where(eq(waitingList.registrationId, input.registrationId));
+        
+        // 3. Get playerTeams to delete related stats and badges
+        const playerTeamsData = await db.select()
+          .from(playerTeams)
+          .where(eq(playerTeams.registrationId, input.registrationId));
+        
+        for (const pt of playerTeamsData) {
+          // Delete player stats
+          await db.delete(playerStats)
+            .where(eq(playerStats.playerTeamId, pt.id));
+          
+          // Delete game stats
+          await db.delete(gameStats)
+            .where(eq(gameStats.playerTeamId, pt.id));
+          
+          // Delete badges
+          await db.delete(badges)
+            .where(eq(badges.playerTeamId, pt.id));
+          
+          // Delete team messages from this player
+          await db.delete(teamMessages)
+            .where(eq(teamMessages.fromPlayerId, input.registrationId));
+        }
+        
+        // 4. Delete playerTeams entries
+        await db.delete(playerTeams)
+          .where(eq(playerTeams.registrationId, input.registrationId));
+        
+        // 5. Delete admin messages to this player
+        await db.delete(adminMessages)
+          .where(eq(adminMessages.toPlayerTeamId, input.registrationId));
+        
+        // 6. Delete notifications
+        await db.delete(notifications)
+          .where(eq(notifications.recipientId, input.registrationId));
+        
+        // 7. Finally, delete the registration
+        await db.delete(playerRegistrations)
+          .where(eq(playerRegistrations.id, input.registrationId));
+        
+        return { success: true, message: 'Player and all related data deleted successfully' };
+      } catch (error: any) {
+        console.error('Error deleting player:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
     }),
 });

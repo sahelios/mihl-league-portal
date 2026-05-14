@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useRouter } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Trash2 } from "lucide-react";
+import { Users, Plus, Trash2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 interface Team {
@@ -129,10 +129,20 @@ export default function AdminTeams() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            {labels.teams}
-          </h1>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin")}
+            >
+              <ArrowLeft size={16} className="mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Users className="h-8 w-8" />
+              {labels.teams}
+            </h1>
+          </div>
           <Button
             variant="outline"
             size="sm"

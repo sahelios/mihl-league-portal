@@ -232,10 +232,17 @@
 
 
 ## BUGS - Admin Players Page (CRITICAL)
-- [ ] Fix rating mutation - not persisting after selection
-- [ ] Fix team assignment mutation - not persisting after selection
-- [ ] Add team display to player card (under rating)
-- [ ] Add position display to player card (under rating)
-- [ ] Verify data updates in real-time after mutations
+- [x] Fix rating mutation - not persisting after selection (FIXED - centralized dialog state)
+- [x] Fix team assignment mutation - not persisting after selection (FIXED - centralized dialog state)
+- [x] Add team display to player card (under rating) - ADDED
+- [x] Add position display to player card (under rating) - ADDED (via teamId)
+- [x] Verify data updates in real-time after mutations - VERIFIED
 - [x] Add "Add to Eval Game" button to Players page
 - [x] Implement addToEvaluationGame backend procedure
+
+## NEW FEATURES - User Requested (Priority)
+- [x] Display player position on admin players page cards
+- [x] Add filter tabs (All, Pending, Approved, Rejected) to admin players page
+- [x] Implement delete player functionality (removes all data including stats)
+- [x] Add back button to Players page (/admin/players)
+- [x] Add back button to Teams page (/admin/teams)

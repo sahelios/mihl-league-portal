@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -8,19 +9,25 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Players() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   const utils = trpc.useUtils();
+
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
   // Dialog state
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<string>('');
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -89,6 +96,19 @@ export default function Players() {
     },
   });
 
+  const deletePlayerMutation = trpc.admin.deletePlayer.useMutation({
+    onSuccess: () => {
+      toast.success('Player deleted successfully!');
+      utils.registration.getAll.invalidate();
+      utils.registration.getStats.invalidate();
+      setDeleteDialogOpen(false);
+      setSelectedRegistrationId(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to delete player');
+    },
+  });
+
   const addToEvaluationGameMutation = trpc.admin.addToEvaluationGame.useMutation({
     onSuccess: () => {
       toast.success('Player added to evaluation game!');
@@ -124,6 +144,11 @@ export default function Players() {
     setTeamDialogOpen(true);
   };
 
+  const handleOpenDeleteDialog = (registrationId: number) => {
+    setSelectedRegistrationId(registrationId);
+    setDeleteDialogOpen(true);
+  };
+
   const handleUpdateRating = () => {
     if (!selectedRegistrationId || !selectedRating) {
       toast.error('Please select a valid rating');
@@ -144,6 +169,14 @@ export default function Players() {
       registrationId: selectedRegistrationId,
       teamId: parseInt(selectedTeam),
     });
+  };
+
+  const handleDeletePlayer = () => {
+    if (!selectedRegistrationId) {
+      toast.error('No player selected');
+      return;
+    }
+    deletePlayerMutation.mutate({ registrationId: selectedRegistrationId });
   };
 
   const handleAddToEvaluationGame = (registrationId: number) => {
@@ -169,6 +202,17 @@ export default function Players() {
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
+
+  const getPositionDisplay = (registrationType: string) => {
+    if (registrationType === 'individual') return 'Individual Player';
+    if (registrationType === 'team') return 'Team Registration';
+    return registrationType;
+  };
+
+  // Filter registrations based on status
+  const filteredRegistrations = statusFilter === 'all'
+    ? registrations
+    : registrations.filter((reg: any) => reg.status === statusFilter);
 
   const PlayerCard = ({ registration }: { registration: any }) => (
     <Card className="overflow-hidden">
@@ -205,6 +249,12 @@ export default function Players() {
               <p className="text-muted-foreground">Payment</p>
               <p className="font-medium">{registration.paymentStatus}</p>
             </div>
+          </div>
+
+          {/* Position */}
+          <div>
+            <p className="text-sm text-muted-foreground">Position</p>
+            <p className="font-medium">{getPositionDisplay(registration.registrationType)}</p>
           </div>
 
           {/* Team & Rating Info */}
@@ -313,6 +363,18 @@ export default function Players() {
               )}
             </div>
           )}
+
+          {/* Delete Button - Always Available */}
+          <Button
+            size="sm"
+            variant="destructive"
+            className="w-full"
+            onClick={() => handleOpenDeleteDialog(registration.id)}
+            disabled={deletePlayerMutation.isPending}
+          >
+            <Trash2 size={16} className="mr-2" />
+            Delete Player
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -321,7 +383,18 @@ export default function Players() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Player Management</h1>
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/admin')}
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold">Player Management</h1>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -351,12 +424,35 @@ export default function Players() {
           </Card>
         </div>
 
+        {/* Filter Tabs */}
+        <div className="flex gap-2 border-b">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-4 py-2 font-medium transition-colors ${
+                statusFilter === status
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+
         {/* Players Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {registrations.map((registration) => (
+          {filteredRegistrations.map((registration) => (
             <PlayerCard key={registration.id} registration={registration} />
           ))}
         </div>
+
+        {filteredRegistrations.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No players found with the selected filter.</p>
+          </div>
+        )}
       </div>
 
       {/* Rating Dialog */}
@@ -426,6 +522,29 @@ export default function Players() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Player</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this player? This action will remove all player data including stats, team assignments, and notifications. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePlayer}
+              disabled={deletePlayerMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletePlayerMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
