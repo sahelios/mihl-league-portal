@@ -492,3 +492,16 @@ export const waitingList = mysqlTable("waitingList", {
 
 export type WaitingList = typeof waitingList.$inferSelect;
 export type InsertWaitingList = typeof waitingList.$inferInsert;
+
+// Evaluation Game Assignments - track White/Black team assignments for evaluation games
+export const evaluationGameAssignments = mysqlTable("evaluationGameAssignments", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  evaluationDate: varchar("evaluationDate", { length: 50 }).notNull(), // "JUN 23" or "JUN 25"
+  team: mysqlEnum("team", ["white", "black"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EvaluationGameAssignment = typeof evaluationGameAssignments.$inferSelect;
+export type InsertEvaluationGameAssignment = typeof evaluationGameAssignments.$inferInsert;

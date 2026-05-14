@@ -18,6 +18,7 @@ import {
   staffPayments,
   notifications,
   waitingList,
+  evaluationGameAssignments,
 } from "../../drizzle/schema";
 
 // Helper to ensure admin access
@@ -734,5 +735,91 @@ export const adminRouter = router({
         console.error('Error removing from waiting list:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
+    }),
+
+  // ============ EVALUATION GAMES ============
+  removeFromEvaluationGame: adminProcedure
+    .input(z.object({ registrationId: z.number(), evaluationDate: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.update(playerRegistrations)
+          .set({ evaluationDate: null })
+          .where(eq(playerRegistrations.id, input.registrationId));
+        
+        await db.delete(evaluationGameAssignments)
+          .where(and(
+            eq(evaluationGameAssignments.registrationId, input.registrationId),
+            eq(evaluationGameAssignments.evaluationDate, input.evaluationDate)
+          ));
+        
+        await db.insert(notifications).values({
+          recipientId: input.registrationId,
+          recipientType: "player",
+          type: "game_assignment",
+          title: "Removed from Evaluation Game",
+          message: `You have been removed from the evaluation game on ${input.evaluationDate}.`,
+          relatedId: input.registrationId,
+          emailSent: false,
+        });
+        
+        return { success: true, message: "Player removed from evaluation game" };
+      } catch (error: any) {
+        console.error('Error removing from evaluation game:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  assignEvaluationTeam: adminProcedure
+    .input(z.object({ registrationId: z.number(), evaluationDate: z.string(), team: z.enum(["white", "black"]) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.delete(evaluationGameAssignments)
+          .where(and(
+            eq(evaluationGameAssignments.registrationId, input.registrationId),
+            eq(evaluationGameAssignments.evaluationDate, input.evaluationDate)
+          ));
+        
+        await db.insert(evaluationGameAssignments).values({
+          registrationId: input.registrationId,
+          evaluationDate: input.evaluationDate,
+          team: input.team,
+        });
+        
+        await db.insert(notifications).values({
+          recipientId: input.registrationId,
+          recipientType: "player",
+          type: "game_assignment",
+          title: "Evaluation Game Team Assignment",
+          message: `You have been assigned to the ${input.team} team for the evaluation game on ${input.evaluationDate}.`,
+          relatedId: input.registrationId,
+          emailSent: false,
+        });
+        
+        return { success: true, message: `Player assigned to ${input.team} team` };
+      } catch (error: any) {
+        console.error('Error assigning evaluation team:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getEvaluationTeamAssignment: adminProcedure
+    .input(z.object({ registrationId: z.number(), evaluationDate: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const result = await db.select()
+        .from(evaluationGameAssignments)
+        .where(and(
+          eq(evaluationGameAssignments.registrationId, input.registrationId),
+          eq(evaluationGameAssignments.evaluationDate, input.evaluationDate)
+        ))
+        .limit(1);
+      
+      return result[0] || null;
     }),
 });

@@ -207,9 +207,9 @@
 - [x] Implement waiting list system:
   - [x] Add waitingList table to database schema
   - [x] Create backend procedures for waiting list management (getWaitingList, promoteFromWaitingList, removeFromWaitingList)
-  - [ ] Add waiting list status to player portal
+  - [ ] Add waiting list status to player portal (PRIORITY 3)
   - [ ] Show waiting list in admin dashboard
-- [ ] Enhance evaluation games:
+- [ ] Enhance evaluation games (PRIORITY 1):
   - [ ] Display player ratings in evaluation game roster
   - [ ] Add "Remove from game" button for each player
   - [ ] Add White/Black team assignment for evaluation games only

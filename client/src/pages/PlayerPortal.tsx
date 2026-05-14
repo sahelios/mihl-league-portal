@@ -78,6 +78,10 @@ export default function PlayerPortal() {
     );
   }
 
+  // Check if player is on waiting list
+  const isOnWaitingList = playerReg?.waitingListStatus === "waiting";
+  const isPromotedFromWaitingList = playerReg?.waitingListStatus === "promoted_from_waiting_list";
+
   if (!playerReg) {
     return (
       <DashboardLayout>
@@ -86,6 +90,21 @@ export default function PlayerPortal() {
             <AlertCircle className="mx-auto text-yellow-600" size={48} />
             <p className="text-foreground font-semibold">No Team Assignment</p>
             <p className="text-muted-foreground text-sm">You haven't been assigned to a team yet.</p>
+            <Button onClick={() => navigate("/")}>Return to Home</Button>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+
+  if (isOnWaitingList) {
+    return (
+      <DashboardLayout>
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="pt-6 text-center space-y-4">
+            <AlertCircle className="mx-auto text-orange-600" size={48} />
+            <p className="text-foreground font-semibold">On Waiting List</p>
+            <p className="text-muted-foreground text-sm">You are currently on the waiting list for this season. We'll notify you when a spot becomes available.</p>
             <Button onClick={() => navigate("/")}>Return to Home</Button>
           </CardContent>
         </Card>
