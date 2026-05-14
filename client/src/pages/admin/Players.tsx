@@ -102,6 +102,16 @@ export default function AdminPlayers() {
     },
   });
 
+  const addToEvaluationGameMutation = trpc.admin.addToEvaluationGame.useMutation({
+    onSuccess: () => {
+      toast.success("Player added to evaluation game!");
+      utils.registration.getAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add to evaluation game");
+    },
+  });
+
   const handleApprove = (id: number) => {
     approveMutation.mutate({ registrationId: id, language: "en" });
   };
@@ -131,6 +141,11 @@ export default function AdminPlayers() {
       return;
     }
     updateRatingMutation.mutate({ registrationId, rating });
+  };
+
+  const handleAddToEvaluationGame = (registrationId: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    addToEvaluationGameMutation.mutate({ registrationId, evaluationDate: today });
   };
 
   const getRegistrationPrice = (type: string) => {
@@ -428,6 +443,19 @@ export default function AdminPlayers() {
                 >
                   {markPaidMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
                   Mark Paid
+                </Button>
+              )}
+
+              {registration.status === "approved" && !registration.evaluationDate && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleAddToEvaluationGame(registration.id)}
+                  disabled={addToEvaluationGameMutation.isPending}
+                  className="flex-1"
+                >
+                  {addToEvaluationGameMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
+                  Add to Eval Game
                 </Button>
               )}
             </div>

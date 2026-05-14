@@ -219,10 +219,21 @@
   - [x] Allow toggling team assignment with real-time reorganization
   - [x] Players move between White/Black sections when toggled
   - [x] Store evaluation game team assignments separately from regular teams
-- [ ] Implement player notification system:
-  - [ ] Create notifications table in database
+- [ ] Implement player notification system (DEFERRED - notifications table exists):
+  - [x] Create notifications table in database (already exists)
   - [ ] Add in-app notification display in player portal
   - [ ] Add email notification sending
+- [ ] Automatic waiting list assignment on player registration
+- [ ] End-to-end testing of all new features
+- [ ] Evaluation games page routing fix (currently redirects to home)
   - [ ] Notify on game assignment/removal
   - [ ] Notify on team assignment
   - [ ] Notify on waiting list status changes
+
+
+## BUGS - Admin Players Page (CRITICAL)
+- [ ] Fix rating mutation - not persisting after selection
+- [ ] Fix team assignment mutation - not persisting after selection
+- [ ] Add team display to player card (under rating)
+- [ ] Add position display to player card (under rating)
+- [ ] Verify data updates in real-time after mutations

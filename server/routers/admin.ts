@@ -70,6 +70,20 @@ export const adminRouter = router({
       return results;
     }),
 
+  addToEvaluationGame: adminProcedure
+    .input(z.object({ registrationId: z.number(), evaluationDate: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db
+        .update(playerRegistrations)
+        .set({ evaluationDate: input.evaluationDate })
+        .where(eq(playerRegistrations.id, input.registrationId));
+
+      return { success: true, message: "Player added to evaluation game" };
+    }),
+
   // ============ SETTINGS: VENUES ============
   createVenue: adminProcedure
     .input(z.object({ name: z.string().min(1), address: z.string().min(1) }))
