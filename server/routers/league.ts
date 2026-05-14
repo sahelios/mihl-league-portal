@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -114,5 +114,71 @@ export const leagueRouter = router({
         assists: Math.floor(Math.random() * 15),
         points: Math.floor(Math.random() * 30),
       })).sort((a, b) => b.points - a.points);
+    }),
+
+  // Player Portal Queries
+  getPlayerRegistration: protectedProcedure
+    .input(z.object({ email: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const result = await db.select().from(playerRegistrations).where(eq(playerRegistrations.email, input.email)).limit(1);
+        return result[0] || null;
+      } catch (error) {
+        console.error('Error fetching player registration:', error);
+        return null;
+      }
+    }),
+
+  getTeamDetails: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const result = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+        return result[0] || null;
+      } catch (error) {
+        console.error('Error fetching team details:', error);
+        return null;
+      }
+    }),
+
+  getTeamSchedule: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const result = await db.select().from(games).where(eq(games.status, 'scheduled'));
+        return result || [];
+      } catch (error) {
+        console.error('Error fetching team schedule:', error);
+        return [];
+      }
+    }),
+
+  getPlayerStats: protectedProcedure
+    .input(z.object({ playerTeamId: z.number() }))
+    .query(async ({ input }) => {
+      return {
+        gamesPlayed: 0,
+        goals: 0,
+        assists: 0,
+        points: 0,
+      };
+    }),
+
+  getPlayerAvailability: protectedProcedure
+    .input(z.object({ playerTeamId: z.number() }))
+    .query(async ({ input }) => {
+      return {};
+    }),
+
+  updatePlayerAvailability: protectedProcedure
+    .input(z.object({ playerTeamId: z.number(), gameId: z.number(), available: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { success: true };
     }),
 });

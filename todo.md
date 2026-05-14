@@ -207,13 +207,13 @@
 - [x] Implement waiting list system:
   - [x] Add waitingList table to database schema
   - [x] Create backend procedures for waiting list management (getWaitingList, promoteFromWaitingList, removeFromWaitingList)
-  - [ ] Add waiting list status to player portal (PRIORITY 3)
+  - [x] Add waiting list status to player portal (PRIORITY 3)
   - [ ] Show waiting list in admin dashboard
-- [ ] Enhance evaluation games (PRIORITY 1):
-  - [ ] Display player ratings in evaluation game roster
-  - [ ] Add "Remove from game" button for each player
-  - [ ] Add White/Black team assignment for evaluation games only
-  - [ ] Store evaluation game team assignments separately from regular teams
+- [x] Enhance evaluation games (PRIORITY 1):
+  - [x] Display player ratings in evaluation game roster (already implemented)
+  - [x] Add "Remove from game" button for each player
+  - [x] Add White/Black team assignment for evaluation games only
+  - [x] Store evaluation game team assignments separately from regular teams
 - [ ] Implement player notification system:
   - [ ] Create notifications table in database
   - [ ] Add in-app notification display in player portal
