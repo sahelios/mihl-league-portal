@@ -208,11 +208,16 @@
   - [x] Add waitingList table to database schema
   - [x] Create backend procedures for waiting list management (getWaitingList, promoteFromWaitingList, removeFromWaitingList)
   - [x] Add waiting list status to player portal (PRIORITY 3)
-  - [ ] Show waiting list in admin dashboard
-- [x] Enhance evaluation games (PRIORITY 1):
-  - [x] Display player ratings in evaluation game roster (already implemented)
+  - [x] Show waiting list in admin dashboard (WaitingListAdmin component created)
+- [x] Add league router procedures for PlayerPortal (getPlayerRegistration with waitingListStatus)
+- [ ] Enhance evaluation games (PRIORITY 1) - REDESIGN REQUIRED:
+  - [x] Display player ratings in evaluation game roster
   - [x] Add "Remove from game" button for each player
-  - [x] Add White/Black team assignment for evaluation games only
+  - [ ] Reorganize UI to show White/Black teams as separate sections
+  - [ ] Display player positions (Forward, Defenseman, Goalie)
+  - [ ] Show position counts (6F, 4D, 1G per team)
+  - [ ] Allow toggling team assignment with real-time reorganization
+  - [ ] Players move between White/Black sections when toggled
   - [x] Store evaluation game team assignments separately from regular teams
 - [ ] Implement player notification system:
   - [ ] Create notifications table in database
