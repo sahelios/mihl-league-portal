@@ -237,3 +237,5 @@
 - [ ] Add team display to player card (under rating)
 - [ ] Add position display to player card (under rating)
 - [ ] Verify data updates in real-time after mutations
+- [x] Add "Add to Eval Game" button to Players page
+- [x] Implement addToEvaluationGame backend procedure
