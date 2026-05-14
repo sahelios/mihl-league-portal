@@ -33,6 +33,7 @@ import StaffApplications from "./pages/admin/StaffApplications";
 import GameScheduler from "./pages/admin/GameScheduler";
 import AdminTeams from "./pages/admin/Teams";
 import TeamManagement from "./pages/admin/TeamManagement";
+import WaitingListAdmin from "./pages/admin/WaitingListAdmin";
 
 // Referee Pages
 import RefereeScorekeeperLanding from "./pages/RefereeScorekeeperLanding";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/admin/game-scheduler" component={GameScheduler} />
       <Route path="/admin/teams" component={AdminTeams} />
       <Route path="/admin/team-management" component={TeamManagement} />
+      <Route path="/admin/waiting-list" component={WaitingListAdmin} />
 
       {/* 404 Fallback */}
       <Route path="/404" component={NotFound} />

@@ -203,10 +203,10 @@
 
 
 ## NEW: Admin & Player Features (May 13, 2026)
-- [ ] Fix admin pagination (remove Page 1/Page 2 navigation links)
-- [ ] Implement waiting list system:
-  - [ ] Add waitingList table to database schema
-  - [ ] Create backend procedures for waiting list management
+- [x] Fix admin pagination (remove Page 1/Page 2 navigation links)
+- [x] Implement waiting list system:
+  - [x] Add waitingList table to database schema
+  - [x] Create backend procedures for waiting list management (getWaitingList, promoteFromWaitingList, removeFromWaitingList)
   - [ ] Add waiting list status to player portal
   - [ ] Show waiting list in admin dashboard
 - [ ] Enhance evaluation games:
