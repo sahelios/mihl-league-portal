@@ -17,6 +17,7 @@ import {
   staffGameAssignments,
   staffPayments,
   notifications,
+  waitingList,
 } from "../../drizzle/schema";
 
 // Helper to ensure admin access
@@ -636,6 +637,102 @@ export const adminRouter = router({
       } catch (error: any) {
         console.error('Error copying team:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to copy team" });
+      }
+    }),
+
+  // ============ WAITING LIST MANAGEMENT ============
+  getWaitingList: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const list = await db
+          .select({
+            id: waitingList.id,
+            registrationId: waitingList.registrationId,
+            position: waitingList.position,
+            status: waitingList.status,
+            firstName: playerRegistrations.firstName,
+            lastName: playerRegistrations.lastName,
+            email: playerRegistrations.email,
+            createdAt: waitingList.createdAt,
+          })
+          .from(waitingList)
+          .innerJoin(playerRegistrations, eq(waitingList.registrationId, playerRegistrations.id))
+          .where(and(
+            eq(waitingList.seasonId, input.seasonId),
+            eq(waitingList.status, "waiting")
+          ))
+          .orderBy(waitingList.position);
+        return list;
+      } catch (error: any) {
+        console.error('Error getting waiting list:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  promoteFromWaitingList: adminProcedure
+    .input(z.object({ waitingListId: z.number(), seasonId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const entry = await db.select().from(waitingList).where(eq(waitingList.id, input.waitingListId)).limit(1);
+        if (!entry.length) throw new TRPCError({ code: "NOT_FOUND", message: "Waiting list entry not found" });
+
+        await db.update(waitingList)
+          .set({ status: "promoted", promotedDate: new Date() })
+          .where(eq(waitingList.id, input.waitingListId));
+
+        await db.update(playerRegistrations)
+          .set({ waitingListStatus: "promoted_from_waiting_list" })
+          .where(eq(playerRegistrations.id, entry[0].registrationId));
+
+        await db.insert(notifications).values({
+          recipientId: entry[0].registrationId,
+          recipientType: "player",
+          type: "approval",
+          title: "Promoted from Waiting List",
+          message: "Congratulations! You have been promoted from the waiting list.",
+          relatedId: input.seasonId,
+          emailSent: false,
+        });
+
+        return { success: true, message: "Player promoted from waiting list" };
+      } catch (error: any) {
+        console.error('Error promoting from waiting list:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  removeFromWaitingList: adminProcedure
+    .input(z.object({ waitingListId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const entry = await db.select().from(waitingList).where(eq(waitingList.id, input.waitingListId)).limit(1);
+        if (!entry.length) throw new TRPCError({ code: "NOT_FOUND", message: "Waiting list entry not found" });
+
+        await db.update(waitingList)
+          .set({ status: "declined" })
+          .where(eq(waitingList.id, input.waitingListId));
+
+        await db.insert(notifications).values({
+          recipientId: entry[0].registrationId,
+          recipientType: "player",
+          type: "rejection",
+          title: "Waiting List Status Update",
+          message: "Unfortunately, you were not selected from the waiting list for this season.",
+          relatedId: entry[0].seasonId,
+          emailSent: false,
+        });
+
+        return { success: true, message: "Player removed from waiting list" };
+      } catch (error: any) {
+        console.error('Error removing from waiting list:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
 });
