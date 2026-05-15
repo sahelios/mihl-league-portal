@@ -23,7 +23,7 @@ export default function TeamManagement() {
   // Queries
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: teams = [] } = trpc.admin.getTeams.useQuery(
-    selectedSeasonId ? { seasonId: selectedSeasonId } : {},
+    { seasonId: selectedSeasonId || 0 },
     { enabled: !!selectedSeasonId }
   );
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
