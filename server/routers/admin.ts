@@ -908,4 +908,99 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
+
+  updatePlayerInfo: adminProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      name: z.string().optional(),
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      rating: z.number().optional(),
+      paymentMethod: z.enum(["eTransfer", "cash", "arrangement"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const updateData: any = {};
+      if (input.name) updateData.name = input.name;
+      if (input.email) updateData.email = input.email;
+      if (input.phone) updateData.phone = input.phone;
+      if (input.rating !== undefined) updateData.rating = input.rating;
+      if (input.paymentMethod) updateData.paymentMethod = input.paymentMethod;
+      
+      await db.update(playerRegistrations)
+        .set(updateData)
+        .where(eq(playerRegistrations.id, input.registrationId));
+      
+      return { success: true };
+    }),
+
+  updatePlayerStatus: adminProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      status: z.enum(["pending", "approved", "rejected", "deleted"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      if (input.status === "deleted") {
+        await db.delete(evaluationGameAssignments)
+          .where(eq(evaluationGameAssignments.registrationId, input.registrationId));
+        await db.delete(waitingList)
+          .where(eq(waitingList.registrationId, input.registrationId));
+        
+        const playerTeamsData = await db.select()
+          .from(playerTeams)
+          .where(eq(playerTeams.registrationId, input.registrationId));
+        
+        for (const pt of playerTeamsData) {
+          await db.delete(playerStats)
+            .where(eq(playerStats.playerTeamId, pt.id));
+          await db.delete(gameStats)
+            .where(eq(gameStats.playerTeamId, pt.id));
+          await db.delete(badges)
+            .where(eq(badges.playerTeamId, pt.id));
+          await db.delete(teamMessages)
+            .where(eq(teamMessages.fromPlayerId, input.registrationId));
+        }
+        
+        await db.delete(playerTeams)
+          .where(eq(playerTeams.registrationId, input.registrationId));
+        
+        try {
+          await db.delete(adminMessages)
+            .where(eq(adminMessages.toPlayerTeamId, input.registrationId));
+        } catch (e) {}
+        
+        await db.delete(notifications)
+          .where(eq(notifications.recipientId, input.registrationId));
+        
+        await db.delete(playerRegistrations)
+          .where(eq(playerRegistrations.id, input.registrationId));
+      } else {
+        await db.update(playerRegistrations)
+          .set({ status: input.status })
+          .where(eq(playerRegistrations.id, input.registrationId));
+      }
+      
+      return { success: true };
+    }),
+
+  updatePlayerPosition: adminProcedure
+    .input(z.object({
+      playerTeamId: z.number(),
+      position: z.enum(["forward", "defense", "goalie"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      await db.update(playerTeams)
+        .set({ position: input.position })
+        .where(eq(playerTeams.id, input.playerTeamId));
+      
+      return { success: true };
+    }),
 });

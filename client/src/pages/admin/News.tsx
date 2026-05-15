@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ArrowLeft, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,9 +105,15 @@ export default function NewsManagement() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">
-            {language === "en" ? "News Management" : "Gestion des Nouvelles"}
-          </h1>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold text-foreground">
+              {language === "en" ? "News Management" : "Gestion des Nouvelles"}
+            </h1>
+          </div>
           <Button variant="ghost" size="sm" onClick={() => setLanguage(language === "en" ? "fr" : "en")}>
             <Languages className="mr-2 h-4 w-4" />
             {language === "en" ? "Français" : "English"}

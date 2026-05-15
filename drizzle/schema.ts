@@ -110,6 +110,7 @@ export const playerTeams = mysqlTable("playerTeams", {
   teamId: int("teamId").notNull(),
   seasonId: int("seasonId").notNull(),
   jerseyNumber: int("jerseyNumber"),
+  position: mysqlEnum("position", ["forward", "defense", "goalie"]),
   isCaptain: boolean("isCaptain").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

@@ -246,6 +246,90 @@
 - [x] Implement delete player functionality (removes all data including stats)
 - [x] Add back button to Players page (/admin/players)
 - [x] Add back button to Teams page (/admin/teams)
+- [x] Add back button to ALL admin pages (News, Stars, Suspensions, Staff, Messages, Settings, Games, etc.)
+- [x] Add position field to playerTeams table (database)
+- [x] Add paymentMethod field to playerRegistrations table (database)
+- [x] Create updatePlayerInfo procedure (edit name, email, phone, rating, payment)
+- [x] Create updatePlayerStatus procedure (change status from any tab)
+- [x] Create updatePlayerPosition procedure
+- [x] Rewrite Players page with full editing, list view toggle, and payment method display
+- [ ] Fix Games page - add game IDs, player assignment with +/-, include evaluation games
+- [ ] Fix Evaluation Games page - add player assignment/deassignment
+- [ ] Fix error pages (Stars, Suspensions, Staff Applications)
+- [ ] Redesign Game Scheduler with ice time slots
+- [ ] Fix Player Portal
+- [ ] Add player picture upload feature
 
 ## BUG FIX - May 15, 2026
 - [x] Fix playerTeams query error on /admin/players page (Added missing isCaptain column to playerTeams table)
+
+
+## USER FEEDBACK - May 15, 2026 (COMPREHENSIVE)
+
+### Navigation & General
+- [ ] Add back button to ALL pages at top right next to dropdown menu
+- [ ] Fix /admin/referee-applications page (currently redirects to home, may be duplicate of /admin/staff-applications)
+- [ ] Fix /admin/evaluation-games page (currently redirects to home, consider merging with /admin/games)
+
+### /admin/players Page
+- [ ] Fix position display: Show "Forward", "Defense", or "Goalie" instead of "Individual Player"
+- [ ] Fix team display: Show "Season Name - Team Name" format (e.g., "Summer 2026 - Iron Lions")
+- [ ] Show all teams/seasons if player registered in multiple seasons
+- [ ] Add payment method selection after approval (eTransfer, Cash, or Arrangement) - admin only
+- [ ] Add full editing capability: Name, Email, Type, Phone, Position, Rating, Team, Payment
+- [ ] Send email notification when player info is edited
+- [ ] Update player portal when info is edited
+- [ ] Allow status change from any tab (Pending → Approved/Rejected/Deleted, etc.)
+- [ ] Add list view toggle (currently tile view only)
+
+### /admin/games Page
+- [ ] Add unique game IDs to all games
+- [ ] Include evaluation games in game dropdown
+- [ ] Game dropdown should show: Game ID, Date, Teams
+- [ ] Auto-populate players from both teams when game is selected
+- [ ] Replace name typing with +/- buttons for goals and assists
+
+### /admin/evaluation-games Page
+- [ ] Add ability to assign/deassign players from approved and waiting list to each game
+- [ ] Consider merging with /admin/games page
+
+### /admin/news, /admin/stars, /admin/suspensions, /admin/staff-applications Pages
+- [ ] Fix all errors on these pages
+
+### /admin/messages Page
+- [ ] Add season identification to messages (needed for multi-season support)
+
+### /admin/settings Page
+- [ ] Add ability to assign specific team to a season
+
+### /admin/game-scheduler Page
+- [ ] Redesign with new workflow:
+  - [ ] Select teams
+  - [ ] Select season start/end date (from /admin/settings)
+  - [ ] Define ice time slots (e.g., "Every Tuesday 9:30 PM - 10:50 PM at Samuel Moscovitch")
+  - [ ] Allow multiple ice time slots per season
+  - [ ] Add blackout dates for ice time slots
+  - [ ] Assign number of evaluation games and which time slots they use
+  - [ ] Auto-generate season schedule and playoffs
+
+### /admin/teams Page
+- [ ] Add ability to edit team information
+- [ ] Fix Season ID to correctly represent assigned season
+
+### /admin/team-management Page
+- [ ] Add evaluation game teams (Tuesday White, Tuesday Black, Thursday White, Thursday Black)
+- [ ] Fix all errors on this page
+
+### /player-portal Page
+- [ ] Fix all errors on this page
+- [ ] Add player picture upload feature
+- [ ] Use uploaded picture for stars of the week and player profile
+
+### /referee-scorekeeper-apply Page
+- [ ] Fix pricing display (should show $40)
+- [ ] Fix form submission error
+
+### General Features
+- [ ] Add player picture upload to player portal
+- [ ] Use uploaded pictures for stars of the week display
+- [ ] Use uploaded pictures for player profiles

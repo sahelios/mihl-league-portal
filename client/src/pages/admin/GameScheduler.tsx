@@ -159,6 +159,10 @@ export default function GameScheduler() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
           <div>
             <h1 className="text-4xl font-bold text-foreground">
               {language === "en" ? "Game Scheduler" : "Planificateur de Matchs"}

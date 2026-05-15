@@ -147,6 +147,7 @@ const escapeCSV = (val) => {
 // COMPONENT
 // ============================================================
 export default function PlayerRegistrationAdmin() {
+  const [, navigate] = useLocation();
   const [registrations, setRegistrations] = useState(mockRegistrations);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');

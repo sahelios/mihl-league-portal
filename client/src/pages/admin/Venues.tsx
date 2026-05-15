@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ArrowLeft, useState } from "react";
 import { useRouter } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -23,6 +23,7 @@ const SAMPLE_VENUES: Venue[] = [
 ];
 
 export default function AdminVenues() {
+  const [, navigate] = useLocation();
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const [, navigate] = useRouter();
   const { user } = useAuth();

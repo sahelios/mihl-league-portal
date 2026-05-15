@@ -2,529 +2,369 @@
 
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
-import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Trash2, Grid3x3, List } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Players() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-
   const utils = trpc.useUtils();
 
-  // Filter state
+  // State
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editData, setEditData] = useState<any>({});
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [paymentMethodId, setPaymentMethodId] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
 
-  // Dialog state
-  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
-  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedRegistrationId, setSelectedRegistrationId] = useState<number | null>(null);
-  const [selectedRating, setSelectedRating] = useState<string>('');
-  const [selectedTeam, setSelectedTeam] = useState<string>('');
-
-  // Data queries
+  // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
   const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
+  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
 
   // Mutations
-  const approveMutation = trpc.registration.approve.useMutation({
+  const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
     onSuccess: () => {
-      toast.success('Registration approved!');
+      toast.success('Player info updated!');
+      utils.registration.getAll.invalidate();
+      setEditingId(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update player');
+    },
+  });
+
+  const updatePlayerStatusMutation = trpc.admin.updatePlayerStatus.useMutation({
+    onSuccess: () => {
+      toast.success('Player status updated!');
       utils.registration.getAll.invalidate();
       utils.registration.getStats.invalidate();
+      setDeleteId(null);
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to approve registration');
-    },
-  });
-
-  const rejectMutation = trpc.registration.reject.useMutation({
-    onSuccess: () => {
-      toast.success('Registration rejected!');
-      utils.registration.getAll.invalidate();
-      utils.registration.getStats.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to reject registration');
-    },
-  });
-
-  const markPaidMutation = trpc.registration.markPaid.useMutation({
-    onSuccess: () => {
-      toast.success('Payment marked!');
-      utils.registration.getAll.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to mark payment');
-    },
-  });
-
-  const assignTeamMutation = trpc.registration.assignTeam.useMutation({
-    onSuccess: () => {
-      toast.success('Player assigned to team!');
-      utils.registration.getAll.invalidate();
-      setTeamDialogOpen(false);
-      setSelectedTeam('');
-      setSelectedRegistrationId(null);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to assign team');
-    },
-  });
-
-  const updateRatingMutation = trpc.registration.updatePlayerRating.useMutation({
-    onSuccess: () => {
-      toast.success('Player rating updated!');
-      utils.registration.getAll.invalidate();
-      setRatingDialogOpen(false);
-      setSelectedRating('');
-      setSelectedRegistrationId(null);
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to update rating');
+      toast.error(error.message || 'Failed to update status');
     },
   });
 
   const deletePlayerMutation = trpc.admin.deletePlayer.useMutation({
     onSuccess: () => {
-      toast.success('Player deleted successfully!');
+      toast.success('Player deleted!');
       utils.registration.getAll.invalidate();
       utils.registration.getStats.invalidate();
-      setDeleteDialogOpen(false);
-      setSelectedRegistrationId(null);
+      setDeleteId(null);
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to delete player');
     },
   });
 
-  const addToEvaluationGameMutation = trpc.admin.addToEvaluationGame.useMutation({
-    onSuccess: () => {
-      toast.success('Player added to evaluation game!');
-      utils.registration.getAll.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to add to evaluation game');
-    },
+  // Filtered registrations
+  const filteredRegistrations = registrations.filter(reg => {
+    if (statusFilter === 'all') return true;
+    return reg.status === statusFilter;
   });
 
-  // Handlers
-  const handleApprove = (id: number) => {
-    approveMutation.mutate({ registrationId: id, language: 'en' });
+  // Get team display name
+  const getTeamDisplay = (reg: any) => {
+    if (!reg.teamId) return 'No Team';
+    const team = teams.find(t => t.id === reg.teamId);
+    const season = seasons.find(s => s.id === team?.seasonId);
+    return team && season ? `${season.name} - ${team.name}` : `Team ID: ${reg.teamId}`;
   };
 
-  const handleReject = (id: number) => {
-    rejectMutation.mutate({ registrationId: id, reason: 'Rejected by admin', language: 'en' });
-  };
-
-  const handleMarkPaid = (id: number) => {
-    markPaidMutation.mutate({ registrationId: id, amountPaid: 1 });
-  };
-
-  const handleOpenRatingDialog = (registrationId: number, currentRating: number | null) => {
-    setSelectedRegistrationId(registrationId);
-    setSelectedRating((currentRating || '').toString());
-    setRatingDialogOpen(true);
-  };
-
-  const handleOpenTeamDialog = (registrationId: number) => {
-    setSelectedRegistrationId(registrationId);
-    setSelectedTeam('');
-    setTeamDialogOpen(true);
-  };
-
-  const handleOpenDeleteDialog = (registrationId: number) => {
-    setSelectedRegistrationId(registrationId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleUpdateRating = () => {
-    if (!selectedRegistrationId || !selectedRating) {
-      toast.error('Please select a valid rating');
-      return;
-    }
-    updateRatingMutation.mutate({
-      registrationId: selectedRegistrationId,
-      rating: parseInt(selectedRating),
-    });
-  };
-
-  const handleAssignTeam = () => {
-    if (!selectedRegistrationId || !selectedTeam) {
-      toast.error('Please select a team');
-      return;
-    }
-    assignTeamMutation.mutate({
-      registrationId: selectedRegistrationId,
-      teamId: parseInt(selectedTeam),
-    });
-  };
-
-  const handleDeletePlayer = () => {
-    if (!selectedRegistrationId) {
-      toast.error('No player selected');
-      return;
-    }
-    deletePlayerMutation.mutate({ registrationId: selectedRegistrationId });
-  };
-
-  const handleAddToEvaluationGame = (registrationId: number) => {
-    const today = new Date().toISOString().split('T')[0];
-    addToEvaluationGameMutation.mutate({ registrationId, evaluationDate: today });
-  };
-
-  const getRegistrationPrice = (type: string) => {
-    const prices: Record<string, number> = {
-      individual: 350,
-      team: 350,
-      referee: 0,
-      scorekeeper: 0,
-    };
-    return prices[type] || 0;
-  };
-
+  // Get status badge color
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getPositionDisplay = (registrationType: string) => {
-    if (registrationType === 'individual') return 'Individual Player';
-    if (registrationType === 'team') return 'Team Registration';
-    return registrationType;
+  const handleEdit = (reg: any) => {
+    setEditingId(reg.id);
+    setEditData({
+      name: reg.name,
+      email: reg.email,
+      phone: reg.phone,
+      rating: reg.rating,
+      paymentMethod: reg.paymentMethod || '',
+    });
   };
 
-  // Filter registrations based on status
-  const filteredRegistrations = statusFilter === 'all'
-    ? registrations
-    : registrations.filter((reg: any) => reg.status === statusFilter);
+  const handleSaveEdit = () => {
+    if (!editingId) return;
+    updatePlayerInfoMutation.mutate({
+      registrationId: editingId,
+      ...editData,
+    });
+  };
 
-  const PlayerCard = ({ registration }: { registration: any }) => (
-    <Card className="overflow-hidden">
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-bold text-lg">
-                {registration.firstName} {registration.lastName}
-              </h3>
-              <p className="text-sm text-muted-foreground">{registration.email}</p>
-            </div>
-            <Badge className={getStatusColor(registration.status)}>
-              {registration.status.charAt(0).toUpperCase() + registration.status.slice(1)}
-            </Badge>
-          </div>
+  const handleStatusChange = (regId: number, newStatus: string) => {
+    if (newStatus === 'deleted') {
+      setDeleteId(regId);
+    } else {
+      updatePlayerStatusMutation.mutate({
+        registrationId: regId,
+        status: newStatus as any,
+      });
+    }
+  };
 
-          {/* Info */}
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">Type</p>
-              <p className="font-medium">{registration.registrationType}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Price</p>
-              <p className="font-medium">${getRegistrationPrice(registration.registrationType)}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Phone</p>
-              <p className="font-medium">{registration.phone}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Payment</p>
-              <p className="font-medium">{registration.paymentStatus}</p>
-            </div>
-          </div>
-
-          {/* Position */}
-          <div>
-            <p className="text-sm text-muted-foreground">Position</p>
-            <p className="font-medium">{getPositionDisplay(registration.registrationType)}</p>
-          </div>
-
-          {/* Team & Rating Info */}
-          {registration.teamId && (
-            <div>
-              <p className="text-sm text-muted-foreground">Team</p>
-              <p className="font-medium">Team ID: {registration.teamId}</p>
-            </div>
-          )}
-
-          {registration.playerRating && (
-            <div>
-              <p className="text-sm text-muted-foreground">Rating</p>
-              <p className="font-medium">{registration.playerRating}/10</p>
-            </div>
-          )}
-
-          {/* Waiting List Status */}
-          {registration.waitingListStatus && registration.waitingListStatus !== 'none' && (
-            <div>
-              <Badge variant="outline" className="bg-orange-50">
-                Waiting List: {registration.waitingListStatus}
-              </Badge>
-            </div>
-          )}
-
-          {/* Actions */}
-          {registration.status === 'pending' && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                className="flex-1"
-                onClick={() => handleApprove(registration.id)}
-                disabled={approveMutation.isPending}
-              >
-                {approveMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="flex-1"
-                onClick={() => handleReject(registration.id)}
-                disabled={rejectMutation.isPending}
-              >
-                {rejectMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                Reject
-              </Button>
-            </div>
-          )}
-
-          {registration.status === 'approved' && (
-            <div className="space-y-2">
-              {/* Team Assignment */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => handleOpenTeamDialog(registration.id)}
-                disabled={assignTeamMutation.isPending || teams.length === 0}
-              >
-                {assignTeamMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                {registration.teamId ? 'Change Team' : 'Assign Team'}
-              </Button>
-
-              {/* Rating Edit */}
-              {registration.registrationType === 'individual' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleOpenRatingDialog(registration.id, registration.playerRating)}
-                  disabled={updateRatingMutation.isPending}
-                >
-                  {updateRatingMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                  {registration.playerRating ? 'Update Rating' : 'Set Rating'}
-                </Button>
-              )}
-
-              {/* Payment */}
-              {registration.paymentStatus === 'unpaid' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleMarkPaid(registration.id)}
-                  disabled={markPaidMutation.isPending}
-                >
-                  {markPaidMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                  Mark Paid
-                </Button>
-              )}
-
-              {/* Add to Evaluation Game */}
-              {!registration.evaluationDate && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleAddToEvaluationGame(registration.id)}
-                  disabled={addToEvaluationGameMutation.isPending}
-                >
-                  {addToEvaluationGameMutation.isPending && <Loader2 size={16} className="mr-1 animate-spin" />}
-                  Add to Eval Game
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Delete Button - Always Available */}
-          <Button
-            size="sm"
-            variant="destructive"
-            className="w-full"
-            onClick={() => handleOpenDeleteDialog(registration.id)}
-            disabled={deletePlayerMutation.isPending}
-          >
-            <Trash2 size={16} className="mr-2" />
-            Delete Player
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const handleConfirmDelete = () => {
+    if (deleteId) {
+      deletePlayerMutation.mutate({ registrationId: deleteId });
+    }
+  };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header with Back Button */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/admin')}
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            Back
-          </Button>
-          <h1 className="text-3xl font-bold">Player Management</h1>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold">Player Management</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{statsData?.pending || 0}</p>
-                <p className="text-sm text-muted-foreground">Pending</p>
+                <div className="text-3xl font-bold text-yellow-600">{statsData?.pending || 0}</div>
+                <div className="text-sm text-gray-600">Pending</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{statsData?.approved || 0}</p>
-                <p className="text-sm text-muted-foreground">Approved</p>
+                <div className="text-3xl font-bold text-green-600">{statsData?.approved || 0}</div>
+                <div className="text-sm text-gray-600">Approved</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">{statsData?.rejected || 0}</p>
-                <p className="text-sm text-muted-foreground">Rejected</p>
+                <div className="text-3xl font-bold text-red-600">{statsData?.rejected || 0}</div>
+                <div className="text-sm text-gray-600">Rejected</div>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 border-b">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
-            <button
+        <div className="flex gap-2 mb-6">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
+            <Button
               key={status}
+              variant={statusFilter === status ? 'default' : 'outline'}
               onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 font-medium transition-colors ${
-                statusFilter === status
-                  ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
+            </Button>
           ))}
         </div>
 
-        {/* Players Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRegistrations.map((registration) => (
-            <PlayerCard key={registration.id} registration={registration} />
-          ))}
-        </div>
-
-        {filteredRegistrations.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No players found with the selected filter.</p>
+        {/* Players Grid/List */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredRegistrations.map(reg => (
+              <Card key={reg.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{reg.name}</CardTitle>
+                      <p className="text-sm text-gray-600">{reg.email}</p>
+                    </div>
+                    <Badge className={getStatusColor(reg.status)}>
+                      {reg.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {editingId === reg.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Name"
+                        value={editData.name}
+                        onChange={e => setEditData({...editData, name: e.target.value})}
+                      />
+                      <Input
+                        placeholder="Email"
+                        value={editData.email}
+                        onChange={e => setEditData({...editData, email: e.target.value})}
+                      />
+                      <Input
+                        placeholder="Phone"
+                        value={editData.phone}
+                        onChange={e => setEditData({...editData, phone: e.target.value})}
+                      />
+                      <Input
+                        placeholder="Rating"
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={editData.rating}
+                        onChange={e => setEditData({...editData, rating: parseInt(e.target.value)})}
+                      />
+                      <Select value={editData.paymentMethod} onValueChange={v => setEditData({...editData, paymentMethod: v})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Payment Method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="eTransfer">eTransfer</SelectItem>
+                          <SelectItem value="cash">Cash</SelectItem>
+                          <SelectItem value="arrangement">Arrangement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleSaveEdit} disabled={updatePlayerInfoMutation.isPending}>
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="font-semibold">Type:</span>
+                          <p>{reg.registrationType}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Price:</span>
+                          <p>$350</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Phone:</span>
+                          <p>{reg.phone}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Payment:</span>
+                          <p>{reg.paymentStatus || 'Pending'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-semibold">Position:</span>
+                          <p>{reg.registrationType === 'team' ? 'Team Registration' : 'Individual Player'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="font-semibold">Team:</span>
+                          <p>{getTeamDisplay(reg)}</p>
+                        </div>
+                        {reg.paymentMethod && (
+                          <div className="col-span-2">
+                            <span className="font-semibold">Payment Method:</span>
+                            <p>{reg.paymentMethod}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(reg)}>
+                          Edit
+                        </Button>
+                        <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                            <SelectItem value="deleted">Delete</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredRegistrations.map(reg => (
+              <Card key={reg.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-semibold">{reg.name}</div>
+                      <div className="text-sm text-gray-600">{reg.email}</div>
+                    </div>
+                    <div className="flex-1 text-sm">
+                      <div>{getTeamDisplay(reg)}</div>
+                      <div>{reg.registrationType === 'team' ? 'Team Registration' : 'Individual Player'}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusColor(reg.status)}>
+                        {reg.status}
+                      </Badge>
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(reg)}>
+                        Edit
+                      </Button>
+                      <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
+                        <SelectTrigger className="h-9 w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                          <SelectItem value="deleted">Delete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Rating Dialog */}
-      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Player Rating</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Select value={selectedRating} onValueChange={setSelectedRating}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select rating (1-10)" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
-                  <SelectItem key={rating} value={rating.toString()}>
-                    {rating}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              className="w-full"
-              onClick={handleUpdateRating}
-              disabled={updateRatingMutation.isPending || !selectedRating}
-            >
-              {updateRatingMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-              Update Rating
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Team Assignment Dialog */}
-      <Dialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign Player to Team</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.length === 0 ? (
-                  <SelectItem value="none" disabled>
-                    No teams available
-                  </SelectItem>
-                ) : (
-                  teams.map((team: any) => (
-                    <SelectItem key={team.id} value={team.id.toString()}>
-                      {team.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            <Button
-              className="w-full"
-              onClick={handleAssignTeam}
-              disabled={assignTeamMutation.isPending || !selectedTeam || teams.length === 0}
-            >
-              {assignTeamMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-              Assign
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Player</AlertDialogTitle>
@@ -532,19 +372,25 @@ export default function Players() {
               Are you sure you want to delete this player? This action will remove all player data including stats, team assignments, and notifications. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeletePlayer}
+              onClick={handleConfirmDelete}
               disabled={deletePlayerMutation.isPending}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deletePlayerMutation.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
-              Delete
+              {deletePlayerMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </div>
   );
 }

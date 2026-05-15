@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { ArrowLeft, useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -30,6 +30,7 @@ interface PlayerWithTeam {
 }
 
 export default function TeamManagement() {
+  const [, navigate] = useLocation();
   const [language, setLanguage] = useState<"en" | "fr">("en");
   const { user } = useAuth();
   

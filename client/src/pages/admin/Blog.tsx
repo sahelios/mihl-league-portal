@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ArrowLeft, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,10 @@ export default function BlogManagement() {
   return (
     <div className="container py-8 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
         <div>
           <h1 className="text-3xl font-bold">{language === "en" ? "Blog Management" : "Gestion du Blog"}</h1>
         </div>
