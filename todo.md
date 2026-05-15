@@ -246,3 +246,6 @@
 - [x] Implement delete player functionality (removes all data including stats)
 - [x] Add back button to Players page (/admin/players)
 - [x] Add back button to Teams page (/admin/teams)
+
+## BUG FIX - May 15, 2026
+- [x] Fix playerTeams query error on /admin/players page (Added missing isCaptain column to playerTeams table)

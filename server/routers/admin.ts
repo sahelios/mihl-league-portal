@@ -886,9 +886,13 @@ export const adminRouter = router({
         await db.delete(playerTeams)
           .where(eq(playerTeams.registrationId, input.registrationId));
         
-        // 5. Delete admin messages to this player
-        await db.delete(adminMessages)
-          .where(eq(adminMessages.toPlayerTeamId, input.registrationId));
+        // 5. Delete admin messages to this player (if table exists)
+        try {
+          await db.delete(adminMessages)
+            .where(eq(adminMessages.toPlayerTeamId, input.registrationId));
+        } catch (e) {
+          // Table might not exist, continue
+        }
         
         // 6. Delete notifications
         await db.delete(notifications)
