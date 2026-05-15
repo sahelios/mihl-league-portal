@@ -366,3 +366,9 @@
 - [x] Implement email verification workflow for admin-changed emails (updatePlayerEmail mutation sends verification email to new address)
 - [x] Fixed Select component empty string value error in Players.tsx
 - [x] All admin pages now have back buttons for navigation
+
+
+## USER REQUESTS - May 15, 2026 (Session 3)
+- [ ] Expand edit dialog on /admin/players to include: type, phone, payment, position, season, team
+- [ ] Add edit functionality to /admin/teams page (link to team management)
+- [ ] Rebuild /admin/team-management with season/team dropdowns and player registration workflow

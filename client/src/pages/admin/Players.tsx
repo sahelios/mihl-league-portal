@@ -250,18 +250,23 @@ export default function Players() {
                   {editingId === reg.id ? (
                     <div className="space-y-2">
                       <Input
-                        placeholder="Name"
-                        value={editData.name}
-                        onChange={e => setEditData({...editData, name: e.target.value})}
+                        placeholder="First Name"
+                        value={editData.firstName || ''}
+                        onChange={e => setEditData({...editData, firstName: e.target.value})}
+                      />
+                      <Input
+                        placeholder="Last Name"
+                        value={editData.lastName || ''}
+                        onChange={e => setEditData({...editData, lastName: e.target.value})}
                       />
                       <Input
                         placeholder="Email"
-                        value={editData.email}
+                        value={editData.email || ''}
                         onChange={e => setEditData({...editData, email: e.target.value})}
                       />
                       <Input
                         placeholder="Phone"
-                        value={editData.phone}
+                        value={editData.phone || ''}
                         onChange={e => setEditData({...editData, phone: e.target.value})}
                       />
                       <Input
@@ -269,9 +274,18 @@ export default function Players() {
                         type="number"
                         min="1"
                         max="10"
-                        value={editData.rating}
-                        onChange={e => setEditData({...editData, rating: parseInt(e.target.value)})}
+                        value={editData.playerRating || ''}
+                        onChange={e => setEditData({...editData, playerRating: e.target.value ? parseInt(e.target.value) : null})}
                       />
+                      <Select value={editData.registrationType || ''} onValueChange={v => setEditData({...editData, registrationType: v})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="individual">Individual Player</SelectItem>
+                          <SelectItem value="team">Team Registration</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Select value={editData.paymentMethod || 'none'} onValueChange={v => setEditData({...editData, paymentMethod: v === 'none' ? '' : v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Payment Method" />
@@ -281,6 +295,23 @@ export default function Players() {
                           <SelectItem value="etransfer">eTransfer</SelectItem>
                           <SelectItem value="cash">Cash</SelectItem>
                           <SelectItem value="arrangement">Arrangement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={editData.seasonId?.toString() || ''} onValueChange={v => setEditData({...editData, seasonId: v ? parseInt(v) : null})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Season" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {seasons.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={editData.teamId?.toString() || 'none'} onValueChange={v => setEditData({...editData, teamId: v === 'none' ? null : parseInt(v)})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Team</SelectItem>
+                          {teams.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <div className="flex gap-2">
