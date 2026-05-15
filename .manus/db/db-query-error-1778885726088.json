@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE games ADD COLUMN IF NOT EXISTS gameId VARCHAR(20) UNIQUE;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute ALTER TABLE games ADD COLUMN IF NOT EXISTS gameId VARCHAR(20) UNIQUE;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 8200 (HY000) at line 1: unsupported add column 'gameid' constraint UNIQUE KEY when altering 'Fde3d448vCxuYB8KePk65W.games'"
+  ]
+}
