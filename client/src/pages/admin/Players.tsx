@@ -70,6 +70,17 @@ export default function Players() {
     },
   });
 
+  const updatePlayerEmailMutation = trpc.admin.updatePlayerEmail.useMutation({
+    onSuccess: () => {
+      toast.success('Email updated! Verification email sent to new address.');
+      utils.registration.getAll.invalidate();
+      setEditingId(null);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update email');
+    },
+  });
+
   // Filtered registrations
   const filteredRegistrations = registrations.filter(reg => {
     if (statusFilter === 'all') return true;
@@ -101,20 +112,34 @@ export default function Players() {
   const handleEdit = (reg: any) => {
     setEditingId(reg.id);
     setEditData({
-      name: reg.name,
+      name: `${reg.firstName} ${reg.lastName}`,
       email: reg.email,
       phone: reg.phone,
-      rating: reg.rating,
+      rating: reg.playerRating,
       paymentMethod: reg.paymentMethod || '',
     });
   };
 
   const handleSaveEdit = () => {
     if (!editingId) return;
-    updatePlayerInfoMutation.mutate({
-      registrationId: editingId,
-      ...editData,
-    });
+    
+    // Get the original player data
+    const originalPlayer = registrations.find(r => r.id === editingId);
+    
+    // Check if email has changed
+    if (originalPlayer && editData.email && editData.email !== originalPlayer.email) {
+      // Email changed - use updatePlayerEmail mutation
+      updatePlayerEmailMutation.mutate({
+        registrationId: editingId,
+        newEmail: editData.email,
+      });
+    } else {
+      // No email change - use regular update
+      updatePlayerInfoMutation.mutate({
+        registrationId: editingId,
+        ...editData,
+      });
+    }
   };
 
   const handleStatusChange = (regId: number, newStatus: string) => {
@@ -194,26 +219,26 @@ export default function Players() {
 
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6">
-          {(['all', 'pending', 'approved', 'rejected'] as const).map(status => (
+          {['all', 'pending', 'approved', 'rejected'].map(status => (
             <Button
               key={status}
               variant={statusFilter === status ? 'default' : 'outline'}
-              onClick={() => setStatusFilter(status)}
+              onClick={() => setStatusFilter(status as any)}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </Button>
           ))}
         </div>
 
-        {/* Players Grid/List */}
-        {viewMode === 'grid' ? (
+        {/* Grid View */}
+        {viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRegistrations.map(reg => (
               <Card key={reg.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{reg.name}</CardTitle>
+                      <CardTitle className="text-lg">{reg.firstName} {reg.lastName}</CardTitle>
                       <p className="text-sm text-gray-600">{reg.email}</p>
                     </div>
                     <Badge className={getStatusColor(reg.status)}>
@@ -240,72 +265,44 @@ export default function Players() {
                         onChange={e => setEditData({...editData, phone: e.target.value})}
                       />
                       <Input
-                        placeholder="Rating"
+                        placeholder="Rating (1-10)"
                         type="number"
                         min="1"
                         max="10"
                         value={editData.rating}
                         onChange={e => setEditData({...editData, rating: parseInt(e.target.value)})}
                       />
-                      <Select value={editData.paymentMethod} onValueChange={v => setEditData({...editData, paymentMethod: v})}>
+                      <Select value={editData.paymentMethod || 'none'} onValueChange={v => setEditData({...editData, paymentMethod: v === 'none' ? '' : v})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Payment Method" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="eTransfer">eTransfer</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="etransfer">eTransfer</SelectItem>
                           <SelectItem value="cash">Cash</SelectItem>
                           <SelectItem value="arrangement">Arrangement</SelectItem>
                         </SelectContent>
                       </Select>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={handleSaveEdit} disabled={updatePlayerInfoMutation.isPending}>
-                          Save
+                        <Button size="sm" onClick={handleSaveEdit} disabled={updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending}>
+                          {updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                          Cancel
-                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
                       </div>
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="font-semibold">Type:</span>
-                          <p>{reg.registrationType}</p>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Price:</span>
-                          <p>$350</p>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Phone:</span>
-                          <p>{reg.phone}</p>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Payment:</span>
-                          <p>{reg.paymentStatus || 'Pending'}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="font-semibold">Position:</span>
-                          <p>{reg.registrationType === 'team' ? 'Team Registration' : 'Individual Player'}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="font-semibold">Team:</span>
-                          <p>{getTeamDisplay(reg)}</p>
-                        </div>
-                        {reg.paymentMethod && (
-                          <div className="col-span-2">
-                            <span className="font-semibold">Payment Method:</span>
-                            <p>{reg.paymentMethod}</p>
-                          </div>
-                        )}
+                      <div className="text-sm">
+                        <div><strong>Type:</strong> {reg.registrationType}</div>
+                        <div><strong>Phone:</strong> {reg.phone}</div>
+                        <div><strong>Payment:</strong> {reg.paymentMethod || 'Pending'}</div>
+                        <div><strong>Position:</strong> {reg.registrationType === 'individual' ? 'Individual Player' : 'Team Registration'}</div>
+                        <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
                       </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(reg)}>
-                          Edit
-                        </Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
                         <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
-                          <SelectTrigger className="h-9">
+                          <SelectTrigger className="w-auto">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -315,6 +312,9 @@ export default function Players() {
                             <SelectItem value="deleted">Delete</SelectItem>
                           </SelectContent>
                         </Select>
+                        <Button size="sm" variant="destructive" onClick={() => setDeleteId(reg.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </>
                   )}
@@ -322,38 +322,31 @@ export default function Players() {
               </Card>
             ))}
           </div>
-        ) : (
+        )}
+
+        {/* List View */}
+        {viewMode === 'list' && (
           <div className="space-y-2">
             {filteredRegistrations.map(reg => (
               <Card key={reg.id}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="font-semibold">{reg.name}</div>
+                      <div className="font-semibold">{reg.firstName} {reg.lastName}</div>
                       <div className="text-sm text-gray-600">{reg.email}</div>
                     </div>
                     <div className="flex-1 text-sm">
                       <div>{getTeamDisplay(reg)}</div>
-                      <div>{reg.registrationType === 'team' ? 'Team Registration' : 'Individual Player'}</div>
+                      <div className="text-gray-600">{reg.phone}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(reg.status)}>
-                        {reg.status}
-                      </Badge>
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(reg)}>
-                        Edit
+                    <Badge className={getStatusColor(reg.status)}>
+                      {reg.status}
+                    </Badge>
+                    <div className="flex gap-2 ml-4">
+                      <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
+                      <Button size="sm" variant="destructive" onClick={() => setDeleteId(reg.id)}>
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                      <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
-                        <SelectTrigger className="h-9 w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                          <SelectItem value="deleted">Delete</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                 </CardContent>
@@ -361,36 +354,25 @@ export default function Players() {
             ))}
           </div>
         )}
-      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Player</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this player? This action will remove all player data including stats, team assignments, and notifications. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              disabled={deletePlayerMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deletePlayerMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete'
-              )}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Player</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the player and all associated data including stats, team assignments, and messages. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex gap-2 justify-end">
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

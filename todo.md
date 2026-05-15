@@ -350,3 +350,19 @@
 - [ ] Add player picture upload to player portal
 - [ ] Use uploaded pictures for stars of the week display
 - [ ] Use uploaded pictures for player profiles
+
+
+## BUG FIXES - May 15, 2026 (Session 3)
+- [ ] Add missing back button to /admin/settings page
+- [ ] Restore player name display on /admin/players page
+- [ ] Implement email verification workflow when admin changes player email
+- [ ] Send verification email to new email address
+- [ ] Update login email after verification
+
+
+## CRITICAL FIXES - May 15, 2026 (Session 3 - User Feedback)
+- [x] Add missing back button to /admin/settings page
+- [x] Restore player name display on /admin/players page (Fixed to use firstName + lastName instead of missing name field)
+- [x] Implement email verification workflow for admin-changed emails (updatePlayerEmail mutation sends verification email to new address)
+- [x] Fixed Select component empty string value error in Players.tsx
+- [x] All admin pages now have back buttons for navigation

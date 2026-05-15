@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Languages, Edit, Trash2, Calendar, Users, MapPin, Plus } from "lucide-react";
+import { Loader2, Languages, Edit, Trash2, Calendar, Users, MapPin, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -207,13 +207,19 @@ export default function AdminSettings() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground">
-              {language === "en" ? "League Settings" : "Paramètres de la Ligue"}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {language === "en" ? "Manage seasons, teams, and venues" : "Gérer les saisons, équipes et lieux"}
-            </p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold text-foreground">
+                {language === "en" ? "League Settings" : "Paramètres de la Ligue"}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {language === "en" ? "Manage seasons, teams, and venues" : "Gérer les saisons, équipes et lieux"}
+              </p>
+            </div>
           </div>
           <Button 
             variant="outline" 

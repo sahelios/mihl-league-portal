@@ -1003,4 +1003,35 @@ export const adminRouter = router({
       
       return { success: true };
     }),
+
+  updatePlayerEmail: adminProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      newEmail: z.string().email(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const player = await db.select().from(playerRegistrations)
+        .where(eq(playerRegistrations.id, input.registrationId))
+        .limit(1);
+      
+      if (!player || player.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Player not found" });
+      }
+      
+      const playerData = player[0];
+      const playerName = `${playerData.firstName} ${playerData.lastName}`;
+      
+      const emailBody = `Hi ${playerName},\n\nYour email address has been changed in the MIHL system. This is now your login email address.\n\nIf you did not request this change, please contact registration@mihl.ca immediately.`;
+      
+      console.log(`[EMAIL] To: ${input.newEmail}\nSubject: Your Email Address Has Been Updated\n${emailBody}`);
+      
+      await db.update(playerRegistrations)
+        .set({ email: input.newEmail })
+        .where(eq(playerRegistrations.id, input.registrationId));
+      
+      return { success: true, message: "Email updated successfully" };
+    }),
 });
