@@ -23,11 +23,11 @@ export default function TeamManagement() {
   // Queries
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: teams = [] } = trpc.admin.getTeams.useQuery(
-    selectedSeasonId ? { seasonId: selectedSeasonId } : { seasonId: 1 },
+    selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
     { enabled: !!selectedSeasonId }
   );
-  const { data: registrations = [] } = trpc.registration.getAll.useQuery();
-  const { data: waitingList = [] } = trpc.admin.getWaitingList.useQuery();
+  const { data: registrations = [] } = trpc.registration.getAll.useQuery(undefined, { enabled: !!selectedSeasonId });
+  const { data: waitingList = [] } = trpc.admin.getWaitingList.useQuery(undefined, { enabled: !!selectedSeasonId });
 
   // Mutations
   const assignTeamMutation = trpc.admin.assignTeam.useMutation({
@@ -50,6 +50,10 @@ export default function TeamManagement() {
   const handleAssignPlayer = (playerId: number) => {
     if (!selectedTeamId) {
       toast.error("Please select a team");
+      return;
+    }
+    if (!selectedSeasonId) {
+      toast.error("Please select a season");
       return;
     }
     assignTeamMutation.mutate({ registrationId: playerId, teamId: selectedTeamId });
