@@ -1034,4 +1034,20 @@ export const adminRouter = router({
       
       return { success: true, message: "Email updated successfully" };
     }),
+
+  updatePlayerPicture: adminProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      pictureUrl: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      await db.update(playerRegistrations)
+        .set({ playerPictureUrl: input.pictureUrl })
+        .where(eq(playerRegistrations.id, input.registrationId));
+      
+      return { success: true, message: "Picture updated successfully" };
+    }),
 });

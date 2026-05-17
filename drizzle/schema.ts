@@ -97,6 +97,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   jerseyOrderConfirmed: boolean("jerseyOrderConfirmed").default(false).notNull(),
   evaluationDate: varchar("evaluationDate", { length: 20 }),
   playerRating: int("playerRating"),
+  playerPictureUrl: text("playerPictureUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

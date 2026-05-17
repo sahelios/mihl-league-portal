@@ -389,8 +389,16 @@
 - [x] Player position sorting in evaluation games (Goalie, Defenseman, Forward)
 - [x] Position counts display in evaluation games
 
+## PLAYER PICTURE UPLOAD - In Progress (May 17, 2026)
+- [x] Added playerPictureUrl field to playerRegistrations table
+- [x] Created updatePlayerPicture backend procedure
+- [ ] Add file upload UI to Players edit dialog
+- [ ] Integrate manus-upload-file for S3 storage
+- [ ] Display pictures in Player Portal
+- [ ] Display pictures in Stars of the Week
+
 ## REMAINING TASKS (Lower Priority)
-- [ ] Implement player picture upload functionality in Players edit dialog
+- [ ] Complete player picture upload functionality
 - [x] Fix pricing issues on Referee/Scorekeeper application pages (Pricing is flexible - allows custom input)
 - [ ] Address remaining minor error pages (News, Stars, Suspensions, Staff)
 - [ ] Final end-to-end testing of entire league portal
