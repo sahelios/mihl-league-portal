@@ -26,8 +26,8 @@ export default function TeamManagement() {
     selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
     { enabled: !!selectedSeasonId }
   );
-  const { data: registrations = [] } = trpc.registration.getAll.useQuery(undefined, { enabled: !!selectedSeasonId });
-  const { data: waitingList = [] } = trpc.admin.getWaitingList.useQuery(undefined, { enabled: !!selectedSeasonId });
+  const { data: registrations = [] } = trpc.registration.getAll.useQuery({} as any, { enabled: !!selectedSeasonId });
+  const { data: waitingList = [] } = trpc.admin.getWaitingList.useQuery({} as any, { enabled: !!selectedSeasonId });
 
   // Mutations
   const assignTeamMutation = trpc.admin.assignTeam.useMutation({

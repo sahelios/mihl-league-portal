@@ -411,3 +411,4 @@
 - [x] Fix EvaluationGames page redirect issue: Changed useAuth property from `isLoading` to `loading`
 - [x] Fixed "Invalid Date" in upcoming games: Changed field names from `game.date`/`game.time` to `game.gameDate`/`game.gameTime`
 - [x] Fixed Team Management query validation error: Changed fallback from `{ seasonId: 1 }` to `undefined` when no season selected
+- [x] Fixed Team Management undefined query parameters: Pass empty object `{}` to queries without input validation
