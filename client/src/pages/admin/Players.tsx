@@ -112,11 +112,16 @@ export default function Players() {
   const handleEdit = (reg: any) => {
     setEditingId(reg.id);
     setEditData({
-      name: `${reg.firstName} ${reg.lastName}`,
-      email: reg.email,
-      phone: reg.phone,
-      rating: reg.playerRating,
-      paymentMethod: reg.paymentMethod || '',
+      firstName: reg.firstName || '',
+      lastName: reg.lastName || '',
+      email: reg.email || '',
+      phone: reg.phone || '',
+      playerRating: reg.playerRating || null,
+      registrationType: reg.registrationType || 'individual',
+      paymentMethod: reg.paymentMethod || 'none',
+      seasonId: reg.seasonId || null,
+      teamId: reg.teamId || null,
+      playerPictureUrl: reg.playerPictureUrl || '',
     });
   };
 

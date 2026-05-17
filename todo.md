@@ -413,3 +413,4 @@
 - [x] Fixed Team Management query validation error: Changed fallback from `{ seasonId: 1 }` to `undefined` when no season selected
 - [x] Fixed Team Management undefined query parameters: Pass empty object `{}` to queries without input validation
 - [x] Fixed Players page payment method validation: Changed from lowercase "etransfer" to correct "eTransfer" enum value
+- [x] Fixed Players edit form pre-population: All player data now auto-fills when clicking Edit (firstName, lastName, email, phone, rating, type, payment, season, team)
