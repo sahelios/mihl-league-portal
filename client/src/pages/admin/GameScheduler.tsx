@@ -291,8 +291,10 @@ export default function GameScheduler() {
     // Collect all available game slots
     const gameSlots: Array<{date: string, time: string, venueId: number}> = [];
     
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateString = d.toISOString().split('T')[0];
+    // Create a proper date range loop that includes the end date
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dateString = currentDate.toISOString().split('T')[0];
       
       // Skip blackout dates and evaluation game dates
       if (blackoutDates.includes(dateString) || evaluationDates.has(dateString)) {
@@ -313,6 +315,9 @@ export default function GameScheduler() {
           gameSlots.push({date: dateString, time: timeSlot, venueId});
         }
       }
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
     
     // Assign matchups to available slots

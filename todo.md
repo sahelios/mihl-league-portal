@@ -487,3 +487,10 @@
 - [x] Ensure all teams play each other equal number of times throughout season
 - [x] Rotate games through all selected venues in order
 - [ ] Verify schedule generates correctly with venue and date rotation
+
+
+## BUG FIX - Game Scheduler Date Range and Game Count (May 17, 2026)
+- [x] Fix date loop to include end date (currently stops before August 25)
+- [x] Fix game slot collection to generate all available slots correctly
+- [ ] Verify scheduler generates correct number of games (18 expected, got 14)
+- [ ] Ensure blackout dates are properly excluded without affecting other dates
