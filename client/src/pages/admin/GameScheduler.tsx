@@ -33,6 +33,7 @@ interface EvaluationGame {
   id: string;
   date: string;
   time: string;
+  venueId: number;
 }
 
 export default function GameScheduler() {
@@ -173,7 +174,7 @@ export default function GameScheduler() {
     setBlackoutDates(blackoutDates.filter(d => d !== date));
   };
 
-  const updateEvaluationGame = (index: number, field: 'date' | 'time', value: string) => {
+  const updateEvaluationGame = (index: number, field: string, value: any) => {
     const newEvalGames = [...evaluationGames];
     if (newEvalGames[index]) {
       newEvalGames[index] = { ...newEvalGames[index], [field]: value };
@@ -187,7 +188,8 @@ export default function GameScheduler() {
       games.push({
         id: `eval-${i}`,
         date: '',
-        time: '18:00'
+        time: '18:00',
+        venueId: selectedVenues[0] || 0
       });
     }
     setEvaluationGames(games);
@@ -237,23 +239,22 @@ export default function GameScheduler() {
     const games: ScheduledGame[] = [];
     const seasonId = parseInt(selectedSeason);
 
-    // Step 1: Create evaluation games first
+    // Step 1: Create evaluation games first (with white/black teams only)
+    const evaluationDates = new Set<string>();
     if (evaluationGameCount > 0) {
-      const evalVenueId = selectedVenues[0];
       for (let i = 0; i < evaluationGames.length; i++) {
         const evalGame = evaluationGames[i];
-        for (let j = 0; j < selectedTeams.length - 1; j++) {
-          games.push({
-            id: `eval-${evalGame.date}-${i}-${j}`,
-            homeTeamId: selectedTeams[j],
-            awayTeamId: selectedTeams[j + 1],
-            venueId: evalVenueId,
-            gameDate: evalGame.date,
-            gameTime: evalGame.time,
-            seasonId,
-            isEvaluation: true,
-          });
-        }
+        evaluationDates.add(evalGame.date);
+        games.push({
+          id: `eval-${evalGame.date}-${i}`,
+          homeTeamId: 1,
+          awayTeamId: 2,
+          venueId: evalGame.venueId,
+          gameDate: evalGame.date,
+          gameTime: evalGame.time,
+          seasonId,
+          isEvaluation: true,
+        });
       }
     }
 
@@ -264,8 +265,8 @@ export default function GameScheduler() {
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateString = d.toISOString().split('T')[0];
       
-      // Skip blackout dates
-      if (blackoutDates.includes(dateString)) {
+      // Skip blackout dates and evaluation game dates
+      if (blackoutDates.includes(dateString) || evaluationDates.has(dateString)) {
         continue;
       }
 
@@ -462,7 +463,7 @@ export default function GameScheduler() {
                     {evaluationGames.map((game, index) => (
                       <div key={game.id} className="p-3 bg-muted rounded space-y-3">
                         <div className="font-medium text-sm">{language === "en" ? `Evaluation Game ${index + 1}` : `Match d'Évaluation ${index + 1}`}</div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
                             <Label className="text-xs">{language === "en" ? "Date" : "Date"}</Label>
                             <Input
@@ -478,6 +479,21 @@ export default function GameScheduler() {
                               value={game.time}
                               onChange={(e) => updateEvaluationGame(index, 'time', e.target.value)}
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{language === "en" ? "Venue" : "Lieu"}</Label>
+                            <Select value={game.venueId.toString()} onValueChange={(value) => updateEvaluationGame(index, 'venueId', parseInt(value))}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {venues?.map((venue: any) => (
+                                  <SelectItem key={venue.id} value={venue.id.toString()}>
+                                    {venue.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       </div>

@@ -465,3 +465,11 @@
 - [x] Update game generation to use venue-specific schedules
 - [x] Test game scheduler with venue-specific schedules
 - [x] Allow individual date/time configuration for each evaluation game
+
+
+## EVALUATION GAMES REFINEMENTS - May 17, 2026 (Session 6)
+- [x] Add venue selection for each evaluation game
+- [x] Exclude evaluation game dates from regular season scheduling
+- [x] Implement white/black team selection for evaluation games (not season teams)
+- [x] Update game generation to use white/black teams for evaluation games
+- [x] Ensure season teams don't play in evaluation games
