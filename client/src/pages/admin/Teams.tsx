@@ -120,7 +120,7 @@ export default function AdminTeams() {
 
   const handleDeleteTeam = (id: number) => {
     if (confirm("Are you sure?")) {
-      deleteTeamMutation.mutate({ teamId: id });
+      deleteTeamMutation.mutate({ id });
     }
   };
 

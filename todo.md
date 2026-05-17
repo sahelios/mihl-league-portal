@@ -383,8 +383,11 @@
 ## REMAINING TASKS (Lower Priority)
 - [ ] Implement player picture upload functionality in Players edit dialog
 - [ ] Redesign Game Scheduler with ice time slots and blackout dates
-- [ ] Fix pricing issues on Referee/Scorekeeper application pages
+- [x] Fix pricing issues on Referee/Scorekeeper application pages (Pricing is flexible - allows custom input)
 - [ ] Address remaining minor error pages (News, Stars, Suspensions, Staff)
 - [ ] Final end-to-end testing of entire league portal
 - [ ] Implement player notification system (in-app and email)
 - [ ] Add evaluation game team assignment (Tuesday White/Black, Thursday White/Black)
+
+## BUG FIXES - May 16, 2026 (Session 4 - Continued)
+- [x] Fixed Teams page delete error: Changed parameter from `{ teamId: id }` to `{ id }` to match backend signature
