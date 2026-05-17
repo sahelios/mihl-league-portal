@@ -130,26 +130,42 @@ export default function Players() {
     
     // Get the original player data
     const originalPlayer = registrations.find(r => r.id === editingId);
+    if (!originalPlayer) return;
+    
+    // Combine first and last name
+    const fullName = `${editData.firstName} ${editData.lastName}`.trim();
     
     // If picture is a data URL, show info that S3 upload will be done later
     if (editData.playerPictureUrl && editData.playerPictureUrl.startsWith('data:')) {
       toast.info('Picture will be uploaded to storage in next phase');
     }
     
-    // Check if email has changed
-    if (originalPlayer && editData.email && editData.email !== originalPlayer.email) {
-      // Email changed - use updatePlayerEmail mutation
-      updatePlayerEmailMutation.mutate({
-        registrationId: editingId,
-        newEmail: editData.email,
-      });
-    } else {
-      // No email change - use regular update
-      updatePlayerInfoMutation.mutate({
-        registrationId: editingId,
-        ...editData,
-      });
+    // Prepare update data in the format the backend expects
+    const updatePayload: any = {
+      registrationId: editingId,
+      name: fullName,
+      email: editData.email,
+      phone: editData.phone,
+      rating: editData.playerRating,
+    };
+    
+    // Only add paymentMethod if it's not 'none'
+    if (editData.paymentMethod && editData.paymentMethod !== 'none') {
+      updatePayload.paymentMethod = editData.paymentMethod;
     }
+    
+    // Include teamId if it's set
+    if (editData.teamId) {
+      updatePayload.teamId = editData.teamId;
+    }
+    
+    // Send the update
+    updatePlayerInfoMutation.mutate(updatePayload);
+    
+    // Close the edit dialog
+    setEditingId(null);
+    setEditData({});
+    toast.success('Player updated successfully');
   };
 
   const handleStatusChange = (regId: number, newStatus: string) => {

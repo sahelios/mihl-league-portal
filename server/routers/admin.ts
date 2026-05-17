@@ -917,6 +917,7 @@ export const adminRouter = router({
       phone: z.string().optional(),
       rating: z.number().optional(),
       paymentMethod: z.enum(["eTransfer", "cash", "arrangement"]).optional(),
+      teamId: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -928,6 +929,7 @@ export const adminRouter = router({
       if (input.phone) updateData.phone = input.phone;
       if (input.rating !== undefined) updateData.rating = input.rating;
       if (input.paymentMethod) updateData.paymentMethod = input.paymentMethod;
+      if (input.teamId !== undefined) updateData.teamId = input.teamId;
       
       await db.update(playerRegistrations)
         .set(updateData)
