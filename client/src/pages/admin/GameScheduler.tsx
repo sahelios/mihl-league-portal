@@ -29,6 +29,12 @@ interface VenueSchedule {
   timeSlots: string[];
 }
 
+interface EvaluationGame {
+  id: string;
+  date: string;
+  time: string;
+}
+
 export default function GameScheduler() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -44,8 +50,7 @@ export default function GameScheduler() {
   const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
   const [newBlackoutDate, setNewBlackoutDate] = useState("");
   const [evaluationGameCount, setEvaluationGameCount] = useState(0);
-  const [evaluationDate, setEvaluationDate] = useState("");
-  const [evaluationTime, setEvaluationTime] = useState("18:00");
+  const [evaluationGames, setEvaluationGames] = useState<EvaluationGame[]>([]);
   const [scheduledGames, setScheduledGames] = useState<ScheduledGame[]>([]);
   const [currentEditingVenue, setCurrentEditingVenue] = useState<number | null>(null);
   const [newTimeSlot, setNewTimeSlot] = useState("");
@@ -168,6 +173,26 @@ export default function GameScheduler() {
     setBlackoutDates(blackoutDates.filter(d => d !== date));
   };
 
+  const updateEvaluationGame = (index: number, field: 'date' | 'time', value: string) => {
+    const newEvalGames = [...evaluationGames];
+    if (newEvalGames[index]) {
+      newEvalGames[index] = { ...newEvalGames[index], [field]: value };
+      setEvaluationGames(newEvalGames);
+    }
+  };
+
+  const initializeEvaluationGames = (count: number) => {
+    const games: EvaluationGame[] = [];
+    for (let i = 0; i < count; i++) {
+      games.push({
+        id: `eval-${i}`,
+        date: '',
+        time: '18:00'
+      });
+    }
+    setEvaluationGames(games);
+  };
+
   const generateSchedule = () => {
     // Validation
     if (!selectedSeason) {
@@ -199,26 +224,32 @@ export default function GameScheduler() {
       toast.error(language === "en" ? "Select start and end dates" : "Sélectionnez les dates de début et de fin");
       return;
     }
-    if (evaluationGameCount > 0 && !evaluationDate) {
-      toast.error(language === "en" ? "Set evaluation game date" : "Définissez la date des matchs d'évaluation");
-      return;
+    // Validate evaluation games
+    if (evaluationGameCount > 0) {
+      for (let i = 0; i < evaluationGames.length; i++) {
+        if (!evaluationGames[i].date) {
+          toast.error(language === "en" ? `Set date for evaluation game ${i + 1}` : `Définissez la date pour le match d'évaluation ${i + 1}`);
+          return;
+        }
+      }
     }
 
     const games: ScheduledGame[] = [];
     const seasonId = parseInt(selectedSeason);
 
     // Step 1: Create evaluation games first
-    if (evaluationGameCount > 0 && evaluationDate) {
+    if (evaluationGameCount > 0) {
       const evalVenueId = selectedVenues[0];
-      for (let i = 0; i < evaluationGameCount; i++) {
+      for (let i = 0; i < evaluationGames.length; i++) {
+        const evalGame = evaluationGames[i];
         for (let j = 0; j < selectedTeams.length - 1; j++) {
           games.push({
-            id: `eval-${evaluationDate}-${i}-${j}`,
+            id: `eval-${evalGame.date}-${i}-${j}`,
             homeTeamId: selectedTeams[j],
             awayTeamId: selectedTeams[j + 1],
             venueId: evalVenueId,
-            gameDate: evaluationDate,
-            gameTime: evaluationTime,
+            gameDate: evalGame.date,
+            gameTime: evalGame.time,
             seasonId,
             isEvaluation: true,
           });
@@ -291,7 +322,7 @@ export default function GameScheduler() {
       setSelectedVenues([]);
       setVenueSchedules(new Map());
       setEvaluationGameCount(0);
-      setEvaluationDate("");
+      setEvaluationGames([]);
     } catch (error: any) {
       toast.error(error.message || (language === "en" ? "Failed to create schedule" : "Échec de la création du calendrier"));
     }
@@ -418,20 +449,40 @@ export default function GameScheduler() {
                     type="number"
                     min="0"
                     value={evaluationGameCount}
-                    onChange={(e) => setEvaluationGameCount(parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0;
+                      setEvaluationGameCount(count);
+                      initializeEvaluationGames(count);
+                    }}
                   />
                 </div>
                 {evaluationGameCount > 0 && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>{language === "en" ? "Evaluation Date" : "Date d'évaluation"}</Label>
-                      <Input type="date" value={evaluationDate} onChange={(e) => setEvaluationDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{language === "en" ? "Evaluation Time" : "Heure d'évaluation"}</Label>
-                      <Input type="time" value={evaluationTime} onChange={(e) => setEvaluationTime(e.target.value)} />
-                    </div>
-                  </>
+                  <div className="space-y-4 border-t pt-4">
+                    <h3 className="font-semibold text-sm">{language === "en" ? "Configure Each Evaluation Game" : "Configurez Chaque Match d'Évaluation"}</h3>
+                    {evaluationGames.map((game, index) => (
+                      <div key={game.id} className="p-3 bg-muted rounded space-y-3">
+                        <div className="font-medium text-sm">{language === "en" ? `Evaluation Game ${index + 1}` : `Match d'Évaluation ${index + 1}`}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{language === "en" ? "Date" : "Date"}</Label>
+                            <Input
+                              type="date"
+                              value={game.date}
+                              onChange={(e) => updateEvaluationGame(index, 'date', e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{language === "en" ? "Time" : "Heure"}</Label>
+                            <Input
+                              type="time"
+                              value={game.time}
+                              onChange={(e) => updateEvaluationGame(index, 'time', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

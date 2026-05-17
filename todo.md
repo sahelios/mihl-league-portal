@@ -463,4 +463,5 @@
 - [x] Add venue-specific days configuration (each venue has different available days)
 - [x] Add venue-specific time slots configuration (each venue has different available times)
 - [x] Update game generation to use venue-specific schedules
-- [ ] Test game scheduler with venue-specific schedules
+- [x] Test game scheduler with venue-specific schedules
+- [x] Allow individual date/time configuration for each evaluation game
