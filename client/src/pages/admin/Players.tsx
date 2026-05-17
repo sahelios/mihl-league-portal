@@ -297,7 +297,7 @@ export default function Players() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="etransfer">eTransfer</SelectItem>
+                          <SelectItem value="eTransfer">eTransfer</SelectItem>
                           <SelectItem value="cash">Cash</SelectItem>
                           <SelectItem value="arrangement">Arrangement</SelectItem>
                         </SelectContent>
