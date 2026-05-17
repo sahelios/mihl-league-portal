@@ -271,12 +271,13 @@ export default function GameScheduler() {
     const start = new Date(startDate);
     const end = new Date(endDate);
     
-    // Generate all possible matchups (round-robin)
+    // Generate all possible matchups (round-robin) - each team plays every other team
     const matchups: Array<{home: number, away: number}> = [];
     for (let i = 0; i < selectedTeams.length; i++) {
-      for (let j = i + 1; j < selectedTeams.length; j++) {
-        matchups.push({home: selectedTeams[i], away: selectedTeams[j]});
-        matchups.push({home: selectedTeams[j], away: selectedTeams[i]});
+      for (let j = 0; j < selectedTeams.length; j++) {
+        if (i !== j) {
+          matchups.push({home: selectedTeams[i], away: selectedTeams[j]});
+        }
       }
     }
     
@@ -290,6 +291,13 @@ export default function GameScheduler() {
     
     // Collect all available game slots
     const gameSlots: Array<{date: string, time: string, venueId: number}> = [];
+    
+    console.log('DEBUG: Starting game generation');
+    console.log('DEBUG: Selected teams:', selectedTeams);
+    console.log('DEBUG: Total matchups:', matchups.length);
+    console.log('DEBUG: Evaluation dates:', Array.from(evaluationDates));
+    console.log('DEBUG: Blackout dates:', blackoutDates);
+    console.log('DEBUG: Start date:', startDate, 'End date:', endDate);
     
     // Create a proper date range loop that includes the end date
     const currentDate = new Date(start);
@@ -321,9 +329,15 @@ export default function GameScheduler() {
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // Assign matchups to available slots
+    console.log('DEBUG: Total game slots available:', gameSlots.length);
+    console.log('DEBUG: Game slots:', gameSlots);
+    
+    // Assign matchups to available slots - limit to 16 season games
+    const maxSeasonGames = 16;
+    let seasonGamesCreated = 0;
+    
     for (const slot of gameSlots) {
-      if (matchupIndex >= matchups.length) break;
+      if (seasonGamesCreated >= maxSeasonGames || matchupIndex >= matchups.length) break;
       
       const matchup = matchups[matchupIndex];
       games.push({
@@ -336,6 +350,7 @@ export default function GameScheduler() {
         seasonId,
       });
       matchupIndex++;
+      seasonGamesCreated++;
     }
 
     setScheduledGames(games);
