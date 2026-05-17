@@ -34,7 +34,7 @@ export default function EvaluationGames() {
 
   // Fetch evaluation game attendance
   const { data: evaluationAttendance, isLoading: isLoadingAttendance, refetch } = 
-    trpc.admin.getEvaluationAttendance.useQuery();
+    trpc.admin.getEvaluationAttendance.useQuery({});
 
   // Mutations
   const removeFromGameMutation = trpc.admin.removeFromEvaluationGame.useMutation({

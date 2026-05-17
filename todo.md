@@ -426,6 +426,9 @@
   - Backend: updatePlayerInfo procedure ready with teamId support
 
 
+## BUG FIXES - May 17, 2026 (Session 4 - Continued)
+- [x] Fixed EvaluationGames query undefined error: Pass empty object `{}` to getEvaluationAttendance query
+
 ## CRITICAL BLOCKER - May 17, 2026
 - Players edit button onClick not firing (React event handling issue)
   - Button exists in DOM but click events not reaching handler
