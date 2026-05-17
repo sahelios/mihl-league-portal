@@ -448,3 +448,16 @@
 - [x] Added back button to AdminSuspensions page
 - [ ] Wrap remaining admin pages in DashboardLayout
 - [ ] Test all admin pages end-to-end
+
+
+## GAME SCHEDULER IMPROVEMENTS - May 17, 2026 (Session 5)
+- [x] Add multiple venue support to database schema (already exists)
+- [x] Add ice slot management to database (already exists)
+- [x] Update GameScheduler UI to select season
+- [x] Update GameScheduler UI to select multiple venues
+- [x] Add evaluation game count input to GameScheduler
+- [x] Implement 1 game per ice slot constraint
+- [x] Implement evaluation games scheduled first
+- [x] Auto-distribute games between all teams
+- [x] Update createGames mutation to accept seasonId
+- [ ] Test game scheduler with multiple venues

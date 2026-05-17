@@ -378,6 +378,7 @@ export const adminRouter = router({
         venueId: z.number(),
         gameDate: z.string(),
         gameTime: z.string(),
+        seasonId: z.number(),
       }))
     }))
     .mutation(async ({ input }) => {
@@ -385,14 +386,19 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       try {
-        const seasons_data = await db.select().from(seasons).where(eq(seasons.isActive, true));
-        if (seasons_data.length === 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No active season found" });
+        // Verify season exists
+        if (input.games.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No games provided" });
         }
-        const seasonId = seasons_data[0].id;
+        
+        const seasonId = input.games[0].seasonId;
+        const seasonData = await db.select().from(seasons).where(eq(seasons.id, seasonId));
+        if (seasonData.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Season not found" });
+        }
 
         const gamesToInsert = input.games.map(game => ({
-          seasonId,
+          seasonId: game.seasonId,
           homeTeamId: game.homeTeamId,
           awayTeamId: game.awayTeamId,
           venueId: game.venueId,

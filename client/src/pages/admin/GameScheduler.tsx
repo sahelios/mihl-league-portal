@@ -19,6 +19,8 @@ interface ScheduledGame {
   venueId: number;
   gameDate: string;
   gameTime: string;
+  seasonId: number;
+  isEvaluation?: boolean;
 }
 
 interface IceTimeSlot {
@@ -32,8 +34,9 @@ export default function GameScheduler() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
 
   // Form State
+  const [selectedSeason, setSelectedSeason] = useState("");
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
-  const [venueId, setVenueId] = useState("");
+  const [selectedVenues, setSelectedVenues] = useState<number[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
@@ -45,9 +48,13 @@ export default function GameScheduler() {
   const [newTimeSlot, setNewTimeSlot] = useState("");
   const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
   const [newBlackoutDate, setNewBlackoutDate] = useState("");
+  const [evaluationGameCount, setEvaluationGameCount] = useState(0);
+  const [evaluationDate, setEvaluationDate] = useState("");
+  const [evaluationTime, setEvaluationTime] = useState("18:00");
   const [scheduledGames, setScheduledGames] = useState<ScheduledGame[]>([]);
 
   // tRPC Queries
+  const { data: seasons, isLoading: loadingSeasons } = trpc.admin.getSeasons.useQuery();
   const { data: teams, isLoading: loadingTeams } = trpc.league.getTeams.useQuery();
   const { data: venues, isLoading: loadingVenues } = trpc.admin.getVenues.useQuery();
   const createGamesMutation = trpc.admin.createGames.useMutation();
@@ -95,6 +102,12 @@ export default function GameScheduler() {
     );
   };
 
+  const toggleVenue = (venueId: number) => {
+    setSelectedVenues(prev =>
+      prev.includes(venueId) ? prev.filter(v => v !== venueId) : [...prev, venueId]
+    );
+  };
+
   const addTimeSlot = () => {
     if (!newTimeSlot) {
       toast.error(language === "en" ? "Enter a time" : "Entrez une heure");
@@ -130,8 +143,17 @@ export default function GameScheduler() {
   };
 
   const generateSchedule = () => {
+    // Validation
+    if (!selectedSeason) {
+      toast.error(language === "en" ? "Select a season" : "Sélectionnez une saison");
+      return;
+    }
     if (selectedTeams.length < 2) {
       toast.error(language === "en" ? "Select at least 2 teams" : "Sélectionnez au moins 2 équipes");
+      return;
+    }
+    if (selectedVenues.length === 0) {
+      toast.error(language === "en" ? "Select at least one venue" : "Sélectionnez au moins un lieu");
       return;
     }
     if (!startDate || !endDate) {
@@ -146,12 +168,42 @@ export default function GameScheduler() {
       toast.error(language === "en" ? "Add at least one ice time slot" : "Ajoutez au moins un créneau horaire");
       return;
     }
+    if (evaluationGameCount > 0 && !evaluationDate) {
+      toast.error(language === "en" ? "Set evaluation game date" : "Définissez la date des matchs d'évaluation");
+      return;
+    }
 
     const games: ScheduledGame[] = [];
+    const seasonId = parseInt(selectedSeason);
+
+    // Step 1: Create evaluation games first
+    if (evaluationGameCount > 0 && evaluationDate) {
+      const evalVenueId = selectedVenues[0]; // Use first venue for evaluation games
+      for (let i = 0; i < evaluationGameCount; i++) {
+        const slotIndex = i % iceTimeSlots.length;
+        const slot = iceTimeSlots[slotIndex];
+        
+        // Create matchups for evaluation games
+        for (let j = 0; j < selectedTeams.length - 1; j++) {
+          games.push({
+            id: `eval-${evaluationDate}-${slotIndex}-${j}`,
+            homeTeamId: selectedTeams[j],
+            awayTeamId: selectedTeams[j + 1],
+            venueId: evalVenueId,
+            gameDate: evaluationDate,
+            gameTime: slot.time,
+            seasonId,
+            isEvaluation: true,
+          });
+        }
+      }
+    }
+
+    // Step 2: Create regular season games with 1 game per ice slot
     const start = new Date(startDate);
     const end = new Date(endDate);
+    let slotIndex = 0;
 
-    // Generate all games for selected recurring days with ice time slots
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateString = d.toISOString().split('T')[0];
       
@@ -163,25 +215,31 @@ export default function GameScheduler() {
       const dayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()];
       
       if (recurringDays.includes(dayName)) {
-        // Create matchups for each ice time slot
-        iceTimeSlots.forEach(slot => {
-          for (let i = 0; i < selectedTeams.length - 1; i++) {
-            games.push({
-              id: `${dateString}-${slot.id}-${i}`,
-              homeTeamId: selectedTeams[i],
-              awayTeamId: selectedTeams[i + 1],
-              venueId: parseInt(venueId),
-              gameDate: dateString,
-              gameTime: slot.time,
-            });
-          }
-        });
+        // Rotate through venues
+        const venueId = selectedVenues[games.length % selectedVenues.length];
+        
+        // Use one ice time slot per game date
+        const slot = iceTimeSlots[slotIndex % iceTimeSlots.length];
+        slotIndex++;
+
+        // Create one matchup per game slot
+        for (let i = 0; i < selectedTeams.length - 1; i++) {
+          games.push({
+            id: `${dateString}-${venueId}-${i}`,
+            homeTeamId: selectedTeams[i],
+            awayTeamId: selectedTeams[i + 1],
+            venueId,
+            gameDate: dateString,
+            gameTime: slot.time,
+            seasonId,
+          });
+        }
       }
     }
 
     setScheduledGames(games);
     toast.success(language === "en" 
-      ? `Generated ${games.length} games` 
+      ? `Generated ${games.length} games (${evaluationGameCount > 0 ? `${evaluationGameCount * (selectedTeams.length - 1)} evaluation + ` : ''}${games.length - (evaluationGameCount > 0 ? evaluationGameCount * (selectedTeams.length - 1) : 0)} regular)` 
       : `${games.length} matchs générés`);
   };
 
@@ -202,7 +260,10 @@ export default function GameScheduler() {
         : "Calendrier créé avec succès!");
       setScheduledGames([]);
       setSelectedTeams([]);
+      setSelectedVenues([]);
       setRecurringDays([]);
+      setEvaluationGameCount(0);
+      setEvaluationDate("");
     } catch (error: any) {
       toast.error(error.message || (language === "en" ? "Failed to create schedule" : "Échec de la création du calendrier"));
     }
@@ -231,8 +292,8 @@ export default function GameScheduler() {
             </h1>
             <p className="text-muted-foreground mt-2">
               {language === "en" 
-                ? "Create recurring game schedules with ice time slots" 
-                : "Créez des calendriers de matchs récurrents avec créneaux horaires"}
+                ? "Create recurring game schedules with evaluation games and multiple venues" 
+                : "Créez des calendriers de matchs récurrents avec matchs d'évaluation et plusieurs lieux"}
             </p>
           </div>
           <button
@@ -246,6 +307,31 @@ export default function GameScheduler() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Season Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{language === "en" ? "Season" : "Saison"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={language === "en" ? "Select season" : "Sélectionnez une saison"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {loadingSeasons ? (
+                      <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                    ) : (
+                      seasons?.map((season: any) => (
+                        <SelectItem key={season.id} value={season.id.toString()}>
+                          {season.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
             {/* Teams Card */}
             <Card>
               <CardHeader>
@@ -273,24 +359,30 @@ export default function GameScheduler() {
               </CardContent>
             </Card>
 
-            {/* Venue Card */}
+            {/* Venues Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{language === "en" ? "Venue" : "Lieu"}</CardTitle>
+                <CardTitle className="text-lg">{language === "en" ? "Venues" : "Lieux"}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Select value={venueId} onValueChange={setVenueId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={language === "en" ? "Select venue" : "Sélectionnez un lieu"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {venues?.map((venue: any) => (
-                      <SelectItem key={venue.id} value={venue.id.toString()}>
-                        {venue.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <CardContent className="space-y-3">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {loadingVenues ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    venues?.map((venue: any) => (
+                      <div key={venue.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedVenues.includes(venue.id)}
+                          onCheckedChange={() => toggleVenue(venue.id)}
+                        />
+                        <Label className="font-normal cursor-pointer">{venue.name}</Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedVenues.length} {language === "en" ? "selected" : "sélectionnés"}
+                </p>
               </CardContent>
             </Card>
 
@@ -299,71 +391,55 @@ export default function GameScheduler() {
               <CardHeader>
                 <CardTitle className="text-lg">{language === "en" ? "Date Range" : "Plage de Dates"}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <Label htmlFor="startDate" className="text-sm">{language === "en" ? "Start Date" : "Date de Début"}</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{language === "en" ? "Start Date" : "Date de début"}</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
-                <div>
-                  <Label htmlFor="endDate" className="text-sm">{language === "en" ? "End Date" : "Date de Fin"}</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                <div className="space-y-2">
+                  <Label>{language === "en" ? "End Date" : "Date de fin"}</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </CardContent>
             </Card>
+          </div>
 
+          {/* Main Content Panel */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Recurring Days Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">{language === "en" ? "Days" : "Jours"}</CardTitle>
+                <CardTitle className="text-lg">{language === "en" ? "Game Days" : "Jours de Matchs"}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {days.map(day => (
                     <div key={day.value} className="flex items-center space-x-2">
                       <Checkbox
                         checked={recurringDays.includes(day.value)}
                         onCheckedChange={() => toggleDay(day.value)}
                       />
-                      <Label className="font-normal cursor-pointer text-sm">{day.label}</Label>
+                      <Label className="font-normal cursor-pointer">{day.label}</Label>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            <Button onClick={generateSchedule} className="w-full">
-              <Plus className="mr-2 h-4 w-4" />
-              {language === "en" ? "Generate Schedule" : "Générer le Calendrier"}
-            </Button>
-          </div>
-
-          {/* Ice Time Slots & Blackout Dates */}
-          <div className="lg:col-span-2 space-y-6">
             {/* Ice Time Slots Card */}
             <Card>
               <CardHeader>
-                <CardTitle>{language === "en" ? "Ice Time Slots" : "Créneaux Horaires"}</CardTitle>
+                <CardTitle className="text-lg">{language === "en" ? "Ice Time Slots" : "Créneaux Horaires"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   {iceTimeSlots.map(slot => (
-                    <div key={slot.id} className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border">
+                    <div key={slot.id} className="flex items-center justify-between p-2 bg-muted rounded">
                       <span className="font-mono">{slot.time}</span>
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="ghost"
                         onClick={() => removeTimeSlot(slot.id)}
-                        className="text-destructive hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -375,30 +451,59 @@ export default function GameScheduler() {
                     type="time"
                     value={newTimeSlot}
                     onChange={(e) => setNewTimeSlot(e.target.value)}
-                    placeholder={language === "en" ? "Add time slot" : "Ajouter un créneau"}
+                    placeholder="HH:MM"
                   />
-                  <Button onClick={addTimeSlot} variant="outline">
+                  <Button onClick={addTimeSlot} size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Evaluation Games Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{language === "en" ? "Evaluation Games" : "Matchs d'Évaluation"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>{language === "en" ? "Number of Evaluation Games" : "Nombre de matchs d'évaluation"}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={evaluationGameCount}
+                    onChange={(e) => setEvaluationGameCount(parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                {evaluationGameCount > 0 && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>{language === "en" ? "Evaluation Date" : "Date d'évaluation"}</Label>
+                      <Input type="date" value={evaluationDate} onChange={(e) => setEvaluationDate(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{language === "en" ? "Evaluation Time" : "Heure d'évaluation"}</Label>
+                      <Input type="time" value={evaluationTime} onChange={(e) => setEvaluationTime(e.target.value)} />
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Blackout Dates Card */}
             <Card>
               <CardHeader>
-                <CardTitle>{language === "en" ? "Blackout Dates" : "Dates Exclues"}</CardTitle>
+                <CardTitle className="text-lg">{language === "en" ? "Blackout Dates" : "Dates Exclues"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2">
                   {blackoutDates.map(date => (
-                    <div key={date} className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border">
-                      <span>{new Date(date).toLocaleDateString()}</span>
+                    <div key={date} className="flex items-center justify-between p-2 bg-muted rounded">
+                      <span className="font-mono">{date}</span>
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="ghost"
                         onClick={() => removeBlackoutDate(date)}
-                        className="text-destructive hover:text-destructive"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -411,68 +516,61 @@ export default function GameScheduler() {
                     value={newBlackoutDate}
                     onChange={(e) => setNewBlackoutDate(e.target.value)}
                   />
-                  <Button onClick={addBlackoutDate} variant="outline">
+                  <Button onClick={addBlackoutDate} size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Scheduled Games Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {language === "en" ? "Scheduled Games" : "Matchs Programmés"}
-                  <Badge className="ml-2">{scheduledGames.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {scheduledGames.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {language === "en" 
-                      ? "No games scheduled yet. Configure and generate a schedule above." 
-                      : "Aucun match programmé. Configurez et générez un calendrier ci-dessus."}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="max-h-96 overflow-y-auto space-y-2">
-                      {scheduledGames.map((game, idx) => {
-                        const homeTeam = teams?.find(t => t.id === game.homeTeamId);
-                        const awayTeam = teams?.find(t => t.id === game.awayTeamId);
-                        const venue = venues?.find((v: any) => v.id === game.venueId);
-
-                        return (
-                          <div key={game.id} className="flex items-center justify-between p-3 bg-muted/50 rounded border border-border">
-                            <div className="flex-1">
-                              <p className="font-semibold text-foreground">
-                                {homeTeam?.name} vs {awayTeam?.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {new Date(game.gameDate).toLocaleDateString()} @ {game.gameTime} - {venue?.name}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeGame(game.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <Button onClick={submitSchedule} className="w-full mt-6">
-                      {language === "en" ? "Create Games" : "Créer les Matchs"}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Generate Button */}
+            <Button onClick={generateSchedule} className="w-full" size="lg">
+              {language === "en" ? "Generate Schedule" : "Générer le Calendrier"}
+            </Button>
           </div>
         </div>
+
+        {/* Scheduled Games Preview */}
+        {scheduledGames.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>
+                {language === "en" 
+                  ? `Preview: ${scheduledGames.length} Games` 
+                  : `Aperçu: ${scheduledGames.length} Matchs`}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {scheduledGames.map(game => (
+                  <div key={game.id} className="flex items-center justify-between p-3 bg-muted rounded">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        {game.isEvaluation && <Badge variant="secondary">{language === "en" ? "Eval" : "Éval"}</Badge>}
+                        <span className="font-mono text-sm">
+                          {game.gameDate} @ {game.gameTime}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Team {game.homeTeamId} vs Team {game.awayTeamId}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeGame(game.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button onClick={submitSchedule} className="w-full mt-4" size="lg">
+                {language === "en" ? "Submit Schedule" : "Soumettre le Calendrier"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
