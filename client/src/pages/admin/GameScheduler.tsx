@@ -267,10 +267,30 @@ export default function GameScheduler() {
       }
     }
 
-    // Step 2: Create regular season games using venue-specific schedules
+    // Step 2: Create regular season games with round-robin scheduling
     const start = new Date(startDate);
     const end = new Date(endDate);
-
+    
+    // Generate all possible matchups (round-robin)
+    const matchups: Array<{home: number, away: number}> = [];
+    for (let i = 0; i < selectedTeams.length; i++) {
+      for (let j = i + 1; j < selectedTeams.length; j++) {
+        matchups.push({home: selectedTeams[i], away: selectedTeams[j]});
+        matchups.push({home: selectedTeams[j], away: selectedTeams[i]});
+      }
+    }
+    
+    // Shuffle matchups for randomization
+    for (let i = matchups.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [matchups[i], matchups[j]] = [matchups[j], matchups[i]];
+    }
+    
+    let matchupIndex = 0;
+    
+    // Collect all available game slots
+    const gameSlots: Array<{date: string, time: string, venueId: number}> = [];
+    
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const dateString = d.toISOString().split('T')[0];
       
@@ -285,25 +305,31 @@ export default function GameScheduler() {
       for (const venueId of selectedVenues) {
         const schedule = venueSchedules.get(venueId);
         if (!schedule || !schedule.days.includes(dayName)) {
-          continue; // This venue doesn't have games on this day
+          continue;
         }
 
-        // Create games for each time slot at this venue
+        // Add one game slot per time slot
         for (const timeSlot of schedule.timeSlots) {
-          // Create one matchup per time slot
-          for (let i = 0; i < selectedTeams.length - 1; i++) {
-            games.push({
-              id: `${dateString}-${venueId}-${timeSlot}-${i}`,
-              homeTeamId: selectedTeams[i],
-              awayTeamId: selectedTeams[i + 1],
-              venueId,
-              gameDate: dateString,
-              gameTime: timeSlot,
-              seasonId,
-            });
-          }
+          gameSlots.push({date: dateString, time: timeSlot, venueId});
         }
       }
+    }
+    
+    // Assign matchups to available slots
+    for (const slot of gameSlots) {
+      if (matchupIndex >= matchups.length) break;
+      
+      const matchup = matchups[matchupIndex];
+      games.push({
+        id: `${slot.date}-${slot.venueId}-${slot.time}-${matchupIndex}`,
+        homeTeamId: matchup.home,
+        awayTeamId: matchup.away,
+        venueId: slot.venueId,
+        gameDate: slot.date,
+        gameTime: slot.time,
+        seasonId,
+      });
+      matchupIndex++;
     }
 
     setScheduledGames(games);
@@ -669,7 +695,19 @@ export default function GameScheduler() {
                         <Badge variant="outline">{getVenueName(game.venueId)}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Team {game.homeTeamId} vs Team {game.awayTeamId}
+                        {game.isEvaluation ? (
+                          <>
+                            <span className="cursor-pointer hover:underline">{game.homeTeamId === 1 ? 'Team White' : 'Team Black'}</span>
+                            {' vs '}
+                            <span className="cursor-pointer hover:underline">{game.awayTeamId === 2 ? 'Team Black' : 'Team White'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{teams?.find(t => t.id === game.homeTeamId)?.name || `Team ${game.homeTeamId}`}</span>
+                            {' vs '}
+                            <span>{teams?.find(t => t.id === game.awayTeamId)?.name || `Team ${game.awayTeamId}`}</span>
+                          </>
+                        )}
                       </p>
                     </div>
                     <Button

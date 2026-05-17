@@ -478,3 +478,12 @@
 ## BUG FIX - Venue Configuration Persistence (May 17, 2026)
 - [x] Fix venue schedule data not persisting when switching between venues
 - [x] Ensure all venue configurations are saved before validation
+
+
+## GAME SCHEDULER IMPROVEMENTS - Phase 2 (May 17, 2026)
+- [x] Display "Team White" and "Team Black" instead of "Team 1" and "Team 2" in evaluation games
+- [ ] Add clickable team names to view/edit team rosters for evaluation games
+- [x] Redesign scheduling algorithm to properly randomize team matchups
+- [x] Ensure all teams play each other equal number of times throughout season
+- [x] Rotate games through all selected venues in order
+- [ ] Verify schedule generates correctly with venue and date rotation
