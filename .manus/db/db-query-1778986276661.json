@@ -1,0 +1,14 @@
+{
+  "query": "SELECT id, name FROM seasons ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, name FROM seasons ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "name": "Summer 2026"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n30001\tSummer 2026\n",
+  "stderr": "",
+  "execution_time_ms": 584
+}

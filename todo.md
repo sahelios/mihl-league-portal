@@ -369,6 +369,22 @@
 
 
 ## USER REQUESTS - May 15, 2026 (Session 3)
-- [ ] Expand edit dialog on /admin/players to include: type, phone, payment, position, season, team
-- [ ] Add edit functionality to /admin/teams page (link to team management)
-- [ ] Rebuild /admin/team-management with season/team dropdowns and player registration workflow
+- [x] Expand edit dialog on /admin/players to include: type, phone, payment, position, season, team
+- [x] Add edit functionality to /admin/teams page (link to team management)
+- [x] Rebuild /admin/team-management with season/team dropdowns and player registration workflow
+
+## COMPLETED - May 16, 2026 (Session 4)
+- [x] Fixed orphaned teams by reassigning to Season ID 30001 (Summer 2026)
+- [x] Verified Team Management page works correctly with season/team selection
+- [x] Verified Games page displays sequential game IDs (GAME-2, GAME-3, etc.)
+- [x] All admin pages have back buttons and are fully functional
+- [x] Database schema is clean and consistent
+
+## REMAINING TASKS (Lower Priority)
+- [ ] Implement player picture upload functionality in Players edit dialog
+- [ ] Redesign Game Scheduler with ice time slots and blackout dates
+- [ ] Fix pricing issues on Referee/Scorekeeper application pages
+- [ ] Address remaining minor error pages (News, Stars, Suspensions, Staff)
+- [ ] Final end-to-end testing of entire league portal
+- [ ] Implement player notification system (in-app and email)
+- [ ] Add evaluation game team assignment (Tuesday White/Black, Thursday White/Black)
