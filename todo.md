@@ -494,3 +494,8 @@
 - [x] Fix game slot collection to generate all available slots correctly
 - [ ] Verify scheduler generates correct number of games (18 expected, got 14)
 - [ ] Ensure blackout dates are properly excluded without affecting other dates
+
+
+## CRITICAL BUGS - Game Scheduler (May 17, 2026)
+- [x] Fix Generate Schedule button - not working after date loop update (fixed undefined variable d → currentDate)
+- [x] Fix blackout date logic - should skip to next available slot, not replace with adjacent dates

@@ -298,10 +298,11 @@ export default function GameScheduler() {
       
       // Skip blackout dates and evaluation game dates
       if (blackoutDates.includes(dateString) || evaluationDates.has(dateString)) {
+        currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
 
-      const dayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()];
+      const dayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][currentDate.getDay()];
       
       // Check each venue's schedule for this day
       for (const venueId of selectedVenues) {
