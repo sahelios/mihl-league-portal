@@ -435,3 +435,14 @@
   - Affects: Player editing, team assignment, payment method updates
   - Status: Requires dev tools investigation in future session
   - Workaround: None currently available
+
+
+## ADMIN PAGE FIXES - May 17, 2026 (Session 5)
+- [x] Fixed Players page getTeams query (changed from {} to undefined to match optional input)
+- [x] Fixed RefereeApplications page redirect issue (added auth loading guard and wrapped in DashboardLayout)
+- [x] Fixed News page missing ArrowLeft import
+- [x] Fixed PlayerPortal.tsx auth hook property (changed isLoading to loading)
+- [x] Fixed Games page scoring bug (home and away scores now calculated separately)
+- [ ] Fix remaining admin pages (Stars, Suspensions, StaffApplications)
+- [ ] Add DashboardLayout to remaining admin pages that need it
+- [ ] Test all admin pages end-to-end

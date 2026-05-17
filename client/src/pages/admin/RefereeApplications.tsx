@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function RefereeApplications() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [language, setLanguage] = useState<"en" | "fr">("en");
   
@@ -20,9 +21,13 @@ export default function RefereeApplications() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
-  if (user?.role !== "admin") {
+  if (!loading && user?.role !== "admin") {
     navigate("/");
     return null;
+  }
+
+  if (loading) {
+    return <DashboardLayout><div className="p-8 text-center">Loading...</div></DashboardLayout>;
   }
 
   const utils = trpc.useUtils();
@@ -49,15 +54,20 @@ export default function RefereeApplications() {
     setApprovalModalOpen(true);
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (isLoading) return <DashboardLayout><div className="p-8 text-center">Loading...</div></DashboardLayout>;
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-foreground">
-            {language === "en" ? "Staff Applications" : "Candidatures du Personnel"}
-          </h1>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold text-foreground">
+              {language === "en" ? "Staff Applications" : "Candidatures du Personnel"}
+            </h1>
+          </div>
           <Button variant="outline" onClick={() => setLanguage(language === "en" ? "fr" : "en")}>
             {language === "en" ? "FR" : "EN"}
           </Button>
@@ -128,6 +138,6 @@ export default function RefereeApplications() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

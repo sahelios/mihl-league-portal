@@ -14,10 +14,11 @@ import {
   DialogFooter,
   DialogTrigger 
 } from "@/components/ui/dialog";
-import { Loader2, Trash2, Edit, Plus, Languages, AlertCircle } from "lucide-react";
+import { Loader2, Trash2, Edit, Plus, Languages, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 type NewsPost = {
   id: number;

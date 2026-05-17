@@ -109,8 +109,15 @@ export default function Games() {
       return;
     }
 
-    const homeScore = Object.values(playerScores).reduce((sum, p) => sum + p.goals, 0);
-    const awayScore = Object.values(playerScores).reduce((sum, p) => sum + p.goals, 0);
+    // Calculate home team score
+    const homeScore = homeTeamPlayers.reduce((sum, player) => {
+      return sum + (playerScores[player.id]?.goals || 0);
+    }, 0);
+
+    // Calculate away team score
+    const awayScore = awayTeamPlayers.reduce((sum, player) => {
+      return sum + (playerScores[player.id]?.goals || 0);
+    }, 0);
 
     submitMutation.mutate({
       gameId: selectedGameId,

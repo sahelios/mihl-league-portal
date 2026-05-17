@@ -11,7 +11,7 @@ import { AlertCircle, Loader2, Users, Calendar, TrendingUp, CheckCircle, XCircle
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function PlayerPortal() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [selectedGame, setSelectedGame] = useState<number | null>(null);
   const [gameAvailability, setGameAvailability] = useState<Record<number, boolean>>({});

@@ -30,7 +30,7 @@ export default function Players() {
 
   // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
-  const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
+  const { data: teams = [] } = trpc.admin.getTeams.useQuery(undefined);
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
 
@@ -92,7 +92,9 @@ export default function Players() {
     if (!reg.teamId) return 'No Team';
     const team = teams.find(t => t.id === reg.teamId);
     const season = seasons.find(s => s.id === team?.seasonId);
-    return team && season ? `${season.name} - ${team.name}` : `Team ID: ${reg.teamId}`;
+    if (team && season) return `${season.name} - ${team.name}`;
+    if (team) return team.name;
+    return `Team ID: ${reg.teamId}`;
   };
 
   // Get status badge color
