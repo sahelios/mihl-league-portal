@@ -22,12 +22,12 @@ interface PlayerWithTeam {
 }
 
 export default function EvaluationGames() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [teamAssignments, setTeamAssignments] = useState<Record<string, Record<number, PlayerTeam>>>({});
 
   // Redirect if not admin
-  if (!isLoading && user?.role !== "admin") {
+  if (!loading && (!user || user.role !== "admin")) {
     navigate("/");
     return null;
   }
@@ -63,7 +63,7 @@ export default function EvaluationGames() {
     }
   }, [evaluationAttendance]);
 
-  if (isLoading || isLoadingAttendance) {
+  if (loading || isLoadingAttendance) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

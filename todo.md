@@ -393,4 +393,4 @@
 - [x] Fixed Teams page delete error: Changed parameter from `{ teamId: id }` to `{ id }` to match backend signature
 - [x] Fixed EvaluationGames component to use correct router (trpc.admin.getEvaluationAttendance)
 - [x] Added DashboardLayout wrapper and back button to EvaluationGames page
-- [ ] Fix EvaluationGames page redirect issue (still redirecting to home on load)
+- [x] Fix EvaluationGames page redirect issue: Changed useAuth property from `isLoading` to `loading`
