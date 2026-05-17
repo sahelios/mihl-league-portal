@@ -268,8 +268,12 @@ export default function GameScheduler() {
     }
 
     // Step 2: Create regular season games with round-robin scheduling
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Parse dates correctly without timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
     
     // Generate all possible matchups (round-robin) - each team plays every other team
     const matchups: Array<{home: number, away: number}> = [];
@@ -293,16 +297,20 @@ export default function GameScheduler() {
     const gameSlots: Array<{date: string, time: string, venueId: number}> = [];
     
     console.log('DEBUG: Starting game generation');
+    console.log('DEBUG: Start date:', start, 'End date:', end);
     console.log('DEBUG: Selected teams:', selectedTeams);
     console.log('DEBUG: Total matchups:', matchups.length);
     console.log('DEBUG: Evaluation dates:', Array.from(evaluationDates));
     console.log('DEBUG: Blackout dates:', blackoutDates);
-    console.log('DEBUG: Start date:', startDate, 'End date:', endDate);
     
     // Create a proper date range loop that includes the end date
     const currentDate = new Date(start);
     while (currentDate <= end) {
-      const dateString = currentDate.toISOString().split('T')[0];
+      // Format date as YYYY-MM-DD without timezone conversion
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
       
       // Skip blackout dates and evaluation game dates
       if (blackoutDates.includes(dateString) || evaluationDates.has(dateString)) {
