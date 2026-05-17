@@ -118,11 +118,14 @@ export default function GameScheduler() {
     const newSchedules = new Map(venueSchedules);
     const schedule = newSchedules.get(venueId) || { venueId, days: [], timeSlots: [] };
     
-    schedule.days = schedule.days.includes(day)
-      ? schedule.days.filter(d => d !== day)
-      : [...schedule.days, day];
+    const updatedSchedule = {
+      ...schedule,
+      days: schedule.days.includes(day)
+        ? schedule.days.filter(d => d !== day)
+        : [...schedule.days, day]
+    };
     
-    newSchedules.set(venueId, schedule);
+    newSchedules.set(venueId, updatedSchedule);
     setVenueSchedules(newSchedules);
   };
 
@@ -140,8 +143,11 @@ export default function GameScheduler() {
       return;
     }
     
-    schedule.timeSlots = [...schedule.timeSlots, newTimeSlot];
-    newSchedules.set(venueId, schedule);
+    const updatedSchedule = {
+      ...schedule,
+      timeSlots: [...schedule.timeSlots, newTimeSlot]
+    };
+    newSchedules.set(venueId, updatedSchedule);
     setVenueSchedules(newSchedules);
     setNewTimeSlot("");
   };
@@ -151,8 +157,11 @@ export default function GameScheduler() {
     const schedule = newSchedules.get(venueId);
     
     if (schedule) {
-      schedule.timeSlots = schedule.timeSlots.filter(t => t !== time);
-      newSchedules.set(venueId, schedule);
+      const updatedSchedule = {
+        ...schedule,
+        timeSlots: schedule.timeSlots.filter(t => t !== time)
+      };
+      newSchedules.set(venueId, updatedSchedule);
       setVenueSchedules(newSchedules);
     }
   };

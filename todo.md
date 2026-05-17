@@ -473,3 +473,8 @@
 - [x] Implement white/black team selection for evaluation games (not season teams)
 - [x] Update game generation to use white/black teams for evaluation games
 - [x] Ensure season teams don't play in evaluation games
+
+
+## BUG FIX - Venue Configuration Persistence (May 17, 2026)
+- [x] Fix venue schedule data not persisting when switching between venues
+- [x] Ensure all venue configurations are saved before validation
