@@ -110,6 +110,7 @@ export default function Players() {
   };
 
   const handleEdit = (reg: any) => {
+    console.log('handleEdit called for player:', reg.id, reg.firstName);
     setEditingId(reg.id);
     setEditData({
       firstName: reg.firstName || '',
@@ -123,6 +124,7 @@ export default function Players() {
       teamId: reg.teamId || null,
       playerPictureUrl: reg.playerPictureUrl || '',
     });
+    console.log('Edit state set for player:', reg.id);
   };
 
   const handleSaveEdit = () => {
@@ -372,7 +374,7 @@ export default function Players() {
                         <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
                       </div>
                       <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
+                        <Button size="sm" onClick={() => { console.log('Button clicked!'); handleEdit(reg); }}>Edit</Button>
                         <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
                           <SelectTrigger className="w-auto">
                             <SelectValue />

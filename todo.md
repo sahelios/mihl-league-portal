@@ -414,3 +414,13 @@
 - [x] Fixed Team Management undefined query parameters: Pass empty object `{}` to queries without input validation
 - [x] Fixed Players page payment method validation: Changed from lowercase "etransfer" to correct "eTransfer" enum value
 - [x] Fixed Players edit form pre-population: All player data now auto-fills when clicking Edit (firstName, lastName, email, phone, rating, type, payment, season, team)
+
+
+## BLOCKER: Players Edit Button Click Issue (May 17, 2026)
+- [ ] Players edit button not responding to clicks (DOM/CSS issue)
+  - Issue: Button click event not reaching handler
+  - Debug: console.log statements not appearing in browser console
+  - Status: Requires deeper investigation into event delegation or CSS overlays
+  - Workaround: None available yet
+  - Impact: Cannot edit player details (team changes, payment method) through UI
+  - Backend: updatePlayerInfo procedure ready with teamId support
