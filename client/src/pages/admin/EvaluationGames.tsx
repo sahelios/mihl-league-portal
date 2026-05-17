@@ -1,11 +1,12 @@
-import { ArrowLeft, Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Loader2, Users, Target, Trash2, Users2, Shield } from "lucide-react";
+import { Loader2, Users, Target, Trash2, Users2, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 type PlayerTeam = "white" | "black" | null;
 
@@ -33,7 +34,7 @@ export default function EvaluationGames() {
 
   // Fetch evaluation game attendance
   const { data: evaluationAttendance, isLoading: isLoadingAttendance, refetch } = 
-    trpc.registration.getEvaluationAttendance.useQuery();
+    trpc.admin.getEvaluationAttendance.useQuery();
 
   // Mutations
   const removeFromGameMutation = trpc.admin.removeFromEvaluationGame.useMutation({
@@ -229,14 +230,22 @@ export default function EvaluationGames() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Evaluation Games</h1>
-          <p className="text-muted-foreground">Manage team assignments for evaluation games</p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/admin")}
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-foreground">Evaluation Games</h1>
         </div>
+        <p className="text-muted-foreground">Manage team assignments for evaluation games</p>
 
-        <div className="grid gap-8">
+        <div className="grid gap-6">
           {evaluationAttendance.map((game) => (
             <Card key={game.date} className="border-border">
               <CardHeader className="bg-muted/50 border-b border-border">
@@ -283,6 +292,6 @@ export default function EvaluationGames() {
           ))}
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
