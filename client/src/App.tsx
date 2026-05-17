@@ -17,12 +17,14 @@ import Suspensions from "./pages/Suspensions";
 import Standings from "./pages/Standings";
 import Registration from "./pages/Registration";
 import RefereeScorekeeper from "./pages/RefereeScorekeeper";
+import NewsPage from "./pages/News";
+import StarsOfWeek from "./pages/StarsOfWeek";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminPlayers from "./pages/admin/Players";
 import Games from "./pages/admin/Games";
-import News from "./pages/admin/News";
+import AdminNews from "./pages/admin/News";
 import Stars from "./pages/admin/Stars";
 import AdminSuspensions from "./pages/admin/AdminSuspensions";
 import Messages from "./pages/admin/Messages";
@@ -56,6 +58,8 @@ function Router() {
       <Route path="/stats" component={Stats} />
       <Route path="/suspensions" component={Suspensions} />
       <Route path="/standings" component={Standings} />
+      <Route path="/news" component={NewsPage} />
+      <Route path="/stars" component={StarsOfWeek} />
       <Route path="/register" component={Registration} />
       <Route path="/referee-scorekeeper" component={RefereeScorekeeperLanding} />
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />
@@ -67,7 +71,7 @@ function Router() {
       <Route path="/admin/players" component={AdminPlayers} />
       <Route path="/admin/games" component={Games} />
       <Route path="/admin/evaluation-games" component={EvaluationGames} />
-      <Route path="/admin/news" component={News} />
+      <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/stars" component={Stars} />
       <Route path="/admin/suspensions" component={AdminSuspensions} />
       <Route path="/admin/messages" component={Messages} />
