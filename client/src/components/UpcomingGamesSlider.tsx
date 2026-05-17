@@ -92,7 +92,7 @@ export default function UpcomingGamesSlider() {
                       : (language === "en" ? "SCHEDULED" : "PRÉVU")}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
-                    {new Date(game.date).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" })}
+                    {game.gameDate ? new Date(game.gameDate).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" }) : "TBD"}
                   </span>
                 </div>
 
@@ -120,7 +120,7 @@ export default function UpcomingGamesSlider() {
 
                 <div className="text-xs text-muted-foreground flex justify-between items-center bg-muted/50 px-3 py-2 rounded-md border border-border/50">
                   <span className="font-medium flex items-center gap-1">
-                    {game.time || "TBD"}
+                    {game.gameTime || "TBD"}
                   </span>
                   <span className="truncate max-w-[140px] text-right">
                     {game.venueName || game.venue || "TBA"}

@@ -389,8 +389,9 @@
 - [ ] Implement player notification system (in-app and email)
 - [ ] Add evaluation game team assignment (Tuesday White/Black, Thursday White/Black)
 
-## BUG FIXES - May 16, 2026 (Session 4 - Continued)
+## BUG FIXES - May 16-17, 2026 (Session 4 - Continued)
 - [x] Fixed Teams page delete error: Changed parameter from `{ teamId: id }` to `{ id }` to match backend signature
 - [x] Fixed EvaluationGames component to use correct router (trpc.admin.getEvaluationAttendance)
 - [x] Added DashboardLayout wrapper and back button to EvaluationGames page
 - [x] Fix EvaluationGames page redirect issue: Changed useAuth property from `isLoading` to `loading`
+- [x] Fixed "Invalid Date" in upcoming games: Changed field names from `game.date`/`game.time` to `game.gameDate`/`game.gameTime`
