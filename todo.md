@@ -424,3 +424,11 @@
   - Workaround: None available yet
   - Impact: Cannot edit player details (team changes, payment method) through UI
   - Backend: updatePlayerInfo procedure ready with teamId support
+
+
+## CRITICAL BLOCKER - May 17, 2026
+- Players edit button onClick not firing (React event handling issue)
+  - Button exists in DOM but click events not reaching handler
+  - Affects: Player editing, team assignment, payment method updates
+  - Status: Requires dev tools investigation in future session
+  - Workaround: None currently available
