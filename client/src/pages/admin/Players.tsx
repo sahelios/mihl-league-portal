@@ -126,6 +126,11 @@ export default function Players() {
     // Get the original player data
     const originalPlayer = registrations.find(r => r.id === editingId);
     
+    // If picture is a data URL, show info that S3 upload will be done later
+    if (editData.playerPictureUrl && editData.playerPictureUrl.startsWith('data:')) {
+      toast.info('Picture will be uploaded to storage in next phase');
+    }
+    
     // Check if email has changed
     if (originalPlayer && editData.email && editData.email !== originalPlayer.email) {
       // Email changed - use updatePlayerEmail mutation
@@ -314,6 +319,21 @@ export default function Players() {
                           {teams.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        placeholder="Upload player picture"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setEditData({...editData, playerPictureUrl: event.target?.result});
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleSaveEdit} disabled={updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending}>
                           {updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}

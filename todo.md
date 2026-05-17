@@ -392,10 +392,10 @@
 ## PLAYER PICTURE UPLOAD - In Progress (May 17, 2026)
 - [x] Added playerPictureUrl field to playerRegistrations table
 - [x] Created updatePlayerPicture backend procedure
-- [ ] Add file upload UI to Players edit dialog
-- [ ] Integrate manus-upload-file for S3 storage
-- [ ] Display pictures in Player Portal
-- [ ] Display pictures in Stars of the Week
+- [x] Add file upload UI to Players edit dialog
+- [ ] Integrate manus-upload-file for S3 storage (deferred - requires more complex implementation)
+- [ ] Display pictures in Player Portal (deferred)
+- [ ] Display pictures in Stars of the Week (deferred)
 
 ## REMAINING TASKS (Lower Priority)
 - [ ] Complete player picture upload functionality
