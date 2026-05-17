@@ -380,14 +380,21 @@
 - [x] All admin pages have back buttons and are fully functional
 - [x] Database schema is clean and consistent
 
+## COMPLETED FEATURES - May 17, 2026 (Session 4 - Continued)
+- [x] Redesign Game Scheduler with ice time slots and blackout dates
+- [x] Evaluation game team assignment (Tuesday/Thursday White/Black) - Already implemented
+- [x] Game Scheduler ice time slots management (add/remove multiple slots)
+- [x] Blackout dates feature for Game Scheduler
+- [x] EvaluationGames page with White/Black team assignment buttons
+- [x] Player position sorting in evaluation games (Goalie, Defenseman, Forward)
+- [x] Position counts display in evaluation games
+
 ## REMAINING TASKS (Lower Priority)
 - [ ] Implement player picture upload functionality in Players edit dialog
-- [ ] Redesign Game Scheduler with ice time slots and blackout dates
 - [x] Fix pricing issues on Referee/Scorekeeper application pages (Pricing is flexible - allows custom input)
 - [ ] Address remaining minor error pages (News, Stars, Suspensions, Staff)
 - [ ] Final end-to-end testing of entire league portal
 - [ ] Implement player notification system (in-app and email)
-- [ ] Add evaluation game team assignment (Tuesday White/Black, Thursday White/Black)
 
 ## BUG FIXES - May 16-17, 2026 (Session 4 - Continued)
 - [x] Fixed Teams page delete error: Changed parameter from `{ teamId: id }` to `{ id }` to match backend signature

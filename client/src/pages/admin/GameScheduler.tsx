@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertCircle, ArrowLeft, Trash2, Plus } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Trash2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -21,18 +21,30 @@ interface ScheduledGame {
   gameTime: string;
 }
 
+interface IceTimeSlot {
+  id: string;
+  time: string;
+}
+
 export default function GameScheduler() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [language, setLanguage] = useState<"en" | "fr">("en");
 
   // Form State
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [venueId, setVenueId] = useState("");
-  const [gameTime, setGameTime] = useState("19:00");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [recurringDays, setRecurringDays] = useState<string[]>([]);
+  const [iceTimeSlots, setIceTimeSlots] = useState<IceTimeSlot[]>([
+    { id: "1", time: "19:00" },
+    { id: "2", time: "20:30" },
+    { id: "3", time: "22:00" }
+  ]);
+  const [newTimeSlot, setNewTimeSlot] = useState("");
+  const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
+  const [newBlackoutDate, setNewBlackoutDate] = useState("");
   const [scheduledGames, setScheduledGames] = useState<ScheduledGame[]>([]);
 
   // tRPC Queries
@@ -41,7 +53,7 @@ export default function GameScheduler() {
   const createGamesMutation = trpc.admin.createGames.useMutation();
 
   // Admin Access Check
-  if (user?.role !== "admin") {
+  if (!loading && user?.role !== "admin") {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -83,6 +95,40 @@ export default function GameScheduler() {
     );
   };
 
+  const addTimeSlot = () => {
+    if (!newTimeSlot) {
+      toast.error(language === "en" ? "Enter a time" : "Entrez une heure");
+      return;
+    }
+    if (iceTimeSlots.some(slot => slot.time === newTimeSlot)) {
+      toast.error(language === "en" ? "Time slot already exists" : "Créneau horaire déjà existant");
+      return;
+    }
+    setIceTimeSlots([...iceTimeSlots, { id: Date.now().toString(), time: newTimeSlot }]);
+    setNewTimeSlot("");
+  };
+
+  const removeTimeSlot = (id: string) => {
+    setIceTimeSlots(iceTimeSlots.filter(slot => slot.id !== id));
+  };
+
+  const addBlackoutDate = () => {
+    if (!newBlackoutDate) {
+      toast.error(language === "en" ? "Select a date" : "Sélectionnez une date");
+      return;
+    }
+    if (blackoutDates.includes(newBlackoutDate)) {
+      toast.error(language === "en" ? "Date already blackedout" : "Date déjà exclue");
+      return;
+    }
+    setBlackoutDates([...blackoutDates, newBlackoutDate]);
+    setNewBlackoutDate("");
+  };
+
+  const removeBlackoutDate = (date: string) => {
+    setBlackoutDates(blackoutDates.filter(d => d !== date));
+  };
+
   const generateSchedule = () => {
     if (selectedTeams.length < 2) {
       toast.error(language === "en" ? "Select at least 2 teams" : "Sélectionnez au moins 2 équipes");
@@ -96,31 +142,40 @@ export default function GameScheduler() {
       toast.error(language === "en" ? "Select at least one day" : "Sélectionnez au moins un jour");
       return;
     }
+    if (iceTimeSlots.length === 0) {
+      toast.error(language === "en" ? "Add at least one ice time slot" : "Ajoutez au moins un créneau horaire");
+      return;
+    }
 
     const games: ScheduledGame[] = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const dayMap: { [key: string]: number } = {
-      sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
-      thursday: 4, friday: 5, saturday: 6
-    };
 
-    // Generate all games for selected recurring days
+    // Generate all games for selected recurring days with ice time slots
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateString = d.toISOString().split('T')[0];
+      
+      // Skip blackout dates
+      if (blackoutDates.includes(dateString)) {
+        continue;
+      }
+
       const dayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()];
       
       if (recurringDays.includes(dayName)) {
-        // Create matchups between selected teams
-        for (let i = 0; i < selectedTeams.length - 1; i++) {
-          games.push({
-            id: `${d.toISOString()}-${i}`,
-            homeTeamId: selectedTeams[i],
-            awayTeamId: selectedTeams[i + 1],
-            venueId: parseInt(venueId),
-            gameDate: d.toISOString().split('T')[0],
-            gameTime: gameTime,
-          });
-        }
+        // Create matchups for each ice time slot
+        iceTimeSlots.forEach(slot => {
+          for (let i = 0; i < selectedTeams.length - 1; i++) {
+            games.push({
+              id: `${dateString}-${slot.id}-${i}`,
+              homeTeamId: selectedTeams[i],
+              awayTeamId: selectedTeams[i + 1],
+              venueId: parseInt(venueId),
+              gameDate: dateString,
+              gameTime: slot.time,
+            });
+          }
+        });
       }
     }
 
@@ -141,7 +196,6 @@ export default function GameScheduler() {
     }
 
     try {
-      // Call tRPC mutation to create all games
       await createGamesMutation.mutateAsync({ games: scheduledGames });
       toast.success(language === "en" 
         ? "Schedule created successfully!" 
@@ -153,6 +207,14 @@ export default function GameScheduler() {
       toast.error(error.message || (language === "en" ? "Failed to create schedule" : "Échec de la création du calendrier"));
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -169,8 +231,8 @@ export default function GameScheduler() {
             </h1>
             <p className="text-muted-foreground mt-2">
               {language === "en" 
-                ? "Create recurring game schedules for your season" 
-                : "Créez des calendriers de matchs récurrents pour votre saison"}
+                ? "Create recurring game schedules with ice time slots" 
+                : "Créez des calendriers de matchs récurrents avec créneaux horaires"}
             </p>
           </div>
           <button
@@ -183,68 +245,63 @@ export default function GameScheduler() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Configuration Panel */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            {/* Teams Card */}
             <Card>
               <CardHeader>
-                <CardTitle>{language === "en" ? "Schedule Configuration" : "Configuration du Calendrier"}</CardTitle>
+                <CardTitle className="text-lg">{language === "en" ? "Teams" : "Équipes"}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Select Teams */}
-                <div>
-                  <Label className="font-semibold mb-3 block">
-                    {language === "en" ? "Select Teams" : "Sélectionnez les Équipes"}
-                  </Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {loadingTeams ? (
-                      <Loader2 className="animate-spin" />
-                    ) : (
-                      teams?.map(team => (
-                        <div key={team.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={selectedTeams.includes(team.id)}
-                            onCheckedChange={() => toggleTeam(team.id)}
-                          />
-                          <Label className="font-normal cursor-pointer">{team.name}</Label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {selectedTeams.length} {language === "en" ? "selected" : "sélectionnés"}
-                  </p>
+              <CardContent className="space-y-3">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {loadingTeams ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    teams?.map(team => (
+                      <div key={team.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={selectedTeams.includes(team.id)}
+                          onCheckedChange={() => toggleTeam(team.id)}
+                        />
+                        <Label className="font-normal cursor-pointer">{team.name}</Label>
+                      </div>
+                    ))
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {selectedTeams.length} {language === "en" ? "selected" : "sélectionnés"}
+                </p>
+              </CardContent>
+            </Card>
 
-                {/* Select Venue */}
-                <div>
-                  <Label htmlFor="venue">{language === "en" ? "Venue" : "Lieu"} *</Label>
-                  <Select value={venueId} onValueChange={setVenueId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={language === "en" ? "Select venue" : "Sélectionnez un lieu"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {venues?.map((venue: any) => (
-                        <SelectItem key={venue.id} value={venue.id.toString()}>
-                          {venue.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Venue Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{language === "en" ? "Venue" : "Lieu"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={venueId} onValueChange={setVenueId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={language === "en" ? "Select venue" : "Sélectionnez un lieu"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {venues?.map((venue: any) => (
+                      <SelectItem key={venue.id} value={venue.id.toString()}>
+                        {venue.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
-                {/* Game Time */}
+            {/* Date Range Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{language === "en" ? "Date Range" : "Plage de Dates"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 <div>
-                  <Label htmlFor="gameTime">{language === "en" ? "Game Time" : "Heure du Match"} *</Label>
-                  <Input
-                    id="gameTime"
-                    type="time"
-                    value={gameTime}
-                    onChange={(e) => setGameTime(e.target.value)}
-                  />
-                </div>
-
-                {/* Date Range */}
-                <div>
-                  <Label htmlFor="startDate">{language === "en" ? "Start Date" : "Date de Début"} *</Label>
+                  <Label htmlFor="startDate" className="text-sm">{language === "en" ? "Start Date" : "Date de Début"}</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -252,9 +309,8 @@ export default function GameScheduler() {
                     onChange={(e) => setStartDate(e.target.value)}
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="endDate">{language === "en" ? "End Date" : "Date de Fin"} *</Label>
+                  <Label htmlFor="endDate" className="text-sm">{language === "en" ? "End Date" : "Date de Fin"}</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -262,35 +318,107 @@ export default function GameScheduler() {
                     onChange={(e) => setEndDate(e.target.value)}
                   />
                 </div>
-
-                {/* Recurring Days */}
-                <div>
-                  <Label className="font-semibold mb-3 block">
-                    {language === "en" ? "Recurring Days" : "Jours Récurrents"}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {days.map(day => (
-                      <div key={day.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={recurringDays.includes(day.value)}
-                          onCheckedChange={() => toggleDay(day.value)}
-                        />
-                        <Label className="font-normal cursor-pointer text-sm">{day.label}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <Button onClick={generateSchedule} className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  {language === "en" ? "Generate Schedule" : "Générer le Calendrier"}
-                </Button>
               </CardContent>
             </Card>
+
+            {/* Recurring Days Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{language === "en" ? "Days" : "Jours"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  {days.map(day => (
+                    <div key={day.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={recurringDays.includes(day.value)}
+                        onCheckedChange={() => toggleDay(day.value)}
+                      />
+                      <Label className="font-normal cursor-pointer text-sm">{day.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button onClick={generateSchedule} className="w-full">
+              <Plus className="mr-2 h-4 w-4" />
+              {language === "en" ? "Generate Schedule" : "Générer le Calendrier"}
+            </Button>
           </div>
 
-          {/* Preview & Submit */}
-          <div className="lg:col-span-2">
+          {/* Ice Time Slots & Blackout Dates */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Ice Time Slots Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === "en" ? "Ice Time Slots" : "Créneaux Horaires"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {iceTimeSlots.map(slot => (
+                    <div key={slot.id} className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border">
+                      <span className="font-mono">{slot.time}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeTimeSlot(slot.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="time"
+                    value={newTimeSlot}
+                    onChange={(e) => setNewTimeSlot(e.target.value)}
+                    placeholder={language === "en" ? "Add time slot" : "Ajouter un créneau"}
+                  />
+                  <Button onClick={addTimeSlot} variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Blackout Dates Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === "en" ? "Blackout Dates" : "Dates Exclues"}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {blackoutDates.map(date => (
+                    <div key={date} className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border">
+                      <span>{new Date(date).toLocaleDateString()}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeBlackoutDate(date)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    type="date"
+                    value={newBlackoutDate}
+                    onChange={(e) => setNewBlackoutDate(e.target.value)}
+                  />
+                  <Button onClick={addBlackoutDate} variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Scheduled Games Preview */}
             <Card>
               <CardHeader>
                 <CardTitle>
