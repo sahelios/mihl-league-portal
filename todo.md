@@ -443,6 +443,8 @@
 - [x] Fixed News page missing ArrowLeft import
 - [x] Fixed PlayerPortal.tsx auth hook property (changed isLoading to loading)
 - [x] Fixed Games page scoring bug (home and away scores now calculated separately)
-- [ ] Fix remaining admin pages (Stars, Suspensions, StaffApplications)
-- [ ] Add DashboardLayout to remaining admin pages that need it
+- [x] Verified Stars, Suspicions, StaffApplications pages have correct imports
+- [x] Added back button to Stars page
+- [x] Added back button to AdminSuspensions page
+- [ ] Wrap remaining admin pages in DashboardLayout
 - [ ] Test all admin pages end-to-end

@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Star, Languages, Trash2, Trophy, User } from "lucide-react";
+import { Loader2, Star, Languages, Trash2, Trophy, User, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -111,14 +111,19 @@ export default function StarsSelection() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-accent" />
-              {language === "en" ? "Stars of the Week" : "Étoiles de la Semaine"}
-            </h1>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold text-foreground flex items-center gap-3">
+                <Trophy className="h-8 w-8 text-accent" />
+                {language === "en" ? "Stars of the Week" : "Étoiles de la Semaine"}
+              </h1>
             <p className="text-muted-foreground">
               {language === "en" ? "Select the top performers for the current week" : "Sélectionnez les meilleurs joueurs de la semaine"}
-            </p>
+              </p>
+            </div>
           </div>
           <Button 
             variant="ghost" 
