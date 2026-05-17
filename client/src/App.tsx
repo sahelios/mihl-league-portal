@@ -19,6 +19,7 @@ import Registration from "./pages/Registration";
 import RefereeScorekeeper from "./pages/RefereeScorekeeper";
 import NewsPage from "./pages/News";
 import StarsOfWeek from "./pages/StarsOfWeek";
+import Staff from "./pages/Staff";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/standings" component={Standings} />
       <Route path="/news" component={NewsPage} />
       <Route path="/stars" component={StarsOfWeek} />
+      <Route path="/staff" component={Staff} />
       <Route path="/register" component={Registration} />
       <Route path="/referee-scorekeeper" component={RefereeScorekeeperLanding} />
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />

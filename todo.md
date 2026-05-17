@@ -400,7 +400,7 @@
 ## REMAINING TASKS (Lower Priority)
 - [ ] Complete player picture upload functionality
 - [x] Fix pricing issues on Referee/Scorekeeper application pages (Pricing is flexible - allows custom input)
-- [ ] Address remaining minor error pages (News, Stars, Suspensions, Staff)
+- [x] Address remaining minor error pages (News, Stars, Staff pages created and working)
 - [ ] Final end-to-end testing of entire league portal
 - [ ] Implement player notification system (in-app and email)
 
