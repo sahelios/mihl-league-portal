@@ -460,4 +460,7 @@
 - [x] Implement evaluation games scheduled first
 - [x] Auto-distribute games between all teams
 - [x] Update createGames mutation to accept seasonId
-- [ ] Test game scheduler with multiple venues
+- [x] Add venue-specific days configuration (each venue has different available days)
+- [x] Add venue-specific time slots configuration (each venue has different available times)
+- [x] Update game generation to use venue-specific schedules
+- [ ] Test game scheduler with venue-specific schedules
