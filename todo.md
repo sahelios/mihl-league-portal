@@ -509,8 +509,25 @@
 
 
 ## SCHEDULE MANAGEMENT - May 18, 2026
-- [ ] Create ScheduleManagement page to view all scheduled games
-- [ ] Add delete game functionality to ScheduleManagement page
-- [ ] Add deleteGame mutation to backend router
-- [ ] Add ScheduleManagement link to admin navigation
+- [x] Create ScheduleManagement page to view all scheduled games
+- [x] Add delete game functionality to ScheduleManagement page
+- [x] Add deleteGame mutation to backend router
+- [x] Add ScheduleManagement link to admin navigation
 - [ ] Test schedule management functionality
+
+## BUG FIXES - May 18, 2026 Session 7
+- [x] Create league.getSchedule procedure with filtering options (all, by season, by season/team)
+- [x] Fix Schedule page to use the new getSchedule procedure
+- [x] Fix homepage upcoming games display to show team names instead of TBA
+- [x] Ensure games created by scheduler are properly displayed on homepage and schedule page
+- [x] Move fake sample data to Sample Season
+- [x] Create fresh Summer 2026 season with only real games from scheduler
+- [x] Homepage now displays all 18 games (2 eval + 16 regular) from Summer 2026
+- [x] Evaluation games are displayed alongside regular season games
+
+## SEASON MANAGEMENT - May 18, 2026
+- [ ] Create admin page to view all seasons
+- [ ] Add ability to delete a season and all associated data (games, teams, etc.)
+- [ ] Add ability to mark seasons as active/inactive
+- [ ] Add delete season confirmation dialog
+- [ ] Add season management link to admin dashboard

@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -20,89 +20,11 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get Summer 2026 season (ID 30001)
-        const allGames = await db.select().from(games).where(
-          and(
-            eq(games.status, 'scheduled'),
-            eq(games.seasonId, 30001)
-          )
-        );
-        
-        // Fetch team names to enrich the response
-        const allTeams = await db.select().from(teams);
-        const teamMap = new Map(allTeams.map(t => [t.id, t.name]));
-        
-        // Fetch venues
-        const allVenues = await db.select().from(gameVenues);
-        const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
-
-        return allGames.map(game => ({
-          ...game,
-          teamAName: teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`,
-          teamBName: teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`,
-          venueName: venueMap.get(game.venueId) || 'TBA',
-        }));
+        return await db.select().from(games).where(eq(games.status, 'scheduled'));
       } catch (error) {
         // Fallback: return all games if query fails
         console.error('Error fetching scheduled games:', error);
         return await db.select().from(games);
-      }
-    }),
-
-  getSchedule: publicProcedure
-    .input(z.object({
-      seasonId: z.number().optional(),
-      homeTeamId: z.number().optional(),
-      awayTeamId: z.number().optional(),
-      status: z.enum(['upcoming', 'completed', 'all']).optional(),
-    }).optional())
-    .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      try {
-        const conditions = [];
-
-        // Default to Summer 2026 if no season specified
-        const seasonId = input?.seasonId || 30001;
-        conditions.push(eq(games.seasonId, seasonId));
-
-        // Filter by team if provided
-        if (input?.homeTeamId) {
-          conditions.push(eq(games.homeTeamId, input.homeTeamId));
-        }
-
-        // Filter by status
-        if (input?.status && input.status !== 'all') {
-          if (input.status === 'upcoming') {
-            conditions.push(eq(games.status, 'scheduled'));
-          } else if (input.status === 'completed') {
-            conditions.push(eq(games.status, 'completed'));
-          }
-        }
-
-        const allGames = await db.select().from(games).where(and(...conditions));
-
-        // Fetch team names to enrich the response
-        const allTeams = await db.select().from(teams);
-        const teamMap = new Map(allTeams.map(t => [t.id, t.name]));
-
-        // Fetch venues
-        const allVenues = await db.select().from(gameVenues);
-        const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
-
-        return allGames.map(game => ({
-          ...game,
-          teamAName: teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`,
-          teamBName: teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`,
-          teamAScore: game.homeScore,
-          teamBScore: game.awayScore,
-          date: game.gameDate,
-          time: game.gameTime,
-          venue: venueMap.get(game.venueId) || 'TBA',
-        }));
-      } catch (error) {
-        console.error('Error fetching schedule:', error);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch schedule" });
       }
     }),
 
@@ -126,14 +48,8 @@ export const leagueRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     
     try {
-      // Get teams for Summer 2026
-      const allTeams = await db.select().from(teams).where(eq(teams.seasonId, 30001));
-      const allGames = await db.select().from(games).where(
-        and(
-          eq(games.status, 'completed'),
-          eq(games.seasonId, 30001)
-        )
-      );
+      const allTeams = await db.select().from(teams);
+      const allGames = await db.select().from(games).where(eq(games.status, 'completed'));
       
       // Calculate standings for each team
       const standings = allTeams.map(team => {
@@ -235,12 +151,7 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db.select().from(games).where(
-          and(
-            eq(games.status, 'scheduled'),
-            eq(games.seasonId, 30001)
-          )
-        );
+        const result = await db.select().from(games).where(eq(games.status, 'scheduled'));
         return result || [];
       } catch (error) {
         console.error('Error fetching team schedule:', error);

@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO seasons (id, name, startDate, endDate, isActive, createdAt) VALUES (1, 'Sample Season', '2026-01-01', '2026-12-31', 0, NOW()); UPDATE games SET seasonId = 1 WHERE seasonId IN (60003, 60004, 90001, 90002);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute INSERT INTO seasons (id, name, startDate, endDate, isActive, createdAt) VALUES (1, 'Sample Season', '2026-01-01', '2026-12-31', 0, NOW()); UPDATE games SET seasonId = 1 WHERE seasonId IN (60003, 60004, 90001, 90002);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 625
+}

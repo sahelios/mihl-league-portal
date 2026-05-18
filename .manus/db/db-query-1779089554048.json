@@ -1,0 +1,19 @@
+{
+  "query": "SELECT COUNT(*) as total_games FROM games WHERE seasonId = 30001; SELECT COUNT(*) as iron_lions_golan_games FROM games WHERE seasonId = 30001 AND homeTeamId = 1 AND awayTeamId = 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT COUNT(*) as total_games FROM games WHERE seasonId = 30001; SELECT COUNT(*) as iron_lions_golan_games FROM games WHERE seasonId = 30001 AND homeTeamId = 1 AND awayTeamId = 2;",
+  "rows": [
+    {
+      "total_games": "18"
+    },
+    {
+      "total_games": "iron_lions_golan_games"
+    },
+    {
+      "total_games": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_games\n18\niron_lions_golan_games\n3\n",
+  "stderr": "",
+  "execution_time_ms": 613
+}

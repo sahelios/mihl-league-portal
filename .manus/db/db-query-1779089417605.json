@@ -1,0 +1,34 @@
+{
+  "query": "SELECT seasonId, COUNT(*) as count FROM games GROUP BY seasonId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT seasonId, COUNT(*) as count FROM games GROUP BY seasonId;",
+  "rows": [
+    {
+      "seasonId": "60003",
+      "count": "20"
+    },
+    {
+      "seasonId": "60004",
+      "count": "20"
+    },
+    {
+      "seasonId": "1",
+      "count": "20"
+    },
+    {
+      "seasonId": "90001",
+      "count": "20"
+    },
+    {
+      "seasonId": "90002",
+      "count": "20"
+    },
+    {
+      "seasonId": "30001",
+      "count": "18"
+    }
+  ],
+  "messages": [],
+  "stdout": "seasonId\tcount\n60003\t20\n60004\t20\n1\t20\n90001\t20\n90002\t20\n30001\t18\n",
+  "stderr": "",
+  "execution_time_ms": 552
+}

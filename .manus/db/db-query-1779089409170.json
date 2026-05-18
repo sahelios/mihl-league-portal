@@ -1,0 +1,25 @@
+{
+  "query": "SELECT DISTINCT seasonId FROM games LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT DISTINCT seasonId FROM games LIMIT 5;",
+  "rows": [
+    {
+      "seasonId": "60004"
+    },
+    {
+      "seasonId": "1"
+    },
+    {
+      "seasonId": "60003"
+    },
+    {
+      "seasonId": "90001"
+    },
+    {
+      "seasonId": "90002"
+    }
+  ],
+  "messages": [],
+  "stdout": "seasonId\n60004\n1\n60003\n90001\n90002\n",
+  "stderr": "",
+  "execution_time_ms": 555
+}
