@@ -486,10 +486,21 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
+        const baseQuery = db
+          .select({
+            id: teams.id,
+            name: masterTeams.name,
+            seasonId: teams.seasonId,
+            masterTeamId: teams.masterTeamId,
+            createdAt: teams.createdAt,
+          })
+          .from(teams)
+          .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
+        
         if (input?.seasonId) {
-          return await db.select().from(teams).where(eq(teams.seasonId, input.seasonId));
+          return await baseQuery.where(eq(teams.seasonId, input.seasonId));
         }
-        return await db.select().from(teams);
+        return await baseQuery;
       } catch (error: any) {
         console.error('Error fetching teams:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });

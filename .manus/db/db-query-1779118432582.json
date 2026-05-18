@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, masterTeamId, seasonId FROM teams LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, masterTeamId, seasonId FROM teams LIMIT 10",
+  "rows": [
+    {
+      "id": "120001",
+      "masterTeamId": "1",
+      "seasonId": "180001"
+    },
+    {
+      "id": "120002",
+      "masterTeamId": "2",
+      "seasonId": "180001"
+    },
+    {
+      "id": "120003",
+      "masterTeamId": "3",
+      "seasonId": "180001"
+    },
+    {
+      "id": "120004",
+      "masterTeamId": "4",
+      "seasonId": "180001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmasterTeamId\tseasonId\n120001\t1\t180001\n120002\t2\t180001\n120003\t3\t180001\n120004\t4\t180001\n",
+  "stderr": "",
+  "execution_time_ms": 693
+}
