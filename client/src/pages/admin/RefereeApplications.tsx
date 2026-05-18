@@ -21,15 +21,6 @@ export default function RefereeApplications() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
-  if (!loading && user?.role !== "admin") {
-    navigate("/");
-    return null;
-  }
-
-  if (loading) {
-    return <DashboardLayout><div className="p-8 text-center">Loading...</div></DashboardLayout>;
-  }
-
   const utils = trpc.useUtils();
   const { data: applications, isLoading } = trpc.admin.getPendingRefereeApplications.useQuery();
 
@@ -47,6 +38,15 @@ export default function RefereeApplications() {
       utils.admin.getPendingRefereeApplications.invalidate();
     }
   });
+
+  if (!loading && user?.role !== "admin") {
+    navigate("/");
+    return null;
+  }
+
+  if (loading) {
+    return <DashboardLayout><div className="p-8 text-center">Loading...</div></DashboardLayout>;
+  }
 
   const openApproveModal = (app: any) => {
     setSelectedApp(app);

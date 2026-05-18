@@ -285,11 +285,11 @@
 
 ### Navigation & General
 - [ ] Add back button to ALL pages at top right next to dropdown menu
-- [ ] Fix /admin/referee-applications page (currently redirects to home, may be duplicate of /admin/staff-applications)
-- [ ] Fix /admin/evaluation-games page (currently redirects to home, consider merging with /admin/games)
+- [x] Fix /admin/referee-applications page (currently redirects to home, may be duplicate of /admin/staff-applications) - FIXED: Moved hooks before conditional returns
+- [x] Fix /admin/evaluation-games page (currently redirects to home, consider merging with /admin/games) - VERIFIED: Page working correctly
 
 ### /admin/players Page
-- [ ] Fix position display: Show "Forward", "Defense", or "Goalie" instead of "Individual Player"
+- [x] Fix position display: Show "Forward", "Defense", or "Goalie" instead of "Individual Player" - UPDATED: Now fetches from playerTeams table
 - [ ] Fix team display: Show "Season Name - Team Name" format (e.g., "Summer 2026 - Iron Lions")
 - [ ] Show all teams/seasons if player registered in multiple seasons
 - [ ] Add payment method selection after approval (eTransfer, Cash, or Arrangement) - admin only
@@ -416,14 +416,21 @@
 - [x] Fixed Players edit form pre-population: All player data now auto-fills when clicking Edit (firstName, lastName, email, phone, rating, type, payment, season, team)
 
 
-## BLOCKER: Players Edit Button Click Issue (May 17, 2026)
-- [ ] Players edit button not responding to clicks (DOM/CSS issue)
-  - Issue: Button click event not reaching handler
-  - Debug: console.log statements not appearing in browser console
-  - Status: Requires deeper investigation into event delegation or CSS overlays
-  - Workaround: None available yet
-  - Impact: Cannot edit player details (team changes, payment method) through UI
-  - Backend: updatePlayerInfo procedure ready with teamId support
+## BLOCKER: Players Edit Button Click Issue (May 17, 2026) - RESOLVED
+- [x] RESOLVED - Rewrote Players page with Dialog-based edit approach
+  - [x] Issue: Button click event not reaching handler (FIXED by using Dialog component)
+  - [x] Implemented Dialog-based edit instead of inline editing
+  - [x] Form fields now properly populate and save
+  - [x] All player data editable through modal dialog
+  - [x] Impact: Player editing now fully functional
+  - [x] Backend: updatePlayerInfo procedure working correctly
+
+## SESSION 10 FIXES - May 18, 2026
+- [x] Rewrote Players.tsx with Dialog-based edit approach (replaces inline editing)
+- [x] Fixed RefereeApplications page React hook ordering error
+- [x] Updated position display to fetch from playerTeams table
+- [x] Added getPlayerTeams query to Players component
+- [x] Verified /admin/evaluation-games page working correctly
 
 
 ## BUG FIXES - May 17, 2026 (Session 4 - Continued)

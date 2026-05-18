@@ -32,6 +32,7 @@ export default function Players() {
   const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
+  const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery();
 
   // Mutations
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
@@ -96,6 +97,15 @@ export default function Players() {
     if (team && season) return `${season.name} - ${team.name}`;
     if (team) return team.name;
     return `Team ID: ${reg.teamId}`;
+  };
+
+  // Get player position
+  const getPlayerPosition = (reg: any) => {
+    const playerTeam = playerTeams.find(pt => pt.registrationId === reg.id);
+    if (playerTeam && playerTeam.position) {
+      return playerTeam.position.charAt(0).toUpperCase() + playerTeam.position.slice(1);
+    }
+    return reg.registrationType === 'individual' ? 'Individual Player' : 'Team Registration';
   };
 
   const getStatusColor = (status: string) => {
@@ -285,7 +295,7 @@ export default function Players() {
                     <div><strong>Type:</strong> {reg.registrationType}</div>
                     <div><strong>Phone:</strong> {reg.phone}</div>
                     <div><strong>Payment:</strong> {reg.paymentMethod || 'Pending'}</div>
-                    <div><strong>Position:</strong> {reg.registrationType === 'individual' ? 'Individual Player' : 'Team Registration'}</div>
+                    <div><strong>Position:</strong> {getPlayerPosition(reg)}</div>
                     <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
                   </div>
                   <div className="flex gap-2 flex-wrap">
