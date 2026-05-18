@@ -147,6 +147,13 @@ export default function AdminDashboard() {
               >
                 {language === "en" ? "Schedule Management" : "Gestion de l'Horaire"}
               </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate("/admin/season-management")}
+              >
+                {language === "en" ? "Season Management" : "Gestion des Saisons"}
+              </Button>
             </CardContent>
           </Card>
 

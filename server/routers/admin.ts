@@ -1105,8 +1105,105 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
-      await db.delete(games).where(eq(games.id, input.gameId));
-
+       await db.delete(games).where(eq(games.id, input.gameId));
       return { success: true, message: "Game deleted successfully" };
     }),
+
+  // ============ SEASON MANAGEMENT ============
+  getAllSeasons: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const allSeasons = await db.select().from(seasons);
+    
+    // Get game counts for each season
+    const seasonStats = await Promise.all(
+      allSeasons.map(async (season) => {
+        const gameCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(games)
+          .where(eq(games.seasonId, season.id));
+        
+        const teamCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(teams)
+          .where(eq(teams.seasonId, season.id));
+        
+        return {
+          ...season,
+          gameCount: gameCount[0]?.count || 0,
+          teamCount: teamCount[0]?.count || 0,
+        };
+      })
+    );
+
+    return seasonStats;
+  }),
+
+  deleteSeasonData: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Check if season exists
+      const season = await db.select().from(seasons).where(eq(seasons.id, input.seasonId)).limit(1);
+      if (!season || season.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Season not found" });
+      }
+
+      // Prevent deletion of Summer 2026 (ID 30001)
+      if (input.seasonId === 30001) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot delete the active Summer 2026 season" });
+      }
+
+      // Delete all related data in order of dependencies
+      // 1. Delete game stats
+      await db.delete(gameStats).where(
+        sql`${gameStats.gameId} IN (SELECT id FROM games WHERE seasonId = ${input.seasonId})`
+      );
+
+      // 2. Delete staff assignments
+      await db.delete(staffGameAssignments).where(
+        sql`${staffGameAssignments.gameId} IN (SELECT id FROM games WHERE seasonId = ${input.seasonId})`
+      );
+
+      // 3. Delete games first
+      await db.delete(games).where(eq(games.seasonId, input.seasonId));
+
+      // 4. Delete player teams
+      await db.delete(playerTeams).where(eq(playerTeams.seasonId, input.seasonId));
+
+      // 5. Delete player stats
+      await db.delete(playerStats).where(eq(playerStats.seasonId, input.seasonId));
+
+      // 6. Delete teams
+      await db.delete(teams).where(eq(teams.seasonId, input.seasonId));
+
+      // 7. Delete season
+      await db.delete(seasons).where(eq(seasons.id, input.seasonId));
+
+      return { success: true, message: `Season and all associated data deleted successfully` };
+    }),
+
+  updateSeasonStatus: adminProcedure
+    .input(z.object({ seasonId: z.number(), isActive: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const season = await db.select().from(seasons).where(eq(seasons.id, input.seasonId)).limit(1);
+      if (!season || season.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Season not found" });
+      }
+
+      // If activating this season, deactivate all others
+      if (input.isActive) {
+        await db.update(seasons).set({ isActive: false });
+      }
+
+      await db.update(seasons).set({ isActive: input.isActive }).where(eq(seasons.id, input.seasonId));
+
+      return { success: true, message: `Season status updated` };
+    })
 });

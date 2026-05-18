@@ -526,8 +526,11 @@
 - [x] Evaluation games are displayed alongside regular season games
 
 ## SEASON MANAGEMENT - May 18, 2026
-- [ ] Create admin page to view all seasons
-- [ ] Add ability to delete a season and all associated data (games, teams, etc.)
-- [ ] Add ability to mark seasons as active/inactive
-- [ ] Add delete season confirmation dialog
-- [ ] Add season management link to admin dashboard
+- [x] Create admin page to view all seasons
+- [x] Add ability to delete a season and all associated data (games, teams, etc.)
+- [x] Add ability to mark seasons as active/inactive
+- [x] Add delete season confirmation dialog
+- [x] Add season management link to admin dashboard
+- [x] Season Management page displays Sample Season (100 games) and Summer 2026 (18 games, 4 teams)
+- [x] Summer 2026 protected from deletion
+- [x] Delete button available on Sample Season card
