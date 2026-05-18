@@ -108,6 +108,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   waitingListStatus: mysqlEnum("waitingListStatus", ["none", "on_waiting_list", "promoted_from_waiting_list"]).default("none").notNull(),
   paymentConfirmed: boolean("paymentConfirmed").default(false).notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", ["eTransfer", "cash", "arrangement"]),
   jerseyOrderConfirmed: boolean("jerseyOrderConfirmed").default(false).notNull(),
   evaluationDate: varchar("evaluationDate", { length: 20 }),
   playerRating: int("playerRating"),

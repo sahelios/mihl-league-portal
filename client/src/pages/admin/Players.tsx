@@ -381,6 +381,19 @@ export default function Players() {
               </Select>
             </div>
             <div>
+              <label className="text-sm font-medium">Season</label>
+              <Select value={editData.seasonId?.toString() || ''} onValueChange={v => setEditData({...editData, seasonId: parseInt(v)})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {seasons.map(season => (
+                    <SelectItem key={season.id} value={season.id.toString()}>{season.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <label className="text-sm font-medium">Payment Method</label>
               <Select value={editData.paymentMethod || 'none'} onValueChange={v => setEditData({...editData, paymentMethod: v === 'none' ? '' : v})}>
                 <SelectTrigger>
@@ -389,8 +402,8 @@ export default function Players() {
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="credit">Credit Card</SelectItem>
-                  <SelectItem value="etransfer">E-Transfer</SelectItem>
+                  <SelectItem value="eTransfer">E-Transfer</SelectItem>
+                  <SelectItem value="arrangement">Arrangement</SelectItem>
                 </SelectContent>
               </Select>
             </div>

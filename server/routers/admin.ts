@@ -539,6 +539,23 @@ export const adminRouter = router({
       }
     }),
 
+  getPlayerTeams: adminProcedure
+    .input(z.object({}).strict())
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      try {
+        const result = await db
+          .select()
+          .from(playerTeams);
+        return result;
+      } catch (error: any) {
+        console.error('Error fetching player teams:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
   createTeam: adminProcedure
     .input(z.object({
       masterTeamId: z.number(),
