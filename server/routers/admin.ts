@@ -2,7 +2,7 @@ import { router, protectedProcedure, publicProcedure } from '../_core/trpc';
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
-import { eq, and, sql, or } from "drizzle-orm";
+import { eq, and, sql, or, inArray } from "drizzle-orm";
 import {
   playerRegistrations,
   games,
@@ -1152,21 +1152,20 @@ export const adminRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Season not found" });
       }
 
-      // Prevent deletion of Summer 2026 (ID 30001)
-      if (input.seasonId === 30001) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot delete the active Summer 2026 season" });
+      // Delete all related data in order of dependencies
+      // First, get all game IDs for this season
+      const seasonGames = await db.select({ id: games.id }).from(games).where(eq(games.seasonId, input.seasonId));
+      const gameIds = seasonGames.map(g => g.id);
+
+      // 1. Delete game stats for these games
+      if (gameIds.length > 0) {
+        await db.delete(gameStats).where(inArray(gameStats.gameId, gameIds));
       }
 
-      // Delete all related data in order of dependencies
-      // 1. Delete game stats
-      await db.delete(gameStats).where(
-        sql`${gameStats.gameId} IN (SELECT id FROM games WHERE seasonId = ${input.seasonId})`
-      );
-
-      // 2. Delete staff assignments
-      await db.delete(staffGameAssignments).where(
-        sql`${staffGameAssignments.gameId} IN (SELECT id FROM games WHERE seasonId = ${input.seasonId})`
-      );
+      // 2. Delete staff assignments for these games
+      if (gameIds.length > 0) {
+        await db.delete(staffGameAssignments).where(inArray(staffGameAssignments.gameId, gameIds));
+      }
 
       // 3. Delete games first
       await db.delete(games).where(eq(games.seasonId, input.seasonId));

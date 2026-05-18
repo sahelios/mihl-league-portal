@@ -134,16 +134,14 @@ export default function SeasonManagement() {
                           Set Active
                         </Button>
                       )}
-                      {season.id !== 30001 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteConfirm(season.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteConfirm(season.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -176,15 +174,15 @@ export default function SeasonManagement() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Season?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the season and all associated data including:
-              <ul className="mt-2 ml-4 space-y-1 list-disc">
+            <AlertDialogDescription className="space-y-3">
+              <p>This will permanently delete the season and all associated data including:</p>
+              <ul className="ml-4 space-y-1 list-disc">
                 <li>All games</li>
                 <li>All teams</li>
                 <li>All player registrations</li>
                 <li>All statistics</li>
               </ul>
-              <p className="mt-3 font-semibold text-foreground">This action cannot be undone.</p>
+              <p className="font-semibold text-foreground">This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
