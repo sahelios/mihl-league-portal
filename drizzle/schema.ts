@@ -39,16 +39,30 @@ export const seasons = mysqlTable("seasons", {
 export type Season = typeof seasons.$inferSelect;
 export type InsertSeason = typeof seasons.$inferInsert;
 
-export const teams = mysqlTable("teams", {
+// Master teams that persist across all seasons
+export const masterTeams = mysqlTable("masterTeams", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   logoUrl: text("logoUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MasterTeam = typeof masterTeams.$inferSelect;
+export type InsertMasterTeam = typeof masterTeams.$inferInsert;
+
+// Season-specific team instances that reference master teams
+export const teams = mysqlTable("teams", {
+  id: int("id").autoincrement().primaryKey(),
+  masterTeamId: int("masterTeamId").notNull(), // Reference to master team
   seasonId: int("seasonId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type Team = typeof teams.$inferSelect;
 export type InsertTeam = typeof teams.$inferInsert;
+
+// Helper type to include master team info
+export type TeamWithMaster = Team & { masterTeam?: MasterTeam };
 
 export const gameVenues = mysqlTable("gameVenues", {
   id: int("id").autoincrement().primaryKey(),

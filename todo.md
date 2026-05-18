@@ -573,3 +573,13 @@
 - [x] Delete button visible for all seasons including active ones
 - [x] SQL error fixed with proper inArray() usage
 - [x] React nesting errors fixed in delete confirmation dialog
+
+## PERSISTENT TEAM SYSTEM - May 18, 2026 Session 9
+- [ ] Create masterTeams table with 4 permanent teams (Iron Lions, Golan Guards, H Hammers, Schvitz Saints)
+- [ ] Update teams table to reference masterTeamId instead of storing team data
+- [ ] Migrate existing teams to use master team references
+- [ ] Update Game Scheduler to select teams from master list instead of creating new teams
+- [ ] Update Season Management to show team selection from master list when creating season
+- [ ] Ensure team stats and players reset for each season but team names persist
+- [ ] Update team display to show team name from masterTeams table
+- [ ] Test that same 4 teams appear in every season

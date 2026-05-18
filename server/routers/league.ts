@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -51,9 +51,12 @@ export const leagueRouter = router({
           eq(games.seasonId, seasonId)
         );
         
-        // Fetch team names to enrich the response
-        const allTeams = await db.select().from(teams);
-        const teamMap = new Map(allTeams.map(t => [t.id, t.name]));
+        // Fetch team names from masterTeams via teams join
+        const teamsWithMasters = await db.select({
+          teamId: teams.id,
+          teamName: masterTeams.name,
+        }).from(teams).leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
+        const teamMap = new Map(teamsWithMasters.map(t => [t.teamId, t.teamName]));
         
         // Fetch venues
         const allVenues = await db.select().from(gameVenues);
@@ -122,9 +125,12 @@ export const leagueRouter = router({
 
         const allGames = await db.select().from(games).where(and(...conditions));
 
-        // Fetch team names to enrich the response
-        const allTeams = await db.select().from(teams);
-        const teamMap = new Map(allTeams.map(t => [t.id, t.name]));
+        // Fetch team names from masterTeams via teams join
+        const teamsWithMasters = await db.select({
+          teamId: teams.id,
+          teamName: masterTeams.name,
+        }).from(teams).leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
+        const teamMap = new Map(teamsWithMasters.map(t => [t.teamId, t.teamName]));
 
         // Fetch venues
         const allVenues = await db.select().from(gameVenues);
@@ -166,28 +172,42 @@ export const leagueRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
     
     try {
-      // Get teams for Summer 2026
-      const allTeams = await db.select().from(teams).where(eq(teams.seasonId, 30001));
+      // Get active season
+      const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+      if (activeSeason.length === 0) {
+        return [];
+      }
+      const seasonId = activeSeason[0].id;
+      
+      // Get teams for active season with master team info
+      const allTeamsData = await db.select({
+        teamId: teams.id,
+        seasonId: teams.seasonId,
+        masterTeamId: teams.masterTeamId,
+        teamName: masterTeams.name,
+        teamLogo: masterTeams.logoUrl,
+      }).from(teams).leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id)).where(eq(teams.seasonId, seasonId));
+      
       const allGames = await db.select().from(games).where(
         and(
           eq(games.status, 'completed'),
-          eq(games.seasonId, 30001)
+          eq(games.seasonId, seasonId)
         )
       );
       
       // Calculate standings for each team
-      const standings = allTeams.map(team => {
+      const standings = allTeamsData.map(team => {
         let wins = 0, losses = 0, ties = 0, gf = 0, ga = 0;
         
         // Process games where this team participated
         allGames.forEach(game => {
-          if (game.homeTeamId === team.id) {
+          if (game.homeTeamId === team.teamId) {
             gf += game.homeScore || 0;
             ga += game.awayScore || 0;
             if ((game.homeScore || 0) > (game.awayScore || 0)) wins++;
             else if ((game.homeScore || 0) < (game.awayScore || 0)) losses++;
             else ties++;
-          } else if (game.awayTeamId === team.id) {
+          } else if (game.awayTeamId === team.teamId) {
             gf += game.awayScore || 0;
             ga += game.homeScore || 0;
             if ((game.awayScore || 0) > (game.homeScore || 0)) wins++;
@@ -202,9 +222,9 @@ export const leagueRouter = router({
         const winPct = gp > 0 ? (wins / gp).toFixed(3) : "0.000";
         
         return {
-          id: team.id,
-          name: team.name,
-          logo: team.logoUrl || "https://placehold.co/100x100?text=Logo",
+          id: team.teamId,
+          name: team.teamName,
+          logo: team.teamLogo || "https://placehold.co/100x100?text=Logo",
           gp,
           w: wins,
           l: losses,

@@ -11,6 +11,7 @@ import {
   starsOfWeek,
   suspensions,
   teams,
+  masterTeams,
   seasons,
   gameVenues,
   refereeApplications,
@@ -1074,12 +1075,13 @@ export const adminRouter = router({
           homeTeamId: games.homeTeamId,
           awayTeamId: games.awayTeamId,
           venueId: games.venueId,
-          homeTeam: teams,
-          awayTeam: teams,
+          homeTeamName: masterTeams.name,
+          awayTeamName: masterTeams.name,
           venue: gameVenues,
         })
         .from(games)
         .leftJoin(teams, eq(games.homeTeamId, teams.id))
+        .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id))
         .leftJoin(gameVenues, eq(games.venueId, gameVenues.id))
         .where(eq(games.seasonId, input.seasonId))
         .orderBy(games.gameDate, games.gameTime);
@@ -1088,8 +1090,8 @@ export const adminRouter = router({
         id: g.id,
         gameDate: g.gameDate,
         gameTime: g.gameTime,
-        homeTeam: g.homeTeam ? { id: g.homeTeam.id, name: g.homeTeam.name } : null,
-        awayTeam: g.awayTeam ? { id: g.awayTeam.id, name: g.awayTeam.name } : null,
+        homeTeam: { id: g.homeTeamId, name: g.homeTeamName || 'Unknown' },
+        awayTeam: { id: g.awayTeamId, name: g.awayTeamName || 'Unknown' },
         venue: g.venue ? { id: g.venue.id, name: g.venue.name } : null,
       }));
     }),
