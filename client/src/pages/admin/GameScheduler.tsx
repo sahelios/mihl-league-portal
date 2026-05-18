@@ -34,7 +34,7 @@ interface ScheduledGame {
 
 export default function GameScheduler() {
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const [, navigate] = useRouter();
   const language = 'en';
   const utils = trpc.useUtils();
 
@@ -213,12 +213,20 @@ export default function GameScheduler() {
     const end_date_str = endDate;
     console.log(`DEBUG: End date string: ${end_date_str}`);
 
-    let currentDate = new Date(startDate);
+    // Parse dates correctly to avoid timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    let currentDate = new Date(startYear, startMonth - 1, startDay);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateObj = new Date(endYear, endMonth - 1, endDay);
+
     let loopCount = 0;
-    while (currentDate <= end_date_obj) {
+    while (currentDate <= endDateObj) {
       loopCount++;
-      const dateStr = currentDate.toISOString().split('T')[0];
-      console.log(`DEBUG: Loop ${loopCount} - Current: ${dateStr}, End: ${end_date_str}, Compare: ${currentDate <= end_date_obj}`);
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      console.log(`DEBUG: Loop ${loopCount} - Current: ${dateStr}, End: ${end_date_str}, DayOfWeek: ${currentDate.getDay()}`);
 
       // Skip blackout dates and evaluation dates
       if (!blackoutDates.includes(dateStr) && !evaluationDates.includes(dateStr)) {
@@ -399,7 +407,7 @@ export default function GameScheduler() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded">
+        <button onClick={() => navigate('/admin')} className="p-2 hover:bg-gray-100 rounded">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h1 className="text-3xl font-bold">Game Scheduler</h1>
