@@ -305,12 +305,21 @@ export default function GameScheduler() {
     
     // Create a proper date range loop that includes the end date
     const currentDate = new Date(start);
+    let loopCount = 0;
+    console.log('DEBUG: End date object:', end);
+    console.log('DEBUG: End date string:', `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`);
+    
     while (currentDate <= end) {
+      loopCount++;
       // Format date as YYYY-MM-DD without timezone conversion
       const year = currentDate.getFullYear();
       const month = String(currentDate.getMonth() + 1).padStart(2, '0');
       const day = String(currentDate.getDate()).padStart(2, '0');
       const dateString = `${year}-${month}-${day}`;
+      
+      if (loopCount <= 10 || loopCount % 10 === 0) {
+        console.log(`DEBUG: Loop ${loopCount} - Current: ${dateString}, End: ${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}, Compare: ${currentDate <= end}`);
+      }
       
       // Skip blackout dates and evaluation game dates
       if (blackoutDates.includes(dateString) || evaluationDates.has(dateString)) {
@@ -323,43 +332,93 @@ export default function GameScheduler() {
       // Check each venue's schedule for this day
       for (const venueId of selectedVenues) {
         const schedule = venueSchedules.get(venueId);
-        if (!schedule || !schedule.days.includes(dayName)) {
+        if (!schedule) {
+          continue;
+        }
+        
+        if (dateString.includes('08-')) {
+          console.log(`DEBUG: ${dateString} (${dayName}) - venue ${venueId} has days: [${schedule.days.join(', ')}], match: ${schedule.days.includes(dayName)}`);
+        }
+        
+        if (!schedule.days.includes(dayName)) {
           continue;
         }
 
         // Add one game slot per time slot
         for (const timeSlot of schedule.timeSlots) {
           gameSlots.push({date: dateString, time: timeSlot, venueId});
+          if (dateString.includes('08-')) {
+            console.log(`DEBUG: ADDED slot for ${dateString} at ${timeSlot} for venue ${venueId}`);
+          }
         }
       }
       
       // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
     }
+    console.log(`DEBUG: Loop completed after ${loopCount} iterations`);
     
     console.log('DEBUG: Total game slots available:', gameSlots.length);
     console.log('DEBUG: Game slots:', gameSlots);
     
-    // Assign matchups to available slots - limit to 16 season games
-    const maxSeasonGames = 16;
+    // Assign matchups to available slots with smart venue distribution
     let seasonGamesCreated = 0;
+    console.log(`DEBUG: About to assign games. Available slots: ${gameSlots.length}, Available matchups: ${matchups.length - matchupIndex}`);
+    
+    // Track venue distribution per team
+    const teamVenueCount: Map<number, Map<number, number>> = new Map();
+    selectedTeams.forEach(teamId => {
+      teamVenueCount.set(teamId, new Map());
+      selectedVenues.forEach(venueId => {
+        teamVenueCount.get(teamId)!.set(venueId, 0);
+      });
+    });
     
     for (const slot of gameSlots) {
-      if (seasonGamesCreated >= maxSeasonGames || matchupIndex >= matchups.length) break;
+      // Cycle through matchups - if we've used all, start over
+      if (matchupIndex >= matchups.length) {
+        matchupIndex = 0; // Reset to start cycling through matchups again
+      }
       
       const matchup = matchups[matchupIndex];
+      
+      // Find the venue with the least games for both teams
+      const homeTeamVenueCounts = teamVenueCount.get(matchup.home)!;
+      const awayTeamVenueCounts = teamVenueCount.get(matchup.away)!;
+      
+      let bestVenueId = slot.venueId;
+      let bestScore = (homeTeamVenueCounts.get(slot.venueId) || 0) + (awayTeamVenueCounts.get(slot.venueId) || 0);
+      
+      // Check other venues that have games at this date/time
+      const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
+      for (const otherSlot of sameTimeSlots) {
+        const homeCount = homeTeamVenueCounts.get(otherSlot.venueId) || 0;
+        const awayCount = awayTeamVenueCounts.get(otherSlot.venueId) || 0;
+        const score = homeCount + awayCount;
+        if (score < bestScore) {
+          bestScore = score;
+          bestVenueId = otherSlot.venueId;
+        }
+      }
+      
       games.push({
-        id: `${slot.date}-${slot.venueId}-${slot.time}-${matchupIndex}`,
+        id: `${slot.date}-${bestVenueId}-${slot.time}-${matchupIndex}`,
         homeTeamId: matchup.home,
         awayTeamId: matchup.away,
-        venueId: slot.venueId,
+        venueId: bestVenueId,
         gameDate: slot.date,
         gameTime: slot.time,
         seasonId,
       });
+      
+      // Update venue counts
+      homeTeamVenueCounts.set(bestVenueId, (homeTeamVenueCounts.get(bestVenueId) || 0) + 1);
+      awayTeamVenueCounts.set(bestVenueId, (awayTeamVenueCounts.get(bestVenueId) || 0) + 1);
+      
       matchupIndex++;
       seasonGamesCreated++;
     }
+    console.log(`DEBUG: Created ${seasonGamesCreated} season games with balanced venue distribution`);
 
     setScheduledGames(games);
     toast.success(language === "en" 
