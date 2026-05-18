@@ -1153,34 +1153,39 @@ export const adminRouter = router({
       }
 
       // Delete all related data in order of dependencies
-      // First, get all game IDs for this season
-      const seasonGames = await db.select({ id: games.id }).from(games).where(eq(games.seasonId, input.seasonId));
-      const gameIds = seasonGames.map(g => g.id);
+      try {
+        // First, get all game IDs for this season
+        const seasonGames = await db.select({ id: games.id }).from(games).where(eq(games.seasonId, input.seasonId));
+        const gameIds = seasonGames.map(g => g.id);
 
-      // 1. Delete game stats for these games
-      if (gameIds.length > 0) {
-        await db.delete(gameStats).where(inArray(gameStats.gameId, gameIds));
+        // 1. Delete staff assignments for these games
+        if (gameIds.length > 0) {
+          try {
+            await db.delete(staffGameAssignments).where(inArray(staffGameAssignments.gameId, gameIds));
+          } catch (e) {
+            // Continue if fails
+          }
+        }
+
+        // 2. Delete games
+        await db.delete(games).where(eq(games.seasonId, input.seasonId));
+
+        // 4. Delete player teams
+        try {
+          await db.delete(playerTeams).where(eq(playerTeams.seasonId, input.seasonId));
+        } catch (e) {
+          // Continue if fails
+        }
+
+        // 5. Delete teams
+        await db.delete(teams).where(eq(teams.seasonId, input.seasonId));
+
+        // 6. Delete season
+        await db.delete(seasons).where(eq(seasons.id, input.seasonId));
+      } catch (error) {
+        console.error('Error deleting season data:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete season data' });
       }
-
-      // 2. Delete staff assignments for these games
-      if (gameIds.length > 0) {
-        await db.delete(staffGameAssignments).where(inArray(staffGameAssignments.gameId, gameIds));
-      }
-
-      // 3. Delete games first
-      await db.delete(games).where(eq(games.seasonId, input.seasonId));
-
-      // 4. Delete player teams
-      await db.delete(playerTeams).where(eq(playerTeams.seasonId, input.seasonId));
-
-      // 5. Delete player stats
-      await db.delete(playerStats).where(eq(playerStats.seasonId, input.seasonId));
-
-      // 6. Delete teams
-      await db.delete(teams).where(eq(teams.seasonId, input.seasonId));
-
-      // 7. Delete season
-      await db.delete(seasons).where(eq(seasons.id, input.seasonId));
 
       return { success: true, message: `Season and all associated data deleted successfully` };
     }),

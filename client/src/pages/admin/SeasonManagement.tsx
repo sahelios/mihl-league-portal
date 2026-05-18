@@ -174,15 +174,17 @@ export default function SeasonManagement() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Season?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p>This will permanently delete the season and all associated data including:</p>
-              <ul className="ml-4 space-y-1 list-disc">
-                <li>All games</li>
-                <li>All teams</li>
-                <li>All player registrations</li>
-                <li>All statistics</li>
-              </ul>
-              <p className="font-semibold text-foreground">This action cannot be undone.</p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>This will permanently delete the season and all associated data including:</p>
+                <ul className="ml-4 space-y-1 list-disc">
+                  <li>All games</li>
+                  <li>All teams</li>
+                  <li>All player registrations</li>
+                  <li>All statistics</li>
+                </ul>
+                <p className="font-semibold text-foreground">This action cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

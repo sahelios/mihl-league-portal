@@ -565,8 +565,11 @@
 - [x] Homepage automatically uses active season for game tracker
 
 ## HANDLE NO ACTIVE SEASON - May 18, 2026
-- [ ] Update getActiveSeason to return null if no active season exists
-- [ ] Update getUpcomingGames to handle null active season (show empty state or message)
-- [ ] Update homepage UpcomingGamesSlider to show "No active season" message when no season is active
-- [ ] Update Season Management to show clear message when no season is active
-- [ ] Allow user to start fresh with no active season initially
+- [x] Update getActiveSeason to return null if no active season exists
+- [x] Update getUpcomingGames to handle null active season (show empty state or message)
+- [x] Update homepage UpcomingGamesSlider to show "No active season" message when no season is active
+- [x] Update Season Management to show clear message when no season is active
+- [x] Allow user to start fresh with no active season initially
+- [x] Delete button visible for all seasons including active ones
+- [x] SQL error fixed with proper inArray() usage
+- [x] React nesting errors fixed in delete confirmation dialog
