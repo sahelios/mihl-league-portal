@@ -1,0 +1,16 @@
+{
+  "query": "SELECT DISTINCT evaluationDate FROM evaluationGameAssignments ORDER BY evaluationDate;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT DISTINCT evaluationDate FROM evaluationGameAssignments ORDER BY evaluationDate;",
+  "rows": [
+    {
+      "evaluationDate": "2026-06-23"
+    },
+    {
+      "evaluationDate": "2026-06-25"
+    }
+  ],
+  "messages": [],
+  "stdout": "evaluationDate\n2026-06-23\n2026-06-25\n",
+  "stderr": "",
+  "execution_time_ms": 592
+}

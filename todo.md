@@ -534,3 +534,16 @@
 - [x] Season Management page displays Sample Season (100 games) and Summer 2026 (18 games, 4 teams)
 - [x] Summer 2026 protected from deletion
 - [x] Delete button available on Sample Season card
+
+## BUG FIX - May 18, 2026 Session 8
+- [ ] Fix homepage game tracker - evaluation games not displaying (should show all 18 games including 3 evaluation games)
+
+## HOMEPAGE GAME TRACKER FIX - May 18, 2026 Session 8
+- [x] Homepage game tracker should read all games from Summer 2026 season database
+- [x] Display both upcoming and completed games with scores
+- [x] Evaluation games should be labeled as "Team White vs Team Black" instead of actual team names
+- [x] Fix evaluation game date matching (Jun 22, 24, 29 instead of Jun 23, 25)
+- [x] Show game scores for completed games
+- [x] Updated getUpcomingGames to return ALL games (scheduled and completed) from Summer 2026
+- [x] Updated evaluation game dates to match actual game dates (Jun 22, 24 instead of Jun 23, 25)
+- [x] Evaluation games now display as Team White vs Team Black on homepage

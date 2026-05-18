@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -20,12 +20,9 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get Summer 2026 season (ID 30001)
+        // Get ALL games from Summer 2026 season (ID 30001) - both scheduled and completed
         const allGames = await db.select().from(games).where(
-          and(
-            eq(games.status, 'scheduled'),
-            eq(games.seasonId, 30001)
-          )
+          eq(games.seasonId, 30001)
         );
         
         // Fetch team names to enrich the response
@@ -35,16 +32,33 @@ export const leagueRouter = router({
         // Fetch venues
         const allVenues = await db.select().from(gameVenues);
         const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
+        
+        // Get all evaluation game dates to identify evaluation games
+        const evalAssignments = await db.select().from(evaluationGameAssignments);
+        const evalDates = new Set(evalAssignments.map(a => a.evaluationDate));
 
-        return allGames.map(game => ({
-          ...game,
-          teamAName: teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`,
-          teamBName: teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`,
-          venueName: venueMap.get(game.venueId) || 'TBA',
-        }));
+        return allGames.map(game => {
+          // Format game date for comparison
+          const gameDateStr = game.gameDate instanceof Date 
+            ? game.gameDate.toISOString().split('T')[0]
+            : game.gameDate;
+          
+          // Check if this is an evaluation game
+          const isEvaluationGame = evalDates.has(gameDateStr);
+          
+          return {
+            ...game,
+            teamAName: isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`),
+            teamBName: isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`),
+            venueName: venueMap.get(game.venueId) || 'TBA',
+            isEvaluationGame,
+            teamAScore: game.homeScore,
+            teamBScore: game.awayScore,
+          };
+        });
       } catch (error) {
         // Fallback: return all games if query fails
-        console.error('Error fetching scheduled games:', error);
+        console.error('Error fetching games:', error);
         return await db.select().from(games);
       }
     }),
