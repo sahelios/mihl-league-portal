@@ -22,11 +22,10 @@ export default function Players() {
   // State
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<any>(null);
   const [editData, setEditData] = useState<any>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [paymentMethodId, setPaymentMethodId] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>('');
 
   // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
@@ -38,7 +37,8 @@ export default function Players() {
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
     onSuccess: () => {
       toast.success('Player info updated!');
-      setEditingId(null);
+      setIsEditDialogOpen(false);
+      setEditingPlayer(null);
       setEditData({});
       utils.registration.getAll.invalidate();
     },
@@ -75,7 +75,7 @@ export default function Players() {
     onSuccess: () => {
       toast.success('Email updated! Verification email sent to new address.');
       utils.registration.getAll.invalidate();
-      setEditingId(null);
+      setIsEditDialogOpen(false);
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update email');
@@ -98,13 +98,12 @@ export default function Players() {
     return `Team ID: ${reg.teamId}`;
   };
 
-  // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
       case 'approved':
         return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
       default:
@@ -112,112 +111,98 @@ export default function Players() {
     }
   };
 
-  const handleEdit = (reg: any) => {
-    setEditingId(reg.id);
+  const handleEditClick = (player: any) => {
+    setEditingPlayer(player);
     setEditData({
-      firstName: reg.firstName || '',
-      lastName: reg.lastName || '',
-      email: reg.email || '',
-      phone: reg.phone || '',
-      playerRating: reg.playerRating || null,
-      registrationType: reg.registrationType || 'individual',
-      paymentMethod: reg.paymentMethod || 'none',
-      seasonId: reg.seasonId || null,
-      teamId: reg.teamId || null,
-      playerPictureUrl: reg.playerPictureUrl || '',
+      firstName: player.firstName || '',
+      lastName: player.lastName || '',
+      email: player.email || '',
+      phone: player.phone || '',
+      playerRating: player.playerRating || null,
+      registrationType: player.registrationType || 'individual',
+      paymentMethod: player.paymentMethod || 'none',
+      seasonId: player.seasonId || null,
+      teamId: player.teamId || null,
+      playerPictureUrl: player.playerPictureUrl || '',
     });
+    setIsEditDialogOpen(true);
   };
 
   const handleSaveEdit = () => {
-    if (!editingId) return;
-    
-    // Get the original player data
-    const originalPlayer = registrations.find(r => r.id === editingId);
-    if (!originalPlayer) return;
-    
-    // Combine first and last name
-    const fullName = `${editData.firstName} ${editData.lastName}`.trim();
-    
-    // If picture is a data URL, show info that S3 upload will be done later
-    if (editData.playerPictureUrl && editData.playerPictureUrl.startsWith('data:')) {
-      toast.info('Picture will be uploaded to storage in next phase');
-    }
-    
-    // Prepare update data in the format the backend expects
-    const updatePayload: any = {
-      registrationId: editingId,
-      name: fullName,
-      email: editData.email,
-      phone: editData.phone,
-    };
-    
-    // Only add rating if it's defined and not null
-    if (editData.playerRating !== null && editData.playerRating !== undefined) {
-      updatePayload.rating = editData.playerRating;
-    }
-    
-    // Only add paymentMethod if it's not 'none'
-    if (editData.paymentMethod && editData.paymentMethod !== 'none') {
-      updatePayload.paymentMethod = editData.paymentMethod;
-    }
-    
-    // Include teamId if it's set
-    if (editData.teamId) {
-      updatePayload.teamId = editData.teamId;
-    }
-    
-    // Send the update
-    updatePlayerInfoMutation.mutate(updatePayload);
-  };
+    if (!editingPlayer) return;
 
-  const handleStatusChange = (regId: number, newStatus: string) => {
-    if (newStatus === 'deleted') {
-      setDeleteId(regId);
-    } else {
-      updatePlayerStatusMutation.mutate({
-        registrationId: regId,
-        status: newStatus as any,
+    const updates: any = {};
+    if (editData.firstName !== editingPlayer.firstName) updates.firstName = editData.firstName;
+    if (editData.lastName !== editingPlayer.lastName) updates.lastName = editData.lastName;
+    if (editData.phone !== editingPlayer.phone) updates.phone = editData.phone;
+    if (editData.playerRating !== editingPlayer.playerRating) updates.playerRating = editData.playerRating;
+    if (editData.registrationType !== editingPlayer.registrationType) updates.registrationType = editData.registrationType;
+    if (editData.paymentMethod !== editingPlayer.paymentMethod) updates.paymentMethod = editData.paymentMethod;
+    if (editData.teamId !== editingPlayer.teamId) updates.teamId = editData.teamId;
+
+    if (editData.email !== editingPlayer.email) {
+      updatePlayerEmailMutation.mutate({
+        registrationId: editingPlayer.id,
+        newEmail: editData.email,
       });
     }
-  };
 
-  const handleConfirmDelete = () => {
-    if (deleteId) {
-      deletePlayerMutation.mutate({ registrationId: deleteId });
+    if (Object.keys(updates).length > 0) {
+      updatePlayerInfoMutation.mutate({
+        registrationId: editingPlayer.id,
+        ...updates,
+      });
+    } else if (editData.email === editingPlayer.email) {
+      setIsEditDialogOpen(false);
+      toast.info('No changes made');
     }
   };
+
+  const handleStatusChange = (registrationId: number, newStatus: string) => {
+    updatePlayerStatusMutation.mutate({
+      registrationId,
+      status: newStatus,
+    });
+  };
+
+  const handleDeleteClick = (registrationId: number) => {
+    deletePlayerMutation.mutate({ registrationId });
+  };
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+              <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-3xl font-bold">Player Management</h1>
+            <h1 className="text-2xl font-bold">Player Management</h1>
           </div>
           <div className="flex gap-2">
             <Button
+              size="icon"
               variant={viewMode === 'grid' ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setViewMode('grid')}
             >
               <Grid3x3 className="w-4 h-4" />
             </Button>
             <Button
+              size="icon"
               variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
               onClick={() => setViewMode('list')}
             >
               <List className="w-4 h-4" />
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Stats */}
+      {/* Stats */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-3 gap-4 mb-6">
           <Card>
             <CardContent className="pt-6">
@@ -245,24 +230,45 @@ export default function Players() {
           </Card>
         </div>
 
-        {/* Filter Tabs */}
+        {/* Filters */}
         <div className="flex gap-2 mb-6">
-          {['all', 'pending', 'approved', 'rejected'].map(status => (
-            <Button
-              key={status}
-              variant={statusFilter === status ? 'default' : 'outline'}
-              onClick={() => setStatusFilter(status as any)}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </Button>
-          ))}
+          <Button
+            variant={statusFilter === 'all' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('all')}
+          >
+            All
+          </Button>
+          <Button
+            variant={statusFilter === 'pending' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('pending')}
+          >
+            Pending
+          </Button>
+          <Button
+            variant={statusFilter === 'approved' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('approved')}
+          >
+            Approved
+          </Button>
+          <Button
+            variant={statusFilter === 'rejected' ? 'default' : 'outline'}
+            onClick={() => setStatusFilter('rejected')}
+          >
+            Rejected
+          </Button>
         </div>
 
-        {/* Grid View */}
-        {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredRegistrations.map(reg => (
-              <Card key={reg.id} className="hover:shadow-lg transition-shadow">
+        {/* Players Grid/List */}
+        {filteredRegistrations.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6 text-center text-gray-500">
+              No players found
+            </CardContent>
+          </Card>
+        ) : (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-4'}>
+            {filteredRegistrations.map((reg) => (
+              <Card key={reg.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
@@ -275,178 +281,145 @@ export default function Players() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {editingId === reg.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="First Name"
-                        value={editData.firstName || ''}
-                        onChange={e => setEditData({...editData, firstName: e.target.value})}
-                      />
-                      <Input
-                        placeholder="Last Name"
-                        value={editData.lastName || ''}
-                        onChange={e => setEditData({...editData, lastName: e.target.value})}
-                      />
-                      <Input
-                        placeholder="Email"
-                        value={editData.email || ''}
-                        onChange={e => setEditData({...editData, email: e.target.value})}
-                      />
-                      <Input
-                        placeholder="Phone"
-                        value={editData.phone || ''}
-                        onChange={e => setEditData({...editData, phone: e.target.value})}
-                      />
-                      <Input
-                        placeholder="Rating (1-10)"
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={editData.playerRating || ''}
-                        onChange={e => setEditData({...editData, playerRating: e.target.value ? parseInt(e.target.value) : null})}
-                      />
-                      <Select value={editData.registrationType || ''} onValueChange={v => setEditData({...editData, registrationType: v})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="individual">Individual Player</SelectItem>
-                          <SelectItem value="team">Team Registration</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={editData.paymentMethod || 'none'} onValueChange={v => setEditData({...editData, paymentMethod: v === 'none' ? '' : v})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Payment Method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="eTransfer">eTransfer</SelectItem>
-                          <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="arrangement">Arrangement</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select value={editData.seasonId?.toString() || ''} onValueChange={v => setEditData({...editData, seasonId: v ? parseInt(v) : null})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Season" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {seasons.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={editData.teamId?.toString() || 'none'} onValueChange={v => setEditData({...editData, teamId: v === 'none' ? null : parseInt(v)})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Team" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Team</SelectItem>
-                          {teams.map(t => <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        placeholder="Upload player picture"
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              setEditData({...editData, playerPictureUrl: event.target?.result});
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={handleSaveEdit} disabled={updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending}>
-                          {updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Cancel</Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-sm">
-                        <div><strong>Type:</strong> {reg.registrationType}</div>
-                        <div><strong>Phone:</strong> {reg.phone}</div>
-                        <div><strong>Payment:</strong> {reg.paymentMethod || 'Pending'}</div>
-                        <div><strong>Position:</strong> {reg.registrationType === 'individual' ? 'Individual Player' : 'Team Registration'}</div>
-                        <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
-                        <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
-                          <SelectTrigger className="w-auto">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                            <SelectItem value="deleted">Delete</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button size="sm" variant="destructive" onClick={() => setDeleteId(reg.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* List View */}
-        {viewMode === 'list' && (
-          <div className="space-y-2">
-            {filteredRegistrations.map(reg => (
-              <Card key={reg.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="font-semibold">{reg.firstName} {reg.lastName}</div>
-                      <div className="text-sm text-gray-600">{reg.email}</div>
-                    </div>
-                    <div className="flex-1 text-sm">
-                      <div>{getTeamDisplay(reg)}</div>
-                      <div className="text-gray-600">{reg.phone}</div>
-                    </div>
-                    <Badge className={getStatusColor(reg.status)}>
-                      {reg.status}
-                    </Badge>
-                    <div className="flex gap-2 ml-4">
-                      <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
-                      <Button size="sm" variant="destructive" onClick={() => setDeleteId(reg.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                  <div className="text-sm">
+                    <div><strong>Type:</strong> {reg.registrationType}</div>
+                    <div><strong>Phone:</strong> {reg.phone}</div>
+                    <div><strong>Payment:</strong> {reg.paymentMethod || 'Pending'}</div>
+                    <div><strong>Position:</strong> {reg.registrationType === 'individual' ? 'Individual Player' : 'Team Registration'}</div>
+                    <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" onClick={() => handleEditClick(reg)}>Edit</Button>
+                    <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
+                      <SelectTrigger className="w-auto">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="deleted">Delete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" variant="destructive" onClick={() => setDeleteId(reg.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Player</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete the player and all associated data including stats, team assignments, and messages. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex gap-2 justify-end">
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Player</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">First Name</label>
+              <Input
+                value={editData.firstName || ''}
+                onChange={e => setEditData({...editData, firstName: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Last Name</label>
+              <Input
+                value={editData.lastName || ''}
+                onChange={e => setEditData({...editData, lastName: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={editData.email || ''}
+                onChange={e => setEditData({...editData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={editData.phone || ''}
+                onChange={e => setEditData({...editData, phone: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Rating (1-10)</label>
+              <Input
+                type="number"
+                min="1"
+                max="10"
+                value={editData.playerRating || ''}
+                onChange={e => setEditData({...editData, playerRating: e.target.value ? parseInt(e.target.value) : null})}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Registration Type</label>
+              <Select value={editData.registrationType || ''} onValueChange={v => setEditData({...editData, registrationType: v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual Player</SelectItem>
+                  <SelectItem value="team">Team Registration</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Payment Method</label>
+              <Select value={editData.paymentMethod || 'none'} onValueChange={v => setEditData({...editData, paymentMethod: v === 'none' ? '' : v})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="credit">Credit Card</SelectItem>
+                  <SelectItem value="etransfer">E-Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 justify-end pt-4">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button 
+                onClick={handleSaveEdit} 
+                disabled={updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending}
+              >
+                {updatePlayerInfoMutation.isPending || updatePlayerEmailMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Player</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this player? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteId && handleDeleteClick(deleteId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -513,7 +513,7 @@ export const adminRouter = router({
 
   // ============ TEAM MANAGEMENT ============
   getTeams: adminProcedure
-    .input(z.object({ seasonId: z.number().optional() }).optional())
+    .input(z.object({ seasonId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
