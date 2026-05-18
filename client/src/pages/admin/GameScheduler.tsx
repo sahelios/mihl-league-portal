@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRouter } from 'wouter';
+import { useLocation } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ interface ScheduledGame {
 
 export default function GameScheduler() {
   const { user, loading: authLoading } = useAuth();
-  const [, navigate] = useRouter();
+  const [, navigate] = useLocation();
   const language = 'en';
   const utils = trpc.useUtils();
 
