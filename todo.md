@@ -499,3 +499,10 @@
 ## CRITICAL BUGS - Game Scheduler (May 17, 2026)
 - [x] Fix Generate Schedule button - not working after date loop update (fixed undefined variable d → currentDate)
 - [x] Fix blackout date logic - should skip to next available slot, not replace with adjacent dates
+
+
+## GAME SCHEDULER - WEEKLY DISTRIBUTION (May 18, 2026)
+- [ ] Implement weekly game distribution constraint
+- [ ] Ensure each team plays exactly once per week
+- [ ] Distribute games evenly across all weeks in season
+- [ ] Verify no team plays more than once per week

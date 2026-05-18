@@ -374,6 +374,37 @@ export default function GameScheduler() {
       });
     });
     
+    // Track weekly games per team to ensure one game per league week
+    // League weeks are Tue+Thu pairs, not calendar weeks
+    const teamLeagueWeekGames: Map<number, Map<number, number>> = new Map();
+    
+    // Build a map of all game dates to their league week number
+    // A league week consists of different days (e.g., Tue+Thu, Mon+Wed, etc.)
+    // When we see a repeat of a day, we move to the next league week
+    const dateToLeagueWeek: Map<string, number> = new Map();
+    const sortedDates = gameSlots.map(s => s.date).filter((v, i, a) => a.indexOf(v) === i).sort();
+    
+    let currentLeagueWeek = 0;
+    const daysInCurrentWeek = new Set<number>(); // Track which days we've seen in current week
+    
+    for (const dateStr of sortedDates) {
+      const date = new Date(dateStr);
+      const dayOfWeek = date.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+      
+      // If we've already seen this day of week in the current league week, move to next week
+      if (daysInCurrentWeek.has(dayOfWeek)) {
+        currentLeagueWeek++;
+        daysInCurrentWeek.clear();
+      }
+      
+      daysInCurrentWeek.add(dayOfWeek);
+      dateToLeagueWeek.set(dateStr, currentLeagueWeek);
+    }
+    
+    selectedTeams.forEach(teamId => {
+      teamLeagueWeekGames.set(teamId, new Map());
+    });
+    
     for (const slot of gameSlots) {
       // Cycle through matchups - if we've used all, start over
       if (matchupIndex >= matchups.length) {
@@ -381,6 +412,24 @@ export default function GameScheduler() {
       }
       
       const matchup = matchups[matchupIndex];
+      const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
+      
+      // Check if both teams already have a game this league week
+      const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
+      const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
+      
+      const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
+      const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
+      
+      // Skip this matchup if either team already has a game this league week
+      if (homeGamesThisWeek > 0 || awayGamesThisWeek > 0) {
+        // Try next matchup
+        matchupIndex++;
+        if (matchupIndex >= matchups.length) {
+          matchupIndex = 0;
+        }
+        continue; // Skip to next slot
+      }
       
       // Find the venue with the least games for both teams
       const homeTeamVenueCounts = teamVenueCount.get(matchup.home)!;
@@ -414,6 +463,10 @@ export default function GameScheduler() {
       // Update venue counts
       homeTeamVenueCounts.set(bestVenueId, (homeTeamVenueCounts.get(bestVenueId) || 0) + 1);
       awayTeamVenueCounts.set(bestVenueId, (awayTeamVenueCounts.get(bestVenueId) || 0) + 1);
+      
+      // Update league week game counts
+      homeLeagueWeekGames.set(leagueWeekNumber, (homeLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
+      awayLeagueWeekGames.set(leagueWeekNumber, (awayLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
       
       matchupIndex++;
       seasonGamesCreated++;
