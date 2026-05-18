@@ -430,15 +430,21 @@ export const adminRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Season not found" });
         }
 
-        const gamesToInsert = input.games.map(game => ({
-          seasonId: game.seasonId,
-          homeTeamId: game.homeTeamId,
-          awayTeamId: game.awayTeamId,
-          venueId: game.venueId,
-          gameDate: new Date(game.gameDate),
-          gameTime: game.gameTime,
-          status: "scheduled" as const,
-        }));
+        const gamesToInsert = input.games.map(game => {
+          // Parse date string correctly to avoid timezone issues
+          // gameDate should be in format YYYY-MM-DD
+          const [year, month, day] = game.gameDate.split('-').map(Number);
+          const gameDate = new Date(year, month - 1, day);
+          return {
+            seasonId: game.seasonId,
+            homeTeamId: game.homeTeamId,
+            awayTeamId: game.awayTeamId,
+            venueId: game.venueId,
+            gameDate,
+            gameTime: game.gameTime,
+            status: "scheduled" as const,
+          };
+        });
 
         await db.insert(games).values(gamesToInsert);
         return { success: true, message: `Created ${gamesToInsert.length} games` };
@@ -450,7 +456,7 @@ export const adminRouter = router({
 
   // ============ SEASON MANAGEMENT ============
   getSeasons: adminProcedure
-    .input(z.void().optional())
+    .input(z.void())
     .query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -511,18 +517,25 @@ export const adminRouter = router({
       }
     }),
 
-  // ============ TEAM MANAGEMENT ============
+
   getTeams: adminProcedure
-    .input(z.object({ seasonId: z.number().optional() }))
-    .query(async ({ input }) => {
+    .input(z.void())
+    .query(async () => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db.select().from(teams);
+        const result = await db
+          .select({
+            id: teams.id,
+            masterTeamId: teams.masterTeamId,
+            seasonId: teams.seasonId,
+            name: masterTeams.name,
+            logoUrl: masterTeams.logoUrl,
+            createdAt: teams.createdAt,
+          })
+          .from(teams)
+          .innerJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
         
-        if (input?.seasonId) {
-          return result.filter(t => t.seasonId === input.seasonId);
-        }
         return result;
       } catch (error: any) {
         console.error('Error fetching teams:', error);
@@ -543,6 +556,23 @@ export const adminRouter = router({
         return result;
       } catch (error: any) {
         console.error('Error fetching player teams:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getMasterTeams: adminProcedure
+    .input(z.object({}).strict())
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      try {
+        const result = await db
+          .select()
+          .from(masterTeams);
+        return result;
+      } catch (error: any) {
+        console.error('Error fetching master teams:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),

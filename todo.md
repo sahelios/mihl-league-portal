@@ -590,3 +590,10 @@
 - [ ] Ensure team stats and players reset for each season but team names persist
 - [ ] Update team display to show team name from masterTeams table
 - [ ] Test that same 4 teams appear in every season
+
+## SESSION 10 CONTINUED - May 18, 2026
+- [x] Fixed payment method field name mapping (firstName/lastName -> name, playerRating -> rating)
+- [x] Added getPlayerTeams procedure to admin router
+- [x] Fixed season selector persistence - now saves correctly when editing players
+- [x] Simplified getTeams procedure to avoid Drizzle ORM mapping errors
+- [x] Verified season selection persists across edit dialog reopens

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT t.id, t.name, t.seasonId, s.name as seasonName FROM teams t LEFT JOIN seasons s ON t.seasonId = s.id WHERE s.name LIKE '%2026%' OR s.name LIKE '%Summer%' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT t.id, t.name, t.seasonId, s.name as seasonName FROM teams t LEFT JOIN seasons s ON t.seasonId = s.id WHERE s.name LIKE '%2026%' OR s.name LIKE '%Summer%' LIMIT 10;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 't.name' in 'field list'"
+  ]
+}

@@ -53,13 +53,17 @@ export default function GameScheduler() {
 
   // Queries
   const { data: seasons } = trpc.admin.getSeasons.useQuery();
-  const { data: teams } = trpc.admin.getTeams.useQuery(seasonId ? { seasonId } : undefined);
+  const { data: teams } = trpc.admin.getTeams.useQuery();
+  const { data: masterTeams } = trpc.admin.getMasterTeams.useQuery({});
   const { data: venues } = trpc.admin.getVenues.useQuery();
   const createGamesMutation = trpc.admin.createGames.useMutation();
+  
+  // Use master teams if no season is selected, otherwise use season teams
+  const teamsToDisplay = seasonId ? teams : masterTeams;
 
   if (authLoading) return <div>Loading...</div>;
   if (!user || user.role !== 'admin') {
-    router.replace('/');
+    navigate('/');
     return null;
   }
 
@@ -257,7 +261,9 @@ export default function GameScheduler() {
     const daysInCurrentWeek = new Set<number>();
 
     for (const dateStr of sortedDates) {
-      const date = new Date(dateStr);
+      // Parse date string correctly to avoid timezone issues
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
       const dayOfWeek = date.getDay();
 
       if (daysInCurrentWeek.has(dayOfWeek)) {
@@ -441,7 +447,7 @@ export default function GameScheduler() {
           <CardDescription>Select teams for the season</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {teams?.map(team => (
+          {teamsToDisplay?.map(team => (
             <div key={team.id} className="flex items-center gap-2">
               <Checkbox 
                 checked={selectedTeams.includes(team.id)}
