@@ -30,7 +30,7 @@ export default function Players() {
 
   // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
-  const { data: teams = [] } = trpc.admin.getTeams.useQuery(undefined);
+  const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
 
@@ -150,8 +150,12 @@ export default function Players() {
       name: fullName,
       email: editData.email,
       phone: editData.phone,
-      rating: editData.playerRating,
     };
+    
+    // Only add rating if it's defined and not null
+    if (editData.playerRating !== null && editData.playerRating !== undefined) {
+      updatePayload.rating = editData.playerRating;
+    }
     
     // Only add paymentMethod if it's not 'none'
     if (editData.paymentMethod && editData.paymentMethod !== 'none') {
