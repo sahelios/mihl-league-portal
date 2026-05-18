@@ -1205,5 +1205,26 @@ export const adminRouter = router({
       await db.update(seasons).set({ isActive: input.isActive }).where(eq(seasons.id, input.seasonId));
 
       return { success: true, message: `Season status updated` };
+    }),
+
+  setActiveSeason: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Check if season exists
+      const season = await db.select().from(seasons).where(eq(seasons.id, input.seasonId)).limit(1);
+      if (!season || season.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Season not found" });
+      }
+
+      // Deactivate all other seasons
+      await db.update(seasons).set({ isActive: false });
+
+      // Activate the selected season
+      await db.update(seasons).set({ isActive: true }).where(eq(seasons.id, input.seasonId));
+
+      return { success: true, message: `Season set as active` };
     })
 });

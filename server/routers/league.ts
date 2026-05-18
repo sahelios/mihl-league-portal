@@ -2,11 +2,29 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export const leagueRouter = router({
   // Public queries
+  getActiveSeason: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    try {
+      // Get the active season
+      const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+      if (activeSeason.length === 0) {
+        // Fallback to Summer 2026 if no active season is set
+        return { id: 30001, name: 'Summer 2026' };
+      }
+      return activeSeason[0];
+    } catch (error) {
+      console.error('Error fetching active season:', error);
+      // Fallback to Summer 2026
+      return { id: 30001, name: 'Summer 2026' };
+    }
+  }),
+
   getGames: publicProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -20,9 +38,13 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get ALL games from Summer 2026 season (ID 30001) - both scheduled and completed
+        // Get the active season
+        const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+        const seasonId = activeSeason.length > 0 ? activeSeason[0].id : 30001; // Fallback to Summer 2026
+        
+        // Get ALL games from the active season - both scheduled and completed
         const allGames = await db.select().from(games).where(
-          eq(games.seasonId, 30001)
+          eq(games.seasonId, seasonId)
         );
         
         // Fetch team names to enrich the response

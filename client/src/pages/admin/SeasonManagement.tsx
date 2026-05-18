@@ -35,6 +35,7 @@ export default function SeasonManagement() {
   // Queries
   const { data: seasons, isLoading } = trpc.admin.getAllSeasons.useQuery();
   const deleteSeasonMutation = trpc.admin.deleteSeasonData.useMutation();
+  const setActiveSeasonMutation = trpc.admin.setActiveSeason.useMutation();
 
   if (authLoading) return <div className="p-4">Loading...</div>;
   if (!user || user.role !== 'admin') {
@@ -50,6 +51,16 @@ export default function SeasonManagement() {
       setDeleteConfirm(null);
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete season');
+    }
+  };
+
+  const handleSetActiveSeason = async (seasonId: number) => {
+    try {
+      await setActiveSeasonMutation.mutateAsync({ seasonId });
+      toast.success('Season set as active');
+      utils.admin.getAllSeasons.invalidate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to set active season');
     }
   };
 
@@ -112,16 +123,28 @@ export default function SeasonManagement() {
                         {formatDate(season.startDate)} - {formatDate(season.endDate)}
                       </CardDescription>
                     </div>
-                    {season.id !== 30001 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteConfirm(season.id)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {!season.isActive && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSetActiveSeason(season.id)}
+                          className="text-green-700 border-green-200 hover:bg-green-50"
+                        >
+                          Set Active
+                        </Button>
+                      )}
+                      {season.id !== 30001 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteConfirm(season.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -135,10 +158,10 @@ export default function SeasonManagement() {
                       <p className="text-2xl font-bold">{season.teamCount}</p>
                     </div>
                   </div>
-                  {season.id === 30001 && (
-                    <div className="mt-4 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 p-3 rounded-md">
+                  {season.isActive && (
+                    <div className="mt-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-md">
                       <AlertCircle className="h-4 w-4" />
-                      <span>Summer 2026 is the active season and cannot be deleted</span>
+                      <span>This is the active season. Homepage tracker will display games from this season.</span>
                     </div>
                   )}
                 </CardContent>

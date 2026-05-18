@@ -547,3 +547,15 @@
 - [x] Updated getUpcomingGames to return ALL games (scheduled and completed) from Summer 2026
 - [x] Updated evaluation game dates to match actual game dates (Jun 22, 24 instead of Jun 23, 25)
 - [x] Evaluation games now display as Team White vs Team Black on homepage
+
+## DYNAMIC SEASON TRACKING - May 18, 2026 Session 8
+- [x] Create getActiveSeason procedure to fetch the current active/live season
+- [x] Update getUpcomingGames to use active season instead of hardcoded seasonId 30001
+- [x] Update Season Management page to allow marking seasons as active/inactive
+- [x] Add setActiveSeason procedure to admin router
+- [x] Homepage tracker automatically updates when active season changes
+- [x] Only one season can be active at a time
+- [x] Season Management page shows "Set Active" button for inactive seasons
+- [x] Active season displays green badge and message on Season Management page
+- [x] When new season is created, can be set as active via Season Management
+- [x] Homepage automatically uses active season for game tracker
