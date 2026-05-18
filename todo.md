@@ -536,7 +536,11 @@
 - [x] Delete button available on Sample Season card
 
 ## BUG FIX - May 18, 2026 Session 8
-- [ ] Fix homepage game tracker - evaluation games not displaying (should show all 18 games including 3 evaluation games)
+- [x] Fix homepage game tracker - evaluation games not displaying (should show all 18 games including 3 evaluation games)
+- [x] Schedule page with game filtering (all, by season, by season/team)
+- [x] Admin ability to delete wrong games (via Season Management - delete entire season)
+- [x] Evaluation games displaying on homepage as Team White vs Team Black
+- [x] Homepage tracker reads from database and automatically uses active season
 
 ## HOMEPAGE GAME TRACKER FIX - May 18, 2026 Session 8
 - [x] Homepage game tracker should read all games from Summer 2026 season database
