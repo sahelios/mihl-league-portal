@@ -38,8 +38,9 @@ export default function Players() {
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
     onSuccess: () => {
       toast.success('Player info updated!');
-      utils.registration.getAll.invalidate();
       setEditingId(null);
+      setEditData({});
+      utils.registration.getAll.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update player');
@@ -112,7 +113,6 @@ export default function Players() {
   };
 
   const handleEdit = (reg: any) => {
-    console.log('handleEdit called for player:', reg.id, reg.firstName);
     setEditingId(reg.id);
     setEditData({
       firstName: reg.firstName || '',
@@ -126,7 +126,6 @@ export default function Players() {
       teamId: reg.teamId || null,
       playerPictureUrl: reg.playerPictureUrl || '',
     });
-    console.log('Edit state set for player:', reg.id);
   };
 
   const handleSaveEdit = () => {
@@ -169,11 +168,6 @@ export default function Players() {
     
     // Send the update
     updatePlayerInfoMutation.mutate(updatePayload);
-    
-    // Close the edit dialog
-    setEditingId(null);
-    setEditData({});
-    toast.success('Player updated successfully');
   };
 
   const handleStatusChange = (regId: number, newStatus: string) => {
@@ -380,7 +374,7 @@ export default function Players() {
                         <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
                       </div>
                       <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" onClick={() => { console.log('Button clicked!'); handleEdit(reg); }}>Edit</Button>
+                        <Button size="sm" onClick={() => handleEdit(reg)}>Edit</Button>
                         <Select value={reg.status} onValueChange={v => handleStatusChange(reg.id, v)}>
                           <SelectTrigger className="w-auto">
                             <SelectValue />
