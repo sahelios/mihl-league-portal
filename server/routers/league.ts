@@ -14,14 +14,14 @@ export const leagueRouter = router({
       // Get the active season
       const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
       if (activeSeason.length === 0) {
-        // Fallback to Summer 2026 if no active season is set
-        return { id: 30001, name: 'Summer 2026' };
+        // Return null if no active season is set
+        return null;
       }
       return activeSeason[0];
     } catch (error) {
       console.error('Error fetching active season:', error);
-      // Fallback to Summer 2026
-      return { id: 30001, name: 'Summer 2026' };
+      // Return null on error
+      return null;
     }
   }),
 
@@ -40,7 +40,11 @@ export const leagueRouter = router({
       try {
         // Get the active season
         const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
-        const seasonId = activeSeason.length > 0 ? activeSeason[0].id : 30001; // Fallback to Summer 2026
+        if (activeSeason.length === 0) {
+          // No active season - return empty array
+          return [];
+        }
+        const seasonId = activeSeason[0].id;
         
         // Get ALL games from the active season - both scheduled and completed
         const allGames = await db.select().from(games).where(

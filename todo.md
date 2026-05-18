@@ -563,3 +563,10 @@
 - [x] Active season displays green badge and message on Season Management page
 - [x] When new season is created, can be set as active via Season Management
 - [x] Homepage automatically uses active season for game tracker
+
+## HANDLE NO ACTIVE SEASON - May 18, 2026
+- [ ] Update getActiveSeason to return null if no active season exists
+- [ ] Update getUpcomingGames to handle null active season (show empty state or message)
+- [ ] Update homepage UpcomingGamesSlider to show "No active season" message when no season is active
+- [ ] Update Season Management to show clear message when no season is active
+- [ ] Allow user to start fresh with no active season initially

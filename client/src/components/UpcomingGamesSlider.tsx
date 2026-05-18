@@ -46,8 +46,8 @@ export default function UpcomingGamesSlider() {
         <div className="container">
           <p className="text-center text-muted-foreground font-medium">
             {language === "en" 
-              ? "No games scheduled in the next 2 weeks." 
-              : "Aucun match prévu dans les 2 prochaines semaines."}
+              ? "No active season or games scheduled." 
+              : "Aucune saison active ou match prévu."}
           </p>
         </div>
       </div>
