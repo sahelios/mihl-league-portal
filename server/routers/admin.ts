@@ -519,12 +519,12 @@ export const adminRouter = router({
 
 
   getTeams: adminProcedure
-    .input(z.void())
-    .query(async () => {
+    .input(z.object({ seasonId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db
+        let baseQuery = db
           .select({
             id: teams.id,
             masterTeamId: teams.masterTeamId,
@@ -536,6 +536,10 @@ export const adminRouter = router({
           .from(teams)
           .innerJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
         
+        // Filter by seasonId if provided
+        const result = input?.seasonId 
+          ? await baseQuery.where(eq(teams.seasonId, input.seasonId))
+          : await baseQuery;
         return result;
       } catch (error: any) {
         console.error('Error fetching teams:', error);
