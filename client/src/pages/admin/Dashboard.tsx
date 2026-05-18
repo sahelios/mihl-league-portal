@@ -140,6 +140,13 @@ export default function AdminDashboard() {
               >
                 {language === "en" ? "Game Scheduler" : "Planificateur de Matchs"}
               </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate("/admin/schedule-management")}
+              >
+                {language === "en" ? "Schedule Management" : "Gestion de l'Horaire"}
+              </Button>
             </CardContent>
           </Card>
 

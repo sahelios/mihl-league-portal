@@ -34,6 +34,7 @@ import EvaluationGames from "./pages/admin/EvaluationGames";
 import RefereeApplications from "./pages/admin/RefereeApplications";
 import StaffApplications from "./pages/admin/StaffApplications";
 import GameScheduler from "./pages/admin/GameScheduler";
+import ScheduleManagement from "./pages/admin/ScheduleManagement";
 import AdminTeams from "./pages/admin/Teams";
 import TeamManagement from "./pages/admin/TeamManagement";
 import WaitingListAdmin from "./pages/admin/WaitingListAdmin";
@@ -81,6 +82,7 @@ function Router() {
       <Route path="/admin/referee-applications" component={RefereeApplications} />
       <Route path="/admin/staff-applications" component={StaffApplications} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
+      <Route path="/admin/schedule-management" component={ScheduleManagement} />
       <Route path="/admin/teams" component={AdminTeams} />
       <Route path="/admin/team-management" component={TeamManagement} />
       <Route path="/admin/waiting-list" component={WaitingListAdmin} />

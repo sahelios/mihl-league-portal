@@ -1058,4 +1058,55 @@ export const adminRouter = router({
       
       return { success: true, message: "Picture updated successfully" };
     }),
+
+  // ============ SCHEDULE MANAGEMENT ============
+  getGamesBySeasonId: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const result = await db
+        .select({
+          id: games.id,
+          gameDate: games.gameDate,
+          gameTime: games.gameTime,
+          homeTeamId: games.homeTeamId,
+          awayTeamId: games.awayTeamId,
+          venueId: games.venueId,
+          homeTeam: teams,
+          awayTeam: teams,
+          venue: gameVenues,
+        })
+        .from(games)
+        .leftJoin(teams, eq(games.homeTeamId, teams.id))
+        .leftJoin(gameVenues, eq(games.venueId, gameVenues.id))
+        .where(eq(games.seasonId, input.seasonId))
+        .orderBy(games.gameDate, games.gameTime);
+
+      return result.map(g => ({
+        id: g.id,
+        gameDate: g.gameDate,
+        gameTime: g.gameTime,
+        homeTeam: g.homeTeam ? { id: g.homeTeam.id, name: g.homeTeam.name } : null,
+        awayTeam: g.awayTeam ? { id: g.awayTeam.id, name: g.awayTeam.name } : null,
+        venue: g.venue ? { id: g.venue.id, name: g.venue.name } : null,
+      }));
+    }),
+
+  deleteGame: adminProcedure
+    .input(z.object({ gameId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const game = await db.select().from(games).where(eq(games.id, input.gameId)).limit(1);
+      if (!game || game.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
+      }
+
+      await db.delete(games).where(eq(games.id, input.gameId));
+
+      return { success: true, message: "Game deleted successfully" };
+    }),
 });

@@ -506,3 +506,11 @@
 - [ ] Ensure each team plays exactly once per week
 - [ ] Distribute games evenly across all weeks in season
 - [ ] Verify no team plays more than once per week
+
+
+## SCHEDULE MANAGEMENT - May 18, 2026
+- [ ] Create ScheduleManagement page to view all scheduled games
+- [ ] Add delete game functionality to ScheduleManagement page
+- [ ] Add deleteGame mutation to backend router
+- [ ] Add ScheduleManagement link to admin navigation
+- [ ] Test schedule management functionality
