@@ -2,7 +2,7 @@ import { router, protectedProcedure, publicProcedure } from '../_core/trpc';
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
-import { eq, and, sql, or, inArray } from "drizzle-orm";
+import { eq, and, sql, or, inArray, desc } from "drizzle-orm";
 import {
   playerRegistrations,
   games,
@@ -443,14 +443,36 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       try {
-        await db.insert(seasons).values({
+        // Insert the season
+        const result = await db.insert(seasons).values({
           name: input.name,
           startDate: new Date(input.startDate),
           endDate: new Date(input.endDate),
           // registrationDeadline removed - column doesn't exist in database
           isActive: false,
         });
-        return { success: true, message: "Season created successfully" };
+        
+        // Get the newly created season - fetch the latest season
+        const createdSeasons = await db.select().from(seasons).orderBy(desc(seasons.id)).limit(1);
+        if (createdSeasons.length === 0) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to retrieve created season" });
+        }
+        const newSeasonId = createdSeasons[0].id;
+        
+        // Get all master teams
+        const allMasterTeams = await db.select().from(masterTeams);
+        
+        // Create team instances for each master team in this season
+        const teamInstances = allMasterTeams.map(masterTeam => ({
+          masterTeamId: masterTeam.id,
+          seasonId: newSeasonId,
+        }));
+        
+        if (teamInstances.length > 0) {
+          await db.insert(teams).values(teamInstances);
+        }
+        
+        return { success: true, message: `Season created successfully with ${teamInstances.length} teams` };
       } catch (error: any) {
         console.error('Error creating season:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to create season" });
@@ -476,7 +498,7 @@ export const adminRouter = router({
 
   createTeam: adminProcedure
     .input(z.object({
-      name: z.string().min(1),
+      masterTeamId: z.number(),
       seasonId: z.number(),
     }))
     .mutation(async ({ input }) => {
@@ -485,7 +507,7 @@ export const adminRouter = router({
 
       try {
         await db.insert(teams).values({
-          name: input.name,
+          masterTeamId: input.masterTeamId,
           seasonId: input.seasonId,
         });
         return { success: true, message: "Team created successfully" };
@@ -505,8 +527,9 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       try {
-        await db.update(teams).set({ name: input.name }).where(eq(teams.id, input.id));
-        return { success: true, message: "Team updated successfully" };
+        // Team names are now stored in masterTeams table
+        // To update a team name, update the masterTeams table instead
+        throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "Update masterTeam name instead" });
       } catch (error: any) {
         console.error('Error updating team:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || "Failed to update team" });
@@ -658,7 +681,7 @@ export const adminRouter = router({
         if (!sourceTeam.length) throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
         
         await db.insert(teams).values({
-          name: sourceTeam[0].name,
+          masterTeamId: sourceTeam[0].masterTeamId,
           seasonId: input.newSeasonId,
         });
         return { success: true, message: "Team copied successfully" };
