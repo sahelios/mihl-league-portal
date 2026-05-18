@@ -64,15 +64,47 @@ export const adminRouter = router({
   }),
 
   getEvaluationAttendance: adminProcedure
-    .input(z.object({ date: z.string() }))
-    .query(async ({ input }) => {
+    .input(z.object({}).strict())
+    .query(async () => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const results = await db
+      // Get all evaluation games from the active season
+      const activeSeason = await db
         .select()
-        .from(playerRegistrations)
-        .where(eq(playerRegistrations.evaluationDate, input.date));
+        .from(seasons)
+        .where(eq(seasons.isActive, true))
+        .limit(1);
+
+      if (!activeSeason.length) {
+        return [];
+      }
+
+      const evalGames = await db
+        .selectDistinct({ gameDate: games.gameDate })
+        .from(games)
+        .where(and(
+          eq(games.seasonId, activeSeason[0].id),
+          eq(games.homeTeamId, 1),
+          eq(games.awayTeamId, 2)
+        ))
+        .orderBy(games.gameDate);
+
+      // For each evaluation game date, get all players registered for that date
+      const results = await Promise.all(
+        evalGames.map(async (game) => {
+          const dateStr = game.gameDate.toISOString().split('T')[0];
+          const attendees = await db
+            .select()
+            .from(playerRegistrations)
+            .where(eq(playerRegistrations.evaluationDate, dateStr));
+          
+          return {
+            date: dateStr,
+            attendees: attendees
+          };
+        })
+      );
 
       return results;
     }),
