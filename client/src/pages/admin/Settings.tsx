@@ -75,7 +75,7 @@ export default function AdminSettings() {
   // ---------------------------------------------------------------------------
   // Team State & tRPC
   // ---------------------------------------------------------------------------
-  const [teamForm, setTeamForm] = useState({ name: "", logoUrl: "", primaryColor: "#000000", secondaryColor: "#ffffff" });
+  const [teamForm, setTeamForm] = useState<{ name: string; logoUrl: string; primaryColor: string; secondaryColor: string }>({ name: "", logoUrl: "", primaryColor: "#000000", secondaryColor: "#ffffff" });
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
   const { data: teams, isLoading: loadingTeams } = trpc.admin.getTeams.useQuery();
@@ -114,7 +114,7 @@ export default function AdminSettings() {
   // ---------------------------------------------------------------------------
   // Venue State & tRPC
   // ---------------------------------------------------------------------------
-  const [venueForm, setVenueForm] = useState({ name: "", address: "", city: "", capacity: 0 });
+  const [venueForm, setVenueForm] = useState<{ name: string; address: string; city: string; capacity: number }>({ name: "", address: "", city: "", capacity: 0 });
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
 
   const { data: venues, isLoading: loadingVenues } = trpc.admin.getVenues.useQuery();
@@ -325,16 +325,16 @@ export default function AdminSettings() {
                   </div>
                   <div className="space-y-2">
                     <Label>{language === "en" ? "Logo URL" : "URL du Logo"}</Label>
-                    <Input value={teamForm.logoUrl} onChange={(e) => setTeamForm({ ...teamForm, logoUrl: e.target.value })} placeholder="https://..." />
+                    <Input value={teamForm.logoUrl || ""} onChange={(e) => setTeamForm({ ...teamForm, logoUrl: e.target.value })} placeholder="https://..." />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>{language === "en" ? "Primary Color" : "Couleur Primaire"}</Label>
-                      <Input type="color" value={teamForm.primaryColor} onChange={(e) => setTeamForm({ ...teamForm, primaryColor: e.target.value })} className="h-10 p-1" />
+                      <Input type="color" value={teamForm.primaryColor || "#000000"} onChange={(e) => setTeamForm({ ...teamForm, primaryColor: e.target.value })} className="h-10 p-1" />
                     </div>
                     <div className="space-y-2">
                       <Label>{language === "en" ? "Secondary Color" : "Couleur Secondaire"}</Label>
-                      <Input type="color" value={teamForm.secondaryColor} onChange={(e) => setTeamForm({ ...teamForm, secondaryColor: e.target.value })} className="h-10 p-1" />
+                      <Input type="color" value={teamForm.secondaryColor || "#ffffff"} onChange={(e) => setTeamForm({ ...teamForm, secondaryColor: e.target.value })} className="h-10 p-1" />
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2">
