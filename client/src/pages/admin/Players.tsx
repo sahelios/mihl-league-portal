@@ -142,13 +142,19 @@ export default function Players() {
     if (!editingPlayer) return;
 
     const updates: any = {};
-    if (editData.firstName !== editingPlayer.firstName) updates.firstName = editData.firstName;
-    if (editData.lastName !== editingPlayer.lastName) updates.lastName = editData.lastName;
+    
+    // Map firstName + lastName to name field
+    const fullName = `${editData.firstName} ${editData.lastName}`.trim();
+    const currentFullName = `${editingPlayer.firstName} ${editingPlayer.lastName}`.trim();
+    if (fullName !== currentFullName) {
+      updates.name = fullName;
+    }
+    
     if (editData.phone !== editingPlayer.phone) updates.phone = editData.phone;
-    if (editData.playerRating !== editingPlayer.playerRating) updates.playerRating = editData.playerRating;
-    if (editData.registrationType !== editingPlayer.registrationType) updates.registrationType = editData.registrationType;
+    if (editData.playerRating !== editingPlayer.playerRating) updates.rating = editData.playerRating;
     if (editData.paymentMethod !== editingPlayer.paymentMethod) updates.paymentMethod = editData.paymentMethod;
     if (editData.teamId !== editingPlayer.teamId) updates.teamId = editData.teamId;
+    if (editData.seasonId !== editingPlayer.seasonId) updates.seasonId = editData.seasonId;
 
     if (editData.email !== editingPlayer.email) {
       updatePlayerEmailMutation.mutate({

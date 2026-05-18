@@ -518,21 +518,12 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const baseQuery = db
-          .select({
-            id: teams.id,
-            name: masterTeams.name,
-            seasonId: teams.seasonId,
-            masterTeamId: teams.masterTeamId,
-            createdAt: teams.createdAt,
-          })
-          .from(teams)
-          .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
+        const result = await db.select().from(teams);
         
         if (input?.seasonId) {
-          return await baseQuery.where(eq(teams.seasonId, input.seasonId));
+          return result.filter(t => t.seasonId === input.seasonId);
         }
-        return await baseQuery;
+        return result;
       } catch (error: any) {
         console.error('Error fetching teams:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
@@ -1008,6 +999,7 @@ export const adminRouter = router({
       rating: z.number().optional(),
       paymentMethod: z.enum(["eTransfer", "cash", "arrangement"]).optional(),
       teamId: z.number().optional(),
+      seasonId: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1020,6 +1012,7 @@ export const adminRouter = router({
       if (input.rating !== undefined) updateData.rating = input.rating;
       if (input.paymentMethod) updateData.paymentMethod = input.paymentMethod;
       if (input.teamId !== undefined) updateData.teamId = input.teamId;
+      if (input.seasonId !== undefined) updateData.seasonId = input.seasonId;
       
       await db.update(playerRegistrations)
         .set(updateData)
