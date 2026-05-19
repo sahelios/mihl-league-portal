@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, seasonId, homeTeamId, awayTeamId, isEvaluationGame FROM games WHERE seasonId = 240001 LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, seasonId, homeTeamId, awayTeamId, isEvaluationGame FROM games WHERE seasonId = 240001 LIMIT 10;",
+  "rows": [
+    {
+      "id": "210001",
+      "seasonId": "240001",
+      "homeTeamId": "180001",
+      "awayTeamId": "180002",
+      "isEvaluationGame": "1"
+    },
+    {
+      "id": "210002",
+      "seasonId": "240001",
+      "homeTeamId": "180001",
+      "awayTeamId": "180002",
+      "isEvaluationGame": "1"
+    },
+    {
+      "id": "210003",
+      "seasonId": "240001",
+      "homeTeamId": "180001",
+      "awayTeamId": "180002",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210004",
+      "seasonId": "240001",
+      "homeTeamId": "180003",
+      "awayTeamId": "180004",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210005",
+      "seasonId": "240001",
+      "homeTeamId": "180004",
+      "awayTeamId": "180001",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210006",
+      "seasonId": "240001",
+      "homeTeamId": "180002",
+      "awayTeamId": "180003",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210007",
+      "seasonId": "240001",
+      "homeTeamId": "180002",
+      "awayTeamId": "180004",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210008",
+      "seasonId": "240001",
+      "homeTeamId": "180003",
+      "awayTeamId": "180001",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210009",
+      "seasonId": "240001",
+      "homeTeamId": "180003",
+      "awayTeamId": "180002",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210010",
+      "seasonId": "240001",
+      "homeTeamId": "180004",
+      "awayTeamId": "180001",
+      "isEvaluationGame": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tseasonId\thomeTeamId\tawayTeamId\tisEvaluationGame\n210001\t240001\t180001\t180002\t1\n210002\t240001\t180001\t180002\t1\n210003\t240001\t180001\t180002\t0\n210004\t240001\t180003\t180004\t0\n210005\t240001\t180004\t180001\t0\n210006\t240001\t180002\t180003\t0\n210007\t240001\t180002\t180004\t0\n210008\t240001\t180003\t180001\t0\n210009\t240001\t180003\t180002\t0\n210010\t240001\t180004\t180001\t0\n",
+  "stderr": "",
+  "execution_time_ms": 503
+}
