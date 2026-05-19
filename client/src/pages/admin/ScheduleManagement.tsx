@@ -135,6 +135,65 @@ export default function ScheduleManagement() {
             </Select>
           </div>
 
+          {/* Statistics */}
+          {selectedSeasonId && !loadingGames && games.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Team Statistics */}
+              <Card className="bg-muted/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Games by Team</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(() => {
+                      const teamCounts: { [key: string]: number } = {};
+                      games.forEach((game) => {
+                        const homeTeam = game.homeTeam?.name || 'Unknown';
+                        const awayTeam = game.awayTeam?.name || 'Unknown';
+                        teamCounts[homeTeam] = (teamCounts[homeTeam] || 0) + 1;
+                        teamCounts[awayTeam] = (teamCounts[awayTeam] || 0) + 1;
+                      });
+                      return Object.entries(teamCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([team, count]) => (
+                          <div key={team} className="flex justify-between text-sm">
+                            <span className="font-medium">{team}</span>
+                            <Badge variant="secondary">{count} games</Badge>
+                          </div>
+                        ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Venue Statistics */}
+              <Card className="bg-muted/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Games by Venue</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {(() => {
+                      const venueCounts: { [key: string]: number } = {};
+                      games.forEach((game) => {
+                        const venue = game.venue?.name || 'Unknown Venue';
+                        venueCounts[venue] = (venueCounts[venue] || 0) + 1;
+                      });
+                      return Object.entries(venueCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([venue, count]) => (
+                          <div key={venue} className="flex justify-between text-sm">
+                            <span className="font-medium">{venue}</span>
+                            <Badge variant="secondary">{count} games</Badge>
+                          </div>
+                        ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Games List */}
           {selectedSeasonId && (
             <div className="space-y-4">
