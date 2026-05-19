@@ -1,0 +1,9 @@
+{
+  "query": "SELECT t.id, t.masterTeamId, t.seasonId, mt.name as masterTeamName FROM teams t LEFT JOIN masterTeams mt ON t.masterTeamId = mt.id WHERE t.seasonId = 1 LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT t.id, t.masterTeamId, t.seasonId, mt.name as masterTeamName FROM teams t LEFT JOIN masterTeams mt ON t.masterTeamId = mt.id WHERE t.seasonId = 1 LIMIT 10",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 381
+}

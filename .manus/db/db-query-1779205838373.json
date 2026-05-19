@@ -1,0 +1,38 @@
+{
+  "query": "SELECT t.id, t.masterTeamId, t.seasonId, mt.name as masterTeamName, s.name as seasonName FROM teams t LEFT JOIN masterTeams mt ON t.masterTeamId = mt.id LEFT JOIN seasons s ON t.seasonId = s.id LIMIT 20",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT t.id, t.masterTeamId, t.seasonId, mt.name as masterTeamName, s.name as seasonName FROM teams t LEFT JOIN masterTeams mt ON t.masterTeamId = mt.id LEFT JOIN seasons s ON t.seasonId = s.id LIMIT 20",
+  "rows": [
+    {
+      "id": "180001",
+      "masterTeamId": "1",
+      "seasonId": "240001",
+      "masterTeamName": "Iron Lions",
+      "seasonName": "Summer 2026 MIHL"
+    },
+    {
+      "id": "180002",
+      "masterTeamId": "2",
+      "seasonId": "240001",
+      "masterTeamName": "Golan Guards",
+      "seasonName": "Summer 2026 MIHL"
+    },
+    {
+      "id": "180003",
+      "masterTeamId": "3",
+      "seasonId": "240001",
+      "masterTeamName": "H Hammers",
+      "seasonName": "Summer 2026 MIHL"
+    },
+    {
+      "id": "180004",
+      "masterTeamId": "4",
+      "seasonId": "240001",
+      "masterTeamName": "Schvitz Saints",
+      "seasonName": "Summer 2026 MIHL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmasterTeamId\tseasonId\tmasterTeamName\tseasonName\n180001\t1\t240001\tIron Lions\tSummer 2026 MIHL\n180002\t2\t240001\tGolan Guards\tSummer 2026 MIHL\n180003\t3\t240001\tH Hammers\tSummer 2026 MIHL\n180004\t4\t240001\tSchvitz Saints\tSummer 2026 MIHL\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

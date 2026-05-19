@@ -238,7 +238,7 @@ export default function AdminTeams() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm text-gray-600">
-                    <p>Season ID: {team.seasonId}</p>
+                    <p>Season: {seasons.find((s: any) => s.id === team.seasonId)?.name || 'Unknown'}</p>
                   </div>
                 </CardContent>
               </Card>

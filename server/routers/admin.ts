@@ -412,6 +412,7 @@ export const adminRouter = router({
         gameDate: z.string(),
         gameTime: z.string(),
         seasonId: z.number(),
+        isEvaluationGame: z.boolean().optional().default(false),
       }))
     }))
     .mutation(async ({ input }) => {
@@ -442,6 +443,7 @@ export const adminRouter = router({
             venueId: game.venueId,
             gameDate,
             gameTime: game.gameTime,
+            isEvaluationGame: game.isEvaluationGame || false,
             status: "scheduled" as const,
           };
         });
@@ -1177,33 +1179,59 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const result = await db
-        .select({
-          id: games.id,
-          gameDate: games.gameDate,
-          gameTime: games.gameTime,
-          homeTeamId: games.homeTeamId,
-          awayTeamId: games.awayTeamId,
-          venueId: games.venueId,
-          homeTeamName: masterTeams.name,
-          awayTeamName: masterTeams.name,
-          venue: gameVenues,
-        })
+      // Fetch all games for this season
+      const gamesList = await db
+        .select()
         .from(games)
-        .leftJoin(teams, eq(games.homeTeamId, teams.id))
-        .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id))
-        .leftJoin(gameVenues, eq(games.venueId, gameVenues.id))
         .where(eq(games.seasonId, input.seasonId))
         .orderBy(games.gameDate, games.gameTime);
 
-      return result.map(g => ({
-        id: g.id,
-        gameDate: g.gameDate,
-        gameTime: g.gameTime,
-        homeTeam: { id: g.homeTeamId, name: g.homeTeamName || 'Unknown' },
-        awayTeam: { id: g.awayTeamId, name: g.awayTeamName || 'Unknown' },
-        venue: g.venue ? { id: g.venue.id, name: g.venue.name } : null,
-      }));
+      // Fetch all teams and their master team info for this season
+      const teamsList = await db
+        .select({
+          id: teams.id,
+          masterTeamId: teams.masterTeamId,
+          seasonId: teams.seasonId,
+          masterTeamName: masterTeams.name,
+        })
+        .from(teams)
+        .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id))
+        .where(eq(teams.seasonId, input.seasonId));
+
+      // Fetch all venues
+      const venuesList = await db.select().from(gameVenues);
+
+      // Create lookup maps
+      const teamMap = new Map(teamsList.map(t => [t.id, t.masterTeamName]));
+      const venueMap = new Map(venuesList.map(v => [v.id, v]));
+
+      // Map games with team and venue info
+      return gamesList.map(g => {
+        // Convert Date to YYYY-MM-DD string to avoid timezone issues
+        let dateStr = '';
+        if (g.gameDate instanceof Date) {
+          const year = g.gameDate.getUTCFullYear();
+          const month = String(g.gameDate.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(g.gameDate.getUTCDate()).padStart(2, '0');
+          dateStr = `${year}-${month}-${day}`;
+        } else if (typeof g.gameDate === 'string') {
+          dateStr = g.gameDate.split('T')[0];
+        }
+        
+        const homeTeamName = teamMap.get(g.homeTeamId) || 'Unknown';
+        const awayTeamName = teamMap.get(g.awayTeamId) || 'Unknown';
+        const venue = venueMap.get(g.venueId);
+        
+        return {
+          id: g.id,
+          gameDate: dateStr,
+          gameTime: g.gameTime,
+          homeTeam: { id: g.homeTeamId, name: homeTeamName },
+          awayTeam: { id: g.awayTeamId, name: awayTeamName },
+          venue: venue ? { id: venue.id, name: venue.name } : null,
+          isEvaluationGame: g.isEvaluationGame || false,
+        };
+      });
     }),
 
   deleteGame: adminProcedure

@@ -1,0 +1,50 @@
+{
+  "query": "SELECT DISTINCT homeTeamId, awayTeamId FROM games WHERE seasonId = 1 LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT DISTINCT homeTeamId, awayTeamId FROM games WHERE seasonId = 1 LIMIT 10",
+  "rows": [
+    {
+      "homeTeamId": "1",
+      "awayTeamId": "2"
+    },
+    {
+      "homeTeamId": "1",
+      "awayTeamId": "3"
+    },
+    {
+      "homeTeamId": "2",
+      "awayTeamId": "4"
+    },
+    {
+      "homeTeamId": "30006",
+      "awayTeamId": "30008"
+    },
+    {
+      "homeTeamId": "30010",
+      "awayTeamId": "30011"
+    },
+    {
+      "homeTeamId": "60006",
+      "awayTeamId": "60007"
+    },
+    {
+      "homeTeamId": "3",
+      "awayTeamId": "4"
+    },
+    {
+      "homeTeamId": "30011",
+      "awayTeamId": "30012"
+    },
+    {
+      "homeTeamId": "30009",
+      "awayTeamId": "30010"
+    },
+    {
+      "homeTeamId": "60004",
+      "awayTeamId": "60001"
+    }
+  ],
+  "messages": [],
+  "stdout": "homeTeamId\tawayTeamId\n1\t2\n1\t3\n2\t4\n30006\t30008\n30010\t30011\n60006\t60007\n3\t4\n30011\t30012\n30009\t30010\n60004\t60001\n",
+  "stderr": "",
+  "execution_time_ms": 402
+}

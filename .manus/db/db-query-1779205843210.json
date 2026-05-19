@@ -1,0 +1,14 @@
+{
+  "query": "SELECT DISTINCT g.seasonId, s.name FROM games g LEFT JOIN seasons s ON g.seasonId = s.id WHERE s.name LIKE '%Sample%' LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT DISTINCT g.seasonId, s.name FROM games g LEFT JOIN seasons s ON g.seasonId = s.id WHERE s.name LIKE '%Sample%' LIMIT 5",
+  "rows": [
+    {
+      "seasonId": "1",
+      "name": "Sample Season"
+    }
+  ],
+  "messages": [],
+  "stdout": "seasonId\tname\n1\tSample Season\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

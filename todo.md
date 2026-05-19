@@ -597,3 +597,27 @@
 - [x] Fixed season selector persistence - now saves correctly when editing players
 - [x] Simplified getTeams procedure to avoid Drizzle ORM mapping errors
 - [x] Verified season selection persists across edit dialog reopens
+
+
+## CRITICAL BUGS - May 19, 2026 (Session 11 - Game Scheduler Issues)
+- [ ] Fix team assignment not persisting when creating games (shows "Unknown vs Unknown" in schedule management)
+- [ ] Implement evaluation game labeling (games need to be marked as evaluation games in database)
+- [ ] Fix evaluation games not appearing in /admin/evaluation-games page
+- [ ] Add game count statistics per team to /admin/schedule-management
+- [ ] Add venue usage statistics to /admin/schedule-management
+
+## FIXES APPLIED - May 19, 2026 (Session 11 Continued)
+- [x] Added isEvaluationGame column to games table schema
+- [x] Updated GameScheduler to use correct team IDs from selectedTeams instead of hardcoded 1 & 2
+- [x] Updated GameScheduler to mark evaluation games with isEvaluationGame: true
+- [x] Updated createGames procedure to handle isEvaluationGame field
+- [x] Updated getGamesBySeasonId query to return isEvaluationGame field
+- [x] Created teams for Sample Season (season ID 1) with proper master team associations
+
+## REMAINING TASKS - May 19, 2026
+- [ ] Update ScheduleManagement page to display evaluation games separately
+- [ ] Add game count statistics per team to ScheduleManagement
+- [ ] Add venue usage statistics to ScheduleManagement
+- [ ] Create/update EvaluationGames page to display evaluation games
+- [ ] Test complete workflow: GameScheduler -> ScheduleManagement -> EvaluationGames
+- [ ] Add vitest tests for game creation and retrieval

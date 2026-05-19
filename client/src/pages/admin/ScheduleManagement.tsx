@@ -66,8 +66,18 @@ export default function ScheduleManagement() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: Date | string) => {
+    let dateObj: Date;
+    
+    if (typeof date === 'string') {
+      // Parse YYYY-MM-DD string as local date to avoid timezone issues
+      const [year, month, day] = date.split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    } else {
+      dateObj = date instanceof Date ? date : new Date(date);
+    }
+    
+    return dateObj.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
