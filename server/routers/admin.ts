@@ -85,8 +85,6 @@ export const adminRouter = router({
         .from(games)
         .where(and(
           eq(games.seasonId, activeSeason[0].id),
-          eq(games.homeTeamId, 1),
-          eq(games.awayTeamId, 2),
           eq(games.isEvaluationGame, true)
         ))
         .orderBy(games.gameDate);
@@ -1238,8 +1236,15 @@ export const adminRouter = router({
           dateStr = g.gameDate.split('T')[0];
         }
         
-        const homeTeamName = teamMap.get(g.homeTeamId) || 'Unknown';
-        const awayTeamName = teamMap.get(g.awayTeamId) || 'Unknown';
+        let homeTeamName = teamMap.get(g.homeTeamId) || 'Unknown';
+        let awayTeamName = teamMap.get(g.awayTeamId) || 'Unknown';
+        
+        // For evaluation games, display as Team White vs Team Black
+        if (g.isEvaluationGame) {
+          homeTeamName = 'Team White';
+          awayTeamName = 'Team Black';
+        }
+        
         const venue = venueMap.get(g.venueId);
         
         return {

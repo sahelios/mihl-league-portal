@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, seasonId, masterTeamId FROM teams ORDER BY seasonId, id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, seasonId, masterTeamId FROM teams ORDER BY seasonId, id;",
+  "rows": [
+    {
+      "id": "1",
+      "seasonId": "1",
+      "masterTeamId": "1"
+    },
+    {
+      "id": "2",
+      "seasonId": "1",
+      "masterTeamId": "2"
+    },
+    {
+      "id": "210001",
+      "seasonId": "1",
+      "masterTeamId": "1"
+    },
+    {
+      "id": "210002",
+      "seasonId": "1",
+      "masterTeamId": "2"
+    },
+    {
+      "id": "210003",
+      "seasonId": "1",
+      "masterTeamId": "3"
+    },
+    {
+      "id": "210004",
+      "seasonId": "1",
+      "masterTeamId": "4"
+    },
+    {
+      "id": "180003",
+      "seasonId": "240001",
+      "masterTeamId": "3"
+    },
+    {
+      "id": "180004",
+      "seasonId": "240001",
+      "masterTeamId": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tseasonId\tmasterTeamId\n1\t1\t1\n2\t1\t2\n210001\t1\t1\n210002\t1\t2\n210003\t1\t3\n210004\t1\t4\n180003\t240001\t3\n180004\t240001\t4\n",
+  "stderr": "",
+  "execution_time_ms": 386
+}

@@ -183,13 +183,17 @@ export default function GameScheduler() {
     const games: ScheduledGame[] = [];
     const evaluationDates: string[] = [];
 
+    // Use the first two teams from selectedTeams for evaluation games (Team White vs Team Black)
+    const teamWhiteId = selectedTeams.length > 0 ? selectedTeams[0] : 1;
+    const teamBlackId = selectedTeams.length > 1 ? selectedTeams[1] : 2;
+
     for (let i = 0; i < evaluationGameCount; i++) {
       const evalGame = evaluationGames[i];
-      // Evaluation games are always Team White vs Team Black (IDs 1 and 2)
+      // Evaluation games are Team White vs Team Black (first two teams in the season)
       games.push({
         id: `eval-${i}-white-black`,
-        homeTeamId: 1, // Team White
-        awayTeamId: 2, // Team Black
+        homeTeamId: teamWhiteId,
+        awayTeamId: teamBlackId,
         venueId: evalGame.venueId,
         gameDate: evalGame.date,
         gameTime: evalGame.time,

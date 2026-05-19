@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE games SET homeTeamId = 180001, awayTeamId = 180002 WHERE seasonId = 240001 AND homeTeamId = 1 AND awayTeamId = 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute UPDATE games SET homeTeamId = 180001, awayTeamId = 180002 WHERE seasonId = 240001 AND homeTeamId = 1 AND awayTeamId = 2;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 371
+}
