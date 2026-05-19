@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name FROM seasons LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, name FROM seasons LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Sample Season"
+    },
+    {
+      "id": "240001",
+      "name": "Summer 2026 MIHL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tSample Season\n240001\tSummer 2026 MIHL\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}

@@ -81,26 +81,46 @@ export const adminRouter = router({
       }
 
       const evalGames = await db
-        .selectDistinct({ gameDate: games.gameDate })
+        .select()
         .from(games)
         .where(and(
           eq(games.seasonId, activeSeason[0].id),
           eq(games.homeTeamId, 1),
-          eq(games.awayTeamId, 2)
+          eq(games.awayTeamId, 2),
+          eq(games.isEvaluationGame, true)
         ))
         .orderBy(games.gameDate);
 
-      // For each evaluation game date, get all players registered for that date
+      // Fetch all venues for lookup
+      const venuesList = await db.select().from(gameVenues);
+      const venueMap = new Map(venuesList.map(v => [v.id, v]));
+
+      // For each evaluation game, get all players registered for that date
       const results = await Promise.all(
         evalGames.map(async (game) => {
-          const dateStr = game.gameDate.toISOString().split('T')[0];
+          const dateStr = game.gameDate instanceof Date 
+            ? game.gameDate.toISOString().split('T')[0]
+            : typeof game.gameDate === 'string'
+            ? game.gameDate.split('T')[0]
+            : '';
+          
           const attendees = await db
             .select()
             .from(playerRegistrations)
             .where(eq(playerRegistrations.evaluationDate, dateStr));
           
+          const venue = venueMap.get(game.venueId);
+          const gameTime = game.gameTime || '21:30';
+          
           return {
             date: dateStr,
+            label: 'Team White vs Team Black - ' + dateStr,
+            venue: venue?.name || 'Unknown Venue',
+            time: gameTime,
+            totalPlayers: attendees.length,
+            maxPlayers: 26,
+            totalGoalies: attendees.filter(p => p.position?.toLowerCase() === 'goalie').length,
+            maxGoalies: 2,
             attendees: attendees
           };
         })
@@ -1235,17 +1255,24 @@ export const adminRouter = router({
     }),
 
   deleteGame: adminProcedure
-    .input(z.object({ gameId: z.number() }))
+    .input(z.object({ gameId: z.union([z.number(), z.string()]) }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const game = await db.select().from(games).where(eq(games.id, input.gameId)).limit(1);
+      // Convert gameId to number if it's a string
+      const gameId = typeof input.gameId === 'string' ? parseInt(input.gameId, 10) : input.gameId;
+      
+      if (isNaN(gameId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid game ID" });
+      }
+
+      const game = await db.select().from(games).where(eq(games.id, gameId)).limit(1);
       if (!game || game.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
-       await db.delete(games).where(eq(games.id, input.gameId));
+      await db.delete(games).where(eq(games.id, gameId));
       return { success: true, message: "Game deleted successfully" };
     }),
 

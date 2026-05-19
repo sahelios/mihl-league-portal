@@ -1,0 +1,59 @@
+{
+  "query": "SELECT id, homeTeamId, awayTeamId, gameDate, isEvaluationGame FROM games WHERE (homeTeamId = 1 AND awayTeamId = 2) OR (homeTeamId = 2 AND awayTeamId = 1) LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, homeTeamId, awayTeamId, gameDate, isEvaluationGame FROM games WHERE (homeTeamId = 1 AND awayTeamId = 2) OR (homeTeamId = 2 AND awayTeamId = 1) LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-23",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "12",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-07-30",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "13",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-08-04",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "120001",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-22",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "120002",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-24",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210001",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-23",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "210002",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-25",
+      "isEvaluationGame": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\thomeTeamId\tawayTeamId\tgameDate\tisEvaluationGame\n1\t1\t2\t2026-06-23\t0\n12\t1\t2\t2026-07-30\t0\n13\t1\t2\t2026-08-04\t0\n120001\t1\t2\t2026-06-22\t0\n120002\t1\t2\t2026-06-24\t0\n210001\t1\t2\t2026-06-23\t0\n210002\t1\t2\t2026-06-25\t0\n",
+  "stderr": "",
+  "execution_time_ms": 381
+}

@@ -402,6 +402,7 @@ export default function GameScheduler() {
           gameDate: g.gameDate,
           gameTime: g.gameTime,
           seasonId: g.seasonId,
+          isEvaluationGame: g.isEvaluationGame || false,
         })),
       });
       toast.success('Games created successfully');
