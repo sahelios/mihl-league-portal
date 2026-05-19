@@ -54,7 +54,7 @@ export default function GameScheduler() {
 
   // Queries
   const { data: seasons } = trpc.admin.getSeasons.useQuery();
-  const { data: teams } = trpc.admin.getTeams.useQuery();
+  const { data: teams } = trpc.admin.getTeams.useQuery(seasonId ? { seasonId } : undefined, { enabled: !!seasonId });
   const { data: masterTeams } = trpc.admin.getMasterTeams.useQuery({});
   const { data: venues } = trpc.admin.getVenues.useQuery();
   const createGamesMutation = trpc.admin.createGames.useMutation();
@@ -185,15 +185,11 @@ export default function GameScheduler() {
 
     for (let i = 0; i < evaluationGameCount; i++) {
       const evalGame = evaluationGames[i];
-      // Use the first two teams from selectedTeams for evaluation games
-      // If not enough teams selected, use team IDs 1 and 2 as fallback
-      const homeTeamId = selectedTeams.length > 0 ? selectedTeams[0] : 1;
-      const awayTeamId = selectedTeams.length > 1 ? selectedTeams[1] : 2;
-      
+      // Evaluation games are always Team White vs Team Black (IDs 1 and 2)
       games.push({
-        id: `eval-${i}-${homeTeamId}-${awayTeamId}`,
-        homeTeamId,
-        awayTeamId,
+        id: `eval-${i}-white-black`,
+        homeTeamId: 1, // Team White
+        awayTeamId: 2, // Team Black
         venueId: evalGame.venueId,
         gameDate: evalGame.date,
         gameTime: evalGame.time,

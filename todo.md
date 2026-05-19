@@ -621,3 +621,7 @@
 - [ ] Create/update EvaluationGames page to display evaluation games
 - [ ] Test complete workflow: GameScheduler -> ScheduleManagement -> EvaluationGames
 - [ ] Add vitest tests for game creation and retrieval
+
+## ADDITIONAL FIXES - May 19, 2026 (Session 11 - Continued)
+- [x] Fixed GameScheduler showing 8 teams instead of 4 for selected season - now passes seasonId to getTeams query
+- [x] Restored Team White vs Team Black functionality for evaluation games - evaluation games use hardcoded IDs 1 & 2
