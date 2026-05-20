@@ -331,8 +331,8 @@ export default function GameScheduler() {
         const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
         const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
 
-        // Skip if either team already has a game this week
-        if (homeGamesThisWeek > 0 || awayGamesThisWeek > 0) {
+        // Skip if BOTH teams already have a game this week (strict constraint)
+        if (homeGamesThisWeek > 0 && awayGamesThisWeek > 0) {
           continue;
         }
 
