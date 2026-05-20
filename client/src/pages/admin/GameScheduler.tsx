@@ -310,101 +310,90 @@ export default function GameScheduler() {
       teamLeagueWeekGames.set(teamId, new Map());
     });
 
-    // Assign matchups to available slots
-    let matchupIndex = 0;
+    // Assign matchups to available slots using queue-based approach
+    let matchupQueue = [...matchups];
+    let slotIndex = 0;
     let seasonGamesCreated = 0;
-    console.log(`DEBUG: About to assign games. Available slots: ${gameSlots.length}, Available matchups: ${matchups.length - matchupIndex}`);
+    console.log(`DEBUG: About to assign games. Available slots: ${gameSlots.length}, Available matchups: ${matchupQueue.length}`);
 
-    for (const slot of gameSlots) {
-      if (matchupIndex >= matchups.length) {
-        matchupIndex = 0;
-      }
-
+    while (matchupQueue.length > 0 && slotIndex < gameSlots.length) {
+      const slot = gameSlots[slotIndex];
       const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
 
-      // Try to find a matchup where neither team has a game this league week
-      let selectedMatchupIndex = matchupIndex;
-      let attemptCount = 0;
-      const maxAttempts = matchups.length;
+      // Try to find a matchup that can be assigned to this slot
+      let assigned = false;
 
-      while (attemptCount < maxAttempts) {
-        const testMatchup = matchups[selectedMatchupIndex];
-        const homeLeagueWeekGames = teamLeagueWeekGames.get(testMatchup.home)!;
-        const awayLeagueWeekGames = teamLeagueWeekGames.get(testMatchup.away)!;
+      for (let i = 0; i < matchupQueue.length; i++) {
+        const matchup = matchupQueue[i];
+        const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
+        const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
 
         const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
         const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
 
-        // If neither team has a game this week, use this matchup
-        if (homeGamesThisWeek === 0 && awayGamesThisWeek === 0) {
-          matchupIndex = selectedMatchupIndex;
+        // Skip if either team already has a game this week
+        if (homeGamesThisWeek > 0 || awayGamesThisWeek > 0) {
+          continue;
+        }
+
+        // Find best venue for this matchup
+        const homeRemaining = teamVenueRemaining.get(matchup.home)!;
+        const awayRemaining = teamVenueRemaining.get(matchup.away)!;
+
+        let bestVenueId = null;
+        let bestScore = -1;
+
+        // Check all venues available at this date/time
+        const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
+        for (const otherSlot of sameTimeSlots) {
+          const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
+          const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
+          const hasValidBudget = homeCount > 0 && awayCount > 0;
+
+          if (hasValidBudget) {
+            const score = Math.min(homeCount, awayCount);
+            if (score > bestScore) {
+              bestScore = score;
+              bestVenueId = otherSlot.venueId;
+            }
+          }
+        }
+
+        // If we found a valid venue, assign the game
+        if (bestVenueId !== null) {
+          games.push({
+            id: `${slot.date}-${bestVenueId}-${slot.time}-${i}`,
+            homeTeamId: matchup.home,
+            awayTeamId: matchup.away,
+            venueId: bestVenueId,
+            gameDate: slot.date,
+            gameTime: slot.time,
+            seasonId,
+          });
+
+          // Update budgets
+          homeRemaining.set(bestVenueId, homeRemaining.get(bestVenueId)! - 1);
+          awayRemaining.set(bestVenueId, awayRemaining.get(bestVenueId)! - 1);
+
+          // Update league week game counts
+          homeLeagueWeekGames.set(leagueWeekNumber, homeGamesThisWeek + 1);
+          awayLeagueWeekGames.set(leagueWeekNumber, awayGamesThisWeek + 1);
+
+          // Remove this matchup from queue and move to next slot
+          matchupQueue.splice(i, 1);
+          slotIndex++;
+          seasonGamesCreated++;
+          assigned = true;
           break;
         }
-
-        // Try next matchup
-        selectedMatchupIndex++;
-        if (selectedMatchupIndex >= matchups.length) {
-          selectedMatchupIndex = 0;
-        }
-        attemptCount++;
       }
 
-      // Use the selected matchup (either valid or fallback)
-      const matchup = matchups[matchupIndex];
-
-      // Find best venue using budget-based approach
-      const homeRemaining = teamVenueRemaining.get(matchup.home)!;
-      const awayRemaining = teamVenueRemaining.get(matchup.away)!;
-
-      let bestVenueId = slot.venueId;
-      let bestScore = Math.max(homeRemaining.get(slot.venueId) || 0, awayRemaining.get(slot.venueId) || 0);
-      let foundValid = (homeRemaining.get(slot.venueId) || 0) > 0 && (awayRemaining.get(slot.venueId) || 0) > 0;
-
-      // Check all venues available at this date/time
-      const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
-      for (const otherSlot of sameTimeSlots) {
-        const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
-        const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
-        const hasValidBudget = homeCount > 0 && awayCount > 0;
-        // Score: prefer venues where both teams have balanced budgets
-        const score = Math.min(homeCount, awayCount);
-
-        // Prefer venues where both teams have budget and minimum is highest
-        if (hasValidBudget && (!foundValid || score > bestScore)) {
-          bestScore = score;
-          bestVenueId = otherSlot.venueId;
-          foundValid = true;
-        } else if (!foundValid && score > bestScore) {
-          // Fallback: if no valid budget found, pick the one with most remaining
-          bestScore = score;
-          bestVenueId = otherSlot.venueId;
-        }
+      // If no matchup could be assigned to this slot, skip the slot
+      if (!assigned) {
+        slotIndex++;
       }
-
-      games.push({
-        id: `${slot.date}-${bestVenueId}-${slot.time}-${matchupIndex}`,
-        homeTeamId: matchup.home,
-        awayTeamId: matchup.away,
-        venueId: bestVenueId,
-        gameDate: slot.date,
-        gameTime: slot.time,
-        seasonId,
-      });
-
-      // Update budgets
-      homeRemaining.set(bestVenueId, Math.max(0, (homeRemaining.get(bestVenueId) || 0) - 1));
-      awayRemaining.set(bestVenueId, Math.max(0, (awayRemaining.get(bestVenueId) || 0) - 1));
-
-      // Update league week game counts
-      const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
-      const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
-      homeLeagueWeekGames.set(leagueWeekNumber, (homeLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
-      awayLeagueWeekGames.set(leagueWeekNumber, (awayLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
-
-      matchupIndex++;
-      seasonGamesCreated++;
     }
-    console.log(`DEBUG: Created ${seasonGamesCreated} season games with balanced venue distribution`);
+
 
     setScheduledGames(games);
     toast.success(`Generated ${games.length} games (${evaluationGameCount > 0 ? `${evaluationGameCount} evaluation + ` : ''}${games.length - evaluationGameCount} regular)`);
