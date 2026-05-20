@@ -284,9 +284,9 @@ export default function GameScheduler() {
 
     // Calculate budgets for team-venue combinations
     const totalGames = gameSlots.length;
-    const gamesPerTeam = (totalGames * 2) / selectedTeams.length;
-    const baseTeamVenueBudget = Math.floor(gamesPerTeam / selectedVenues.length);
-    const extraTeamVenueGames = gamesPerTeam % selectedVenues.length;
+    const totalTeamGames = Math.floor((totalGames * 2) / selectedTeams.length);
+    const baseTeamVenueBudget = Math.floor(totalTeamGames / selectedVenues.length);
+    const extraTeamVenueGames = totalTeamGames % selectedVenues.length;
 
     // Initialize budget tracking
     const teamVenueRemaining: Map<number, Map<number, number>> = new Map();
@@ -300,8 +300,8 @@ export default function GameScheduler() {
       teamVenueRemaining.set(teamId, teamRemaining);
     });
 
-    console.log(`DEBUG: Games per team: ${gamesPerTeam}, Base budget: ${baseTeamVenueBudget}, Extra: ${extraTeamVenueGames}`);
-    console.log(`DEBUG: Team-venue budgets initialized`);
+    console.log(`DEBUG: Total games: ${totalGames}, Games per team: ${totalTeamGames}, Base budget per venue: ${baseTeamVenueBudget}, Extra games: ${extraTeamVenueGames}`);
+    console.log(`DEBUG: Expected per team: ${totalTeamGames} games distributed as ${baseTeamVenueBudget}+${extraTeamVenueGames} across ${selectedVenues.length} venues`);
 
 
     // Track weekly games per team to ensure one game per league week
