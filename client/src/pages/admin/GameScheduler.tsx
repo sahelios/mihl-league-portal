@@ -304,95 +304,119 @@ export default function GameScheduler() {
     console.log(`DEBUG: Expected per team: ${totalTeamGames} games distributed as ${baseTeamVenueBudget}+${extraTeamVenueGames} across ${selectedVenues.length} venues`);
 
 
-    // Track weekly games per team to ensure one game per league week
+    // Track weekly games per team to ensure at most one game per league week
     const teamLeagueWeekGames: Map<number, Map<number, number>> = new Map();
+    const teamLeagueWeekTueThuGames: Map<number, Map<number, number>> = new Map();
     selectedTeams.forEach(teamId => {
       teamLeagueWeekGames.set(teamId, new Map());
+      teamLeagueWeekTueThuGames.set(teamId, new Map());
     });
 
-    // Assign matchups to available slots using queue-based approach
-    let matchupQueue = [...matchups];
-    let slotIndex = 0;
-    let seasonGamesCreated = 0;
-    console.log(`DEBUG: About to assign games. Available slots: ${gameSlots.length}, Available matchups: ${matchupQueue.length}`);
+    // Separate slots into Tue/Thu and other days
+    const tueThuSlots = gameSlots.filter(s => s.dayOfWeek === 2 || s.dayOfWeek === 4);
+    const otherDaySlots = gameSlots.filter(s => s.dayOfWeek !== 2 && s.dayOfWeek !== 4);
 
-    while (matchupQueue.length > 0 && slotIndex < gameSlots.length) {
-      const slot = gameSlots[slotIndex];
-      const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
+    const assignGamesToSlots = (slotsToUse: typeof gameSlots, passName: string) => {
+      let matchupQueue = [...matchups];
+      let slotIndex = 0;
+      let gamesAssigned = 0;
+      console.log(`DEBUG: ${passName} - Available slots: ${slotsToUse.length}, Available matchups: ${matchupQueue.length}`);
 
-      // Try to find a matchup that can be assigned to this slot
-      let assigned = false;
+      while (matchupQueue.length > 0 && slotIndex < slotsToUse.length && games.length - evaluationGameCount < regularGames) {
+        const slot = slotsToUse[slotIndex];
+        const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
+        const isTueThu = slot.dayOfWeek === 2 || slot.dayOfWeek === 4;
 
-      for (let i = 0; i < matchupQueue.length; i++) {
-        const matchup = matchupQueue[i];
-        const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
-        const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
+        let assigned = false;
 
-        const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
-        const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
+        for (let i = 0; i < matchupQueue.length; i++) {
+          const matchup = matchupQueue[i];
+          const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
+          const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
 
-        // Skip if BOTH teams already have a game this week (strict constraint)
-        if (homeGamesThisWeek > 0 && awayGamesThisWeek > 0) {
-          continue;
-        }
+          const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
+          const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
 
-        // Find best venue for this matchup
-        const homeRemaining = teamVenueRemaining.get(matchup.home)!;
-        const awayRemaining = teamVenueRemaining.get(matchup.away)!;
+          // Each team plays AT MOST once per week
+          if (homeGamesThisWeek > 0 || awayGamesThisWeek > 0) {
+            continue;
+          }
 
-        let bestVenueId = null;
-        let bestScore = -1;
+          // Find best venue for this matchup
+          const homeRemaining = teamVenueRemaining.get(matchup.home)!;
+          const awayRemaining = teamVenueRemaining.get(matchup.away)!;
 
-        // Check all venues available at this date/time
-        const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
-        for (const otherSlot of sameTimeSlots) {
-          const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
-          const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
-          const hasValidBudget = homeCount > 0 && awayCount > 0;
+          let bestVenueId = null;
+          let bestScore = -1;
 
-          if (hasValidBudget) {
-            const score = Math.min(homeCount, awayCount);
-            if (score > bestScore) {
-              bestScore = score;
-              bestVenueId = otherSlot.venueId;
+          // Check all venues available at this date/time
+          const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
+          for (const otherSlot of sameTimeSlots) {
+            const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
+            const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
+            const hasValidBudget = homeCount > 0 && awayCount > 0;
+
+            if (hasValidBudget) {
+              const score = Math.min(homeCount, awayCount);
+              if (score > bestScore) {
+                bestScore = score;
+                bestVenueId = otherSlot.venueId;
+              }
             }
+          }
+
+          // If we found a valid venue, assign the game
+          if (bestVenueId !== null) {
+            games.push({
+              id: `${slot.date}-${bestVenueId}-${slot.time}-${i}`,
+              homeTeamId: matchup.home,
+              awayTeamId: matchup.away,
+              venueId: bestVenueId,
+              gameDate: slot.date,
+              gameTime: slot.time,
+              seasonId,
+            });
+
+            // Update budgets
+            homeRemaining.set(bestVenueId, homeRemaining.get(bestVenueId)! - 1);
+            awayRemaining.set(bestVenueId, awayRemaining.get(bestVenueId)! - 1);
+
+            // Update league week game counts
+            homeLeagueWeekGames.set(leagueWeekNumber, homeGamesThisWeek + 1);
+            awayLeagueWeekGames.set(leagueWeekNumber, awayGamesThisWeek + 1);
+
+            // Mark Tue/Thu games
+            if (isTueThu) {
+              teamLeagueWeekTueThuGames.get(matchup.home)!.set(leagueWeekNumber, 1);
+              teamLeagueWeekTueThuGames.get(matchup.away)!.set(leagueWeekNumber, 1);
+            }
+
+            // Remove this matchup from queue and move to next slot
+            matchupQueue.splice(i, 1);
+            slotIndex++;
+            gamesAssigned++;
+            assigned = true;
+            break;
           }
         }
 
-        // If we found a valid venue, assign the game
-        if (bestVenueId !== null) {
-          games.push({
-            id: `${slot.date}-${bestVenueId}-${slot.time}-${i}`,
-            homeTeamId: matchup.home,
-            awayTeamId: matchup.away,
-            venueId: bestVenueId,
-            gameDate: slot.date,
-            gameTime: slot.time,
-            seasonId,
-          });
-
-          // Update budgets
-          homeRemaining.set(bestVenueId, homeRemaining.get(bestVenueId)! - 1);
-          awayRemaining.set(bestVenueId, awayRemaining.get(bestVenueId)! - 1);
-
-          // Update league week game counts
-          homeLeagueWeekGames.set(leagueWeekNumber, homeGamesThisWeek + 1);
-          awayLeagueWeekGames.set(leagueWeekNumber, awayGamesThisWeek + 1);
-
-          // Remove this matchup from queue and move to next slot
-          matchupQueue.splice(i, 1);
+        // If no matchup could be assigned to this slot, skip the slot
+        if (!assigned) {
           slotIndex++;
-          seasonGamesCreated++;
-          assigned = true;
-          break;
         }
       }
 
-      // If no matchup could be assigned to this slot, skip the slot
-      if (!assigned) {
-        slotIndex++;
-      }
-    }
+      console.log(`DEBUG: ${passName} complete - ${gamesAssigned} games assigned`);
+      return matchupQueue;
+    };
+
+    // PASS 1: Assign Tue/Thu games (each team gets at least one per week)
+    console.log('DEBUG: Starting PASS 1 - Tue/Thu games');
+    matchups = assignGamesToSlots(tueThuSlots, 'PASS 1 (Tue/Thu)');
+
+    // PASS 2: Assign remaining games with other days
+    console.log('DEBUG: Starting PASS 2 - Other day games');
+    assignGamesToSlots(otherDaySlots, 'PASS 2 (Other days)');
 
 
     setScheduledGames(games);
