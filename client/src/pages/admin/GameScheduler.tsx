@@ -183,9 +183,9 @@ export default function GameScheduler() {
     const games: ScheduledGame[] = [];
     const evaluationDates: string[] = [];
 
-    // Use the first two teams from selectedTeams for evaluation games (Team White vs Team Black)
-    const teamWhiteId = selectedTeams.length > 0 ? selectedTeams[0] : 1;
-    const teamBlackId = selectedTeams.length > 1 ? selectedTeams[1] : 2;
+    // Evaluation games are always Team White (ID 1) vs Team Black (ID 2)
+    const teamWhiteId = 1;
+    const teamBlackId = 2;
 
     for (let i = 0; i < evaluationGameCount; i++) {
       const evalGame = evaluationGames[i];

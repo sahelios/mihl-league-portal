@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, homeTeamId, awayTeamId, gameDate, gameTime, venueId, isEvaluationGame FROM games WHERE gameDate IN ('2026-06-23', '2026-06-25') ORDER BY gameDate, gameTime",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, homeTeamId, awayTeamId, gameDate, gameTime, venueId, isEvaluationGame FROM games WHERE gameDate IN ('2026-06-23', '2026-06-25') ORDER BY gameDate, gameTime",
+  "rows": [
+    {
+      "id": "30011",
+      "homeTeamId": "30006",
+      "awayTeamId": "30007",
+      "gameDate": "2026-06-23",
+      "gameTime": "10:00 PM",
+      "venueId": "2",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "30031",
+      "homeTeamId": "30010",
+      "awayTeamId": "30011",
+      "gameDate": "2026-06-23",
+      "gameTime": "10:00 PM",
+      "venueId": "2",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "60011",
+      "homeTeamId": "60002",
+      "awayTeamId": "60003",
+      "gameDate": "2026-06-23",
+      "gameTime": "10:00 PM",
+      "venueId": "2",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "60031",
+      "homeTeamId": "60006",
+      "awayTeamId": "60007",
+      "gameDate": "2026-06-23",
+      "gameTime": "10:00 PM",
+      "venueId": "2",
+      "isEvaluationGame": "0"
+    },
+    {
+      "id": "1",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-23",
+      "gameTime": "21:30",
+      "venueId": "1",
+      "isEvaluationGame": "1"
+    },
+    {
+      "id": "2",
+      "homeTeamId": "3",
+      "awayTeamId": "4",
+      "gameDate": "2026-06-25",
+      "gameTime": "22:00",
+      "venueId": "2",
+      "isEvaluationGame": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\thomeTeamId\tawayTeamId\tgameDate\tgameTime\tvenueId\tisEvaluationGame\n30011\t30006\t30007\t2026-06-23\t10:00 PM\t2\t0\n30031\t30010\t30011\t2026-06-23\t10:00 PM\t2\t0\n60011\t60002\t60003\t2026-06-23\t10:00 PM\t2\t0\n60031\t60006\t60007\t2026-06-23\t10:00 PM\t2\t0\n1\t1\t2\t2026-06-23\t21:30\t1\t1\n2\t3\t4\t2026-06-25\t22:00\t2\t0\n",
+  "stderr": "",
+  "execution_time_ms": 378
+}
