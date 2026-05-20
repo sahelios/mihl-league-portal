@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -31,6 +31,29 @@ interface ScheduledGame {
   gameTime: string;
   seasonId: number;
   isEvaluationGame?: boolean;
+}
+
+// Helper function to generate all perfect matchings
+function generatePerfectMatchings(teamIndices: number[]): number[][][] {
+  if (teamIndices.length === 2) {
+    return [[[teamIndices[0], teamIndices[1]]]];
+  }
+  
+  const first = teamIndices[0];
+  const rest = teamIndices.slice(1);
+  const result: number[][][] = [];
+  
+  for (let i = 0; i < rest.length; i++) {
+    const partner = rest[i];
+    const remaining = rest.slice(0, i).concat(rest.slice(i + 1));
+    const subMatchings = generatePerfectMatchings(remaining);
+    
+    for (const subMatching of subMatchings) {
+      result.push([[first, partner], ...subMatching]);
+    }
+  }
+  
+  return result;
 }
 
 export default function GameScheduler() {
@@ -173,23 +196,25 @@ export default function GameScheduler() {
       }
     }
 
-    console.log('DEBUG: Starting game generation');
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    console.log(`DEBUG: Start date: ${start} End date: ${end}`);
-    console.log(`DEBUG: Selected teams: ${selectedTeams}`);
+    // Validate for weekly mode
+    if (selectedTeams.length % 2 !== 0) {
+      toast.error('Weekly mode requires an even number of teams');
+      return;
+    }
+    if (selectedVenues.length !== selectedTeams.length / 2) {
+      toast.error(`For ${selectedTeams.length} teams, you need exactly ${selectedTeams.length / 2} venues`);
+      return;
+    }
 
-    // Create evaluation games
     const games: ScheduledGame[] = [];
     const evaluationDates: string[] = [];
 
-    // Evaluation games are always Team White (ID 1) vs Team Black (ID 2)
+    // Create evaluation games
     const teamWhiteId = 1;
     const teamBlackId = 2;
 
     for (let i = 0; i < evaluationGameCount; i++) {
       const evalGame = evaluationGames[i];
-      // Evaluation games are Team White vs Team Black (first two teams in the season)
       games.push({
         id: `eval-${i}-white-black`,
         homeTeamId: teamWhiteId,
@@ -203,41 +228,20 @@ export default function GameScheduler() {
       evaluationDates.push(evalGame.date);
     }
 
-    console.log(`DEBUG: Total matchups: ${selectedTeams.length * (selectedTeams.length - 1)}`);
-    console.log(`DEBUG: Evaluation dates: ${evaluationDates}`);
-    console.log(`DEBUG: Blackout dates: ${blackoutDates}`);
-
-    // Generate all possible matchups
-    const matchups: Array<{ home: number; away: number }> = [];
-    for (const homeTeam of selectedTeams) {
-      for (const awayTeam of selectedTeams) {
-        if (homeTeam !== awayTeam) {
-          matchups.push({ home: homeTeam, away: awayTeam });
-        }
-      }
-    }
-
-    // Collect all available game slots
-    const gameSlots: Array<{ date: string; venueId: number; time: string }> = [];
-    const end_date_obj = new Date(endDate);
-    console.log(`DEBUG: End date object: ${end_date_obj}`);
-    const end_date_str = endDate;
-    console.log(`DEBUG: End date string: ${end_date_str}`);
-
-    // Parse dates correctly to avoid timezone issues
+    // Parse dates
     const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
     let currentDate = new Date(startYear, startMonth - 1, startDay);
     const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
     const endDateObj = new Date(endYear, endMonth - 1, endDay);
 
-    let loopCount = 0;
+    // Collect all available game slots
+    const gameSlots: Array<{ date: string; venueId: number; time: string }> = [];
+
     while (currentDate <= endDateObj) {
-      loopCount++;
       const year = currentDate.getFullYear();
       const month = String(currentDate.getMonth() + 1).padStart(2, '0');
       const day = String(currentDate.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      console.log(`DEBUG: Loop ${loopCount} - Current: ${dateStr}, End: ${end_date_str}, DayOfWeek: ${currentDate.getDay()}`);
 
       // Skip blackout dates and evaluation dates
       if (!blackoutDates.includes(dateStr) && !evaluationDates.includes(dateStr)) {
@@ -257,8 +261,10 @@ export default function GameScheduler() {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    console.log('DEBUG: Total game slots available:', gameSlots.length);
-    console.log('DEBUG: Game slots:', gameSlots);
+    if (gameSlots.length === 0) {
+      toast.error('No available game slots found. Check your date range and venue schedules.');
+      return;
+    }
 
     // Build league week mapping
     const dateToLeagueWeek: Map<string, number> = new Map();
@@ -268,7 +274,6 @@ export default function GameScheduler() {
     const daysInCurrentWeek = new Set<number>();
 
     for (const dateStr of sortedDates) {
-      // Parse date string correctly to avoid timezone issues
       const [year, month, day] = dateStr.split('-').map(Number);
       const date = new Date(year, month - 1, day);
       const dayOfWeek = date.getDay();
@@ -282,115 +287,51 @@ export default function GameScheduler() {
       dateToLeagueWeek.set(dateStr, currentLeagueWeek);
     }
 
-    // Track venue distribution per team
-    const teamVenueCount: Map<number, Map<number, number>> = new Map();
-    selectedTeams.forEach(teamId => {
-      teamVenueCount.set(teamId, new Map());
-      selectedVenues.forEach(venueId => {
-        teamVenueCount.get(teamId)!.set(venueId, 0);
-      });
-    });
+    // Generate perfect matchings for weekly scheduling
+    const teamIndices = selectedTeams.map((_, i) => i);
+    const matchings = generatePerfectMatchings(teamIndices);
+    const numWeeks = Math.floor(gameSlots.length / selectedVenues.length);
 
-    // Track weekly games per team to ensure one game per league week
-    const teamLeagueWeekGames: Map<number, Map<number, number>> = new Map();
-    selectedTeams.forEach(teamId => {
-      teamLeagueWeekGames.set(teamId, new Map());
-    });
-
-    // Assign matchups to available slots
-    let matchupIndex = 0;
-    let seasonGamesCreated = 0;
-    console.log(`DEBUG: About to assign games. Available slots: ${gameSlots.length}, Available matchups: ${matchups.length - matchupIndex}`);
-
-    for (const slot of gameSlots) {
-      if (matchupIndex >= matchups.length) {
-        matchupIndex = 0;
-      }
-
-      const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
-
-      // Try to find a matchup where neither team has a game this league week
-      let selectedMatchupIndex = matchupIndex;
-      let attemptCount = 0;
-      const maxAttempts = matchups.length;
-
-      while (attemptCount < maxAttempts) {
-        const testMatchup = matchups[selectedMatchupIndex];
-        const homeLeagueWeekGames = teamLeagueWeekGames.get(testMatchup.home)!;
-        const awayLeagueWeekGames = teamLeagueWeekGames.get(testMatchup.away)!;
-
-        const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
-        const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
-
-        // If neither team has a game this week, use this matchup
-        if (homeGamesThisWeek === 0 && awayGamesThisWeek === 0) {
-          matchupIndex = selectedMatchupIndex;
-          break;
-        }
-
-        // Try next matchup
-        selectedMatchupIndex++;
-        if (selectedMatchupIndex >= matchups.length) {
-          selectedMatchupIndex = 0;
-        }
-        attemptCount++;
-      }
-
-      // Use the selected matchup (either valid or fallback)
-      const matchup = matchups[matchupIndex];
-
-      // Find the venue with the most balanced distribution for both teams
-      const homeTeamVenueCounts = teamVenueCount.get(matchup.home)!;
-      const awayTeamVenueCounts = teamVenueCount.get(matchup.away)!;
-
-      // Calculate the max games each team plays at any venue
-      const homeMaxVenueGames = Math.max(...Array.from(homeTeamVenueCounts.values()));
-      const awayMaxVenueGames = Math.max(...Array.from(awayTeamVenueCounts.values()));
-
-      let bestVenueId = slot.venueId;
-      // Score: prefer venues where teams have fewer games, and prioritize balancing the max
-      let bestScore = Math.max(
-        homeTeamVenueCounts.get(slot.venueId) || 0,
-        awayTeamVenueCounts.get(slot.venueId) || 0
-      );
-
-      // Check other venues that have games at this date/time
-      const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
-      for (const otherSlot of sameTimeSlots) {
-        const homeCount = homeTeamVenueCounts.get(otherSlot.venueId) || 0;
-        const awayCount = awayTeamVenueCounts.get(otherSlot.venueId) || 0;
-        // Use max of the two to prioritize balancing
-        const score = Math.max(homeCount, awayCount);
-        if (score < bestScore) {
-          bestScore = score;
-          bestVenueId = otherSlot.venueId;
-        }
-      }
-
-      games.push({
-        id: `${slot.date}-${bestVenueId}-${slot.time}-${matchupIndex}`,
-        homeTeamId: matchup.home,
-        awayTeamId: matchup.away,
-        venueId: bestVenueId,
-        gameDate: slot.date,
-        gameTime: slot.time,
-        seasonId,
-      });
-
-      // Update venue counts
-      homeTeamVenueCounts.set(bestVenueId, (homeTeamVenueCounts.get(bestVenueId) || 0) + 1);
-      awayTeamVenueCounts.set(bestVenueId, (awayTeamVenueCounts.get(bestVenueId) || 0) + 1);
-
-      // Update league week game counts
-      const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
-      const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
-      homeLeagueWeekGames.set(leagueWeekNumber, (homeLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
-      awayLeagueWeekGames.set(leagueWeekNumber, (awayLeagueWeekGames.get(leagueWeekNumber) || 0) + 1);
-
-      matchupIndex++;
-      seasonGamesCreated++;
+    // Build matching sequence (cycle through matchings)
+    const matchingSequence: number[] = [];
+    for (let w = 0; w < numWeeks; w++) {
+      matchingSequence.push(w % matchings.length);
     }
-    console.log(`DEBUG: Created ${seasonGamesCreated} season games with balanced venue distribution`);
+
+    // Assign games using weekly scheduling
+    let gameIndex = 0;
+    for (let weekIdx = 0; weekIdx < matchingSequence.length; weekIdx++) {
+      const matchingIdx = matchingSequence[weekIdx];
+      const matching = matchings[matchingIdx];
+
+      // Get slots for this week
+      const weekSlots = gameSlots.slice(weekIdx * selectedVenues.length, (weekIdx + 1) * selectedVenues.length);
+      
+      if (weekSlots.length === 0) break;
+
+      // Alternate venue assignment direction each week for balance
+      const venueOrder = weekIdx % 2 === 0 
+        ? selectedVenues 
+        : [...selectedVenues].reverse();
+
+      for (let pairIdx = 0; pairIdx < matching.length && pairIdx < weekSlots.length; pairIdx++) {
+        const [homeTeamIdx, awayTeamIdx] = matching[pairIdx];
+        const slot = weekSlots[pairIdx];
+
+        games.push({
+          id: `${slot.date}-${slot.venueId}-${slot.time}-${gameIndex}`,
+          homeTeamId: selectedTeams[homeTeamIdx],
+          awayTeamId: selectedTeams[awayTeamIdx],
+          venueId: slot.venueId,
+          gameDate: slot.date,
+          gameTime: slot.time,
+          seasonId,
+          isEvaluationGame: false,
+        });
+
+        gameIndex++;
+      }
+    }
 
     setScheduledGames(games);
     toast.success(`Generated ${games.length} games (${evaluationGameCount > 0 ? `${evaluationGameCount} evaluation + ` : ''}${games.length - evaluationGameCount} regular)`);
@@ -458,285 +399,307 @@ export default function GameScheduler() {
       </Card>
 
       {/* Team Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Teams</CardTitle>
-          <CardDescription>Select teams for the season</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {teamsToDisplay?.map(team => (
-            <div key={team.id} className="flex items-center gap-2">
-              <Checkbox 
-                checked={selectedTeams.includes(team.id)}
-                onCheckedChange={() => toggleTeam(team.id)}
-              />
-              <label>{team.name}</label>
+      {seasonId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Teams</CardTitle>
+            <CardDescription>Select an even number of teams</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {teamsToDisplay?.map(team => (
+                <div key={team.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`team-${team.id}`}
+                    checked={selectedTeams.includes(team.id)}
+                    onCheckedChange={() => toggleTeam(team.id)}
+                  />
+                  <label htmlFor={`team-${team.id}`} className="text-sm cursor-pointer">
+                    {team.name}
+                  </label>
+                </div>
+              ))}
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Venue Selection and Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Venues</CardTitle>
-          <CardDescription>Select venues and configure their schedules</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {venues?.map(venue => (
-            <div key={venue.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox 
+      {/* Venue Selection & Configuration */}
+      {seasonId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Venues</CardTitle>
+            <CardDescription>Select venues and configure their schedules (need {selectedTeams.length / 2} venues for {selectedTeams.length} teams)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {venues?.map(venue => (
+                <div key={venue.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`venue-${venue.id}`}
                     checked={selectedVenues.includes(venue.id)}
                     onCheckedChange={() => toggleVenue(venue.id)}
                   />
-                  <label className="font-medium">{venue.name}</label>
+                  <label htmlFor={`venue-${venue.id}`} className="text-sm cursor-pointer">
+                    {venue.name}
+                  </label>
                 </div>
-                {selectedVenues.includes(venue.id) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setExpandedVenue(expandedVenue === venue.id ? null : venue.id)}
-                  >
-                    {expandedVenue === venue.id ? 'Hide' : 'Configure'}
-                  </Button>
-                )}
-              </div>
-
-              {expandedVenue === venue.id && selectedVenues.includes(venue.id) && (
-                <div className="ml-6 space-y-3 border-l-2 pl-4">
-                  {/* Days Selection */}
-                  <div>
-                    <Label className="text-sm font-medium">Available Days</Label>
-                    <div className="grid grid-cols-7 gap-2 mt-2">
-                      {dayNames.map((day, idx) => (
-                        <div key={idx} className="flex items-center gap-1">
-                          <Checkbox 
-                            checked={venueSchedules.get(venue.id)?.days.includes(idx) || false}
-                            onCheckedChange={() => toggleDay(venue.id, idx)}
-                          />
-                          <span className="text-xs">{day}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Time Slots */}
-                  <div>
-                    <Label className="text-sm font-medium">Time Slots</Label>
-                    <div className="space-y-2 mt-2">
-                      {venueSchedules.get(venue.id)?.times.map((time, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                          <span>{time}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removeTimeSlot(venue.id, time)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <div className="flex gap-2">
-                        <Input 
-                          type="time" 
-                          placeholder="HH:MM"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              addTimeSlot(venue.id, (e.target as HTMLInputElement).value);
-                              (e.target as HTMLInputElement).value = '';
-                            }
-                          }}
-                        />
-                        <Button 
-                          onClick={(e) => {
-                            const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                            addTimeSlot(venue.id, input.value);
-                            input.value = '';
-                          }}
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
-          ))}
-        </CardContent>
-      </Card>
 
-      {/* Evaluation Games */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Evaluation Games</CardTitle>
-          <CardDescription>Configure evaluation games (Team White vs Team Black)</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label>Number of Evaluation Games</Label>
-            <Input 
-              type="number" 
-              min="0" 
-              max="10"
-              value={evaluationGameCount}
-              onChange={(e) => {
-                const count = parseInt(e.target.value) || 0;
-                setEvaluationGameCount(count);
-                initializeEvaluationGames(count);
-              }}
-            />
-          </div>
+            {/* Venue Schedule Configuration */}
+            {selectedVenues.length > 0 && (
+              <div className="space-y-4 mt-6">
+                {selectedVenues.map(venueId => {
+                  const venue = venues?.find(v => v.id === venueId);
+                  const schedule = venueSchedules.get(venueId) || { days: [], times: [] };
+                  const isExpanded = expandedVenue === venueId;
 
-          {evaluationGames.map((game, idx) => (
-            <div key={idx} className="border rounded-lg p-4 space-y-3">
-              <h4 className="font-medium">Evaluation Game {idx + 1}</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label className="text-sm">Date</Label>
-                  <Input 
-                    type="date"
-                    value={game.date}
-                    onChange={(e) => updateEvaluationGame(idx, 'date', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm">Time</Label>
-                  <Input 
-                    type="time"
-                    value={game.time}
-                    onChange={(e) => updateEvaluationGame(idx, 'time', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm">Venue</Label>
-                  <Select value={game.venueId?.toString() || ''} onValueChange={v => updateEvaluationGame(idx, 'venueId', parseInt(v))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select venue" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {venues?.map(v => (
-                        <SelectItem key={v.id} value={v.id.toString()}>
-                          {v.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  return (
+                    <div key={venueId} className="border rounded-lg p-4">
+                      <button
+                        onClick={() => setExpandedVenue(isExpanded ? null : venueId)}
+                        className="w-full text-left font-semibold flex justify-between items-center"
+                      >
+                        {venue?.name}
+                        <span>{isExpanded ? '▼' : '▶'}</span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="mt-4 space-y-4">
+                          {/* Days Selection */}
+                          <div>
+                            <label className="text-sm font-medium">Days of Week</label>
+                            <div className="grid grid-cols-7 gap-2 mt-2">
+                              {dayNames.map((day, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => toggleDay(venueId, idx)}
+                                  className={`p-2 rounded text-sm ${
+                                    schedule.days.includes(idx)
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-gray-200'
+                                  }`}
+                                >
+                                  {day}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Time Slots */}
+                          <div>
+                            <label className="text-sm font-medium">Time Slots</label>
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                type="time"
+                                onChange={e => {
+                                  if (e.target.value) {
+                                    addTimeSlot(venueId, e.target.value);
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {schedule.times.map(time => (
+                                <div key={time} className="bg-blue-100 px-3 py-1 rounded flex items-center gap-2">
+                                  {time}
+                                  <button
+                                    onClick={() => removeTimeSlot(venueId, time)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Date Range */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Season Date Range</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Start Date</Label>
-            <Input 
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label>End Date</Label>
-            <Input 
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {seasonId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Schedule Period</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Blackout Dates */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Blackout Dates</CardTitle>
-          <CardDescription>Dates when no games should be scheduled</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Input 
-              type="date"
-              value={newBlackoutDate}
-              onChange={(e) => setNewBlackoutDate(e.target.value)}
-            />
-            <Button onClick={addBlackoutDate} size="sm">
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {blackoutDates.map(date => (
-              <div key={date} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                <span>{date}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => removeBlackoutDate(date)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+      {seasonId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Blackout Dates</CardTitle>
+            <CardDescription>Dates when no games should be scheduled</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={newBlackoutDate}
+                onChange={e => setNewBlackoutDate(e.target.value)}
+              />
+              <Button onClick={addBlackoutDate}>Add</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {blackoutDates.map(date => (
+                <div key={date} className="bg-red-100 px-3 py-1 rounded flex items-center gap-2">
+                  {date}
+                  <button
+                    onClick={() => removeBlackoutDate(date)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Evaluation Games */}
+      {seasonId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Evaluation Games</CardTitle>
+            <CardDescription>Team White vs Team Black games</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Number of Evaluation Games</Label>
+              <Input
+                type="number"
+                min="0"
+                value={evaluationGameCount}
+                onChange={e => {
+                  const count = parseInt(e.target.value) || 0;
+                  setEvaluationGameCount(count);
+                  initializeEvaluationGames(count);
+                }}
+              />
+            </div>
+
+            {evaluationGames.map((game, idx) => (
+              <div key={idx} className="border rounded-lg p-4 space-y-3">
+                <h4 className="font-semibold">Evaluation Game {idx + 1}</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Date</Label>
+                    <Input
+                      type="date"
+                      value={game.date}
+                      onChange={e => updateEvaluationGame(idx, 'date', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Time</Label>
+                    <Input
+                      type="time"
+                      value={game.time}
+                      onChange={e => updateEvaluationGame(idx, 'time', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Venue</Label>
+                    <Select
+                      value={game.venueId?.toString() || ''}
+                      onValueChange={v => updateEvaluationGame(idx, 'venueId', parseInt(v))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select venue" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {venues?.map(v => (
+                          <SelectItem key={v.id} value={v.id.toString()}>
+                            {v.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Generate Schedule Button */}
-      <Button onClick={generateSchedule} className="w-full" size="lg">
-        Generate Schedule
-      </Button>
+      {/* Generate Button */}
+      {seasonId && (
+        <Button onClick={generateSchedule} className="w-full" size="lg">
+          Generate Schedule
+        </Button>
+      )}
 
-      {/* Scheduled Games */}
+      {/* Scheduled Games Preview */}
       {scheduledGames.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Generated Games ({scheduledGames.length})</CardTitle>
+            <CardTitle>Generated Schedule Preview</CardTitle>
+            <CardDescription>{scheduledGames.length} games</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-            {scheduledGames.map(game => {
-              const homeTeam = teams?.find(t => t.id === game.homeTeamId);
-              const awayTeam = teams?.find(t => t.id === game.awayTeamId);
-              const venue = venues?.find(v => v.id === game.venueId);
-              const homeTeamName = game.homeTeamId === 1 ? 'Team White' : homeTeam?.name || `Team ${game.homeTeamId}`;
-              const awayTeamName = game.awayTeamId === 2 ? 'Team Black' : awayTeam?.name || `Team ${game.awayTeamId}`;
-
-              return (
-                <div key={game.id} className="flex items-center justify-between bg-gray-50 p-3 rounded border">
-                  <div className="flex-1">
-                    <div className="font-medium">{homeTeamName} vs {awayTeamName}</div>
+          <CardContent>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {scheduledGames.map((game, idx) => (
+                <div
+                  key={game.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                >
+                  <div className="flex-1 space-y-1">
+                    <div className="font-semibold">
+                      {game.homeTeamId === 1 && game.awayTeamId === 2 && game.isEvaluationGame
+                        ? 'Team White vs Team Black'
+                        : `Team ${game.homeTeamId} vs Team ${game.awayTeamId}`}
+                    </div>
                     <div className="text-sm text-gray-600">
-                      {game.gameDate} @ {game.gameTime} - {venue?.name}
+                      {game.gameDate} @ {game.gameTime}
                     </div>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="destructive"
                     size="sm"
                     onClick={() => removeGame(game.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            <Button onClick={submitSchedule} className="w-full mt-4">
+              Submit Schedule
+            </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* Submit Button */}
-      {scheduledGames.length > 0 && (
-        <Button onClick={submitSchedule} className="w-full" size="lg" disabled={createGamesMutation.isPending}>
-          {createGamesMutation.isPending ? 'Submitting...' : 'Submit Schedule'}
-        </Button>
       )}
     </div>
   );
