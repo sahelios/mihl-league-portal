@@ -366,10 +366,11 @@ export default function GameScheduler() {
         const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
         const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
         const hasValidBudget = homeCount > 0 && awayCount > 0;
-        const score = Math.max(homeCount, awayCount);
+        // Score: prefer venues where both teams have balanced budgets
+        const score = Math.min(homeCount, awayCount);
 
-        // Prefer venues where both teams have budget
-        if (hasValidBudget && (!foundValid || score < bestScore)) {
+        // Prefer venues where both teams have budget and minimum is highest
+        if (hasValidBudget && (!foundValid || score > bestScore)) {
           bestScore = score;
           bestVenueId = otherSlot.venueId;
           foundValid = true;
