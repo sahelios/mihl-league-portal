@@ -282,14 +282,27 @@ export default function GameScheduler() {
       dateToLeagueWeek.set(dateStr, currentLeagueWeek);
     }
 
-    // Track venue distribution per team
-    const teamVenueCount: Map<number, Map<number, number>> = new Map();
+    // Calculate budgets for team-venue combinations
+    const totalGames = gameSlots.length;
+    const gamesPerTeam = (totalGames * 2) / selectedTeams.length;
+    const baseTeamVenueBudget = Math.floor(gamesPerTeam / selectedVenues.length);
+    const extraTeamVenueGames = gamesPerTeam % selectedVenues.length;
+
+    // Initialize budget tracking
+    const teamVenueRemaining: Map<number, Map<number, number>> = new Map();
+
     selectedTeams.forEach(teamId => {
-      teamVenueCount.set(teamId, new Map());
-      selectedVenues.forEach(venueId => {
-        teamVenueCount.get(teamId)!.set(venueId, 0);
+      const teamRemaining = new Map<number, number>();
+      selectedVenues.forEach((venueId, venueIdx) => {
+        const budget = baseTeamVenueBudget + (venueIdx < extraTeamVenueGames ? 1 : 0);
+        teamRemaining.set(venueId, budget);
       });
+      teamVenueRemaining.set(teamId, teamRemaining);
     });
+
+    console.log(`DEBUG: Games per team: ${gamesPerTeam}, Base budget: ${baseTeamVenueBudget}, Extra: ${extraTeamVenueGames}`);
+    console.log(`DEBUG: Team-venue budgets initialized`);
+
 
     // Track weekly games per team to ensure one game per league week
     const teamLeagueWeekGames: Map<number, Map<number, number>> = new Map();
@@ -339,29 +352,29 @@ export default function GameScheduler() {
       // Use the selected matchup (either valid or fallback)
       const matchup = matchups[matchupIndex];
 
-      // Find the venue with the most balanced distribution for both teams
-      const homeTeamVenueCounts = teamVenueCount.get(matchup.home)!;
-      const awayTeamVenueCounts = teamVenueCount.get(matchup.away)!;
-
-      // Calculate the max games each team plays at any venue
-      const homeMaxVenueGames = Math.max(...Array.from(homeTeamVenueCounts.values()));
-      const awayMaxVenueGames = Math.max(...Array.from(awayTeamVenueCounts.values()));
+      // Find best venue using budget-based approach
+      const homeRemaining = teamVenueRemaining.get(matchup.home)!;
+      const awayRemaining = teamVenueRemaining.get(matchup.away)!;
 
       let bestVenueId = slot.venueId;
-      // Score: prefer venues where teams have fewer games, and prioritize balancing the max
-      let bestScore = Math.max(
-        homeTeamVenueCounts.get(slot.venueId) || 0,
-        awayTeamVenueCounts.get(slot.venueId) || 0
-      );
+      let bestScore = Math.max(homeRemaining.get(slot.venueId) || 0, awayRemaining.get(slot.venueId) || 0);
+      let foundValid = (homeRemaining.get(slot.venueId) || 0) > 0 && (awayRemaining.get(slot.venueId) || 0) > 0;
 
-      // Check other venues that have games at this date/time
+      // Check all venues available at this date/time
       const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
       for (const otherSlot of sameTimeSlots) {
-        const homeCount = homeTeamVenueCounts.get(otherSlot.venueId) || 0;
-        const awayCount = awayTeamVenueCounts.get(otherSlot.venueId) || 0;
-        // Use max of the two to prioritize balancing
+        const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
+        const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
+        const hasValidBudget = homeCount > 0 && awayCount > 0;
         const score = Math.max(homeCount, awayCount);
-        if (score < bestScore) {
+
+        // Prefer venues where both teams have budget
+        if (hasValidBudget && (!foundValid || score < bestScore)) {
+          bestScore = score;
+          bestVenueId = otherSlot.venueId;
+          foundValid = true;
+        } else if (!foundValid && score > bestScore) {
+          // Fallback: if no valid budget found, pick the one with most remaining
           bestScore = score;
           bestVenueId = otherSlot.venueId;
         }
@@ -377,9 +390,9 @@ export default function GameScheduler() {
         seasonId,
       });
 
-      // Update venue counts
-      homeTeamVenueCounts.set(bestVenueId, (homeTeamVenueCounts.get(bestVenueId) || 0) + 1);
-      awayTeamVenueCounts.set(bestVenueId, (awayTeamVenueCounts.get(bestVenueId) || 0) + 1);
+      // Update budgets
+      homeRemaining.set(bestVenueId, Math.max(0, (homeRemaining.get(bestVenueId) || 0) - 1));
+      awayRemaining.set(bestVenueId, Math.max(0, (awayRemaining.get(bestVenueId) || 0) - 1));
 
       // Update league week game counts
       const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
