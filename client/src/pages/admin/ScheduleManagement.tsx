@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -135,63 +135,79 @@ export default function ScheduleManagement() {
             </Select>
           </div>
 
-          {/* Statistics */}
+          {/* Statistics - Games by Team and Venue */}
           {selectedSeasonId && !loadingGames && games.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Team Statistics */}
-              <Card className="bg-muted/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Games by Team</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {(() => {
-                      const teamCounts: { [key: string]: number } = {};
-                      games.forEach((game) => {
-                        const homeTeam = game.homeTeam?.name || 'Unknown';
-                        const awayTeam = game.awayTeam?.name || 'Unknown';
-                        teamCounts[homeTeam] = (teamCounts[homeTeam] || 0) + 1;
-                        teamCounts[awayTeam] = (teamCounts[awayTeam] || 0) + 1;
-                      });
-                      return Object.entries(teamCounts)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([team, count]) => (
-                          <div key={team} className="flex justify-between text-sm">
-                            <span className="font-medium">{team}</span>
-                            <Badge variant="secondary">{count} games</Badge>
-                          </div>
-                        ));
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="bg-muted/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Games by Team & Venue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left font-semibold py-2 px-2">Team</th>
+                        {(() => {
+                          const venues = new Set<string>();
+                          games.forEach((game) => {
+                            const venue = game.venue?.name || 'Unknown Venue';
+                            venues.add(venue);
+                          });
+                          return Array.from(venues).sort().map((venue) => (
+                            <th key={venue} className="text-center font-semibold py-2 px-2 text-xs">
+                              {venue}
+                            </th>
+                          ));
+                        })()}
+                        <th className="text-center font-semibold py-2 px-2">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        // Build a map of team -> venue -> count
+                        const teamVenueCounts: { [team: string]: { [venue: string]: number } } = {};
+                        const allTeams = new Set<string>();
+                        const allVenues = new Set<string>();
 
-              {/* Venue Statistics */}
-              <Card className="bg-muted/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Games by Venue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {(() => {
-                      const venueCounts: { [key: string]: number } = {};
-                      games.forEach((game) => {
-                        const venue = game.venue?.name || 'Unknown Venue';
-                        venueCounts[venue] = (venueCounts[venue] || 0) + 1;
-                      });
-                      return Object.entries(venueCounts)
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([venue, count]) => (
-                          <div key={venue} className="flex justify-between text-sm">
-                            <span className="font-medium">{venue}</span>
-                            <Badge variant="secondary">{count} games</Badge>
-                          </div>
-                        ));
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                        games.forEach((game) => {
+                          const homeTeam = game.homeTeam?.name || 'Unknown';
+                          const awayTeam = game.awayTeam?.name || 'Unknown';
+                          const venue = game.venue?.name || 'Unknown Venue';
+
+                          allTeams.add(homeTeam);
+                          allTeams.add(awayTeam);
+                          allVenues.add(venue);
+
+                          if (!teamVenueCounts[homeTeam]) teamVenueCounts[homeTeam] = {};
+                          if (!teamVenueCounts[awayTeam]) teamVenueCounts[awayTeam] = {};
+
+                          teamVenueCounts[homeTeam][venue] = (teamVenueCounts[homeTeam][venue] || 0) + 1;
+                          teamVenueCounts[awayTeam][venue] = (teamVenueCounts[awayTeam][venue] || 0) + 1;
+                        });
+
+                        const sortedTeams = Array.from(allTeams).sort();
+                        const sortedVenues = Array.from(allVenues).sort();
+
+                        return sortedTeams.map((team) => {
+                          const teamTotal = Object.values(teamVenueCounts[team] || {}).reduce((a, b) => a + b, 0);
+                          return (
+                            <tr key={team} className="border-b hover:bg-muted/50">
+                              <td className="font-medium py-2 px-2">{team}</td>
+                              {sortedVenues.map((venue) => (
+                                <td key={`${team}-${venue}`} className="text-center py-2 px-2">
+                                  {teamVenueCounts[team]?.[venue] || 0}
+                                </td>
+                              ))}
+                              <td className="text-center font-semibold py-2 px-2">{teamTotal}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Games List */}
