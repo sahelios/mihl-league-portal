@@ -339,19 +339,28 @@ export default function GameScheduler() {
       // Use the selected matchup (either valid or fallback)
       const matchup = matchups[matchupIndex];
 
-      // Find the venue with the least games for both teams
+      // Find the venue with the most balanced distribution for both teams
       const homeTeamVenueCounts = teamVenueCount.get(matchup.home)!;
       const awayTeamVenueCounts = teamVenueCount.get(matchup.away)!;
 
+      // Calculate the max games each team plays at any venue
+      const homeMaxVenueGames = Math.max(...Array.from(homeTeamVenueCounts.values()));
+      const awayMaxVenueGames = Math.max(...Array.from(awayTeamVenueCounts.values()));
+
       let bestVenueId = slot.venueId;
-      let bestScore = (homeTeamVenueCounts.get(slot.venueId) || 0) + (awayTeamVenueCounts.get(slot.venueId) || 0);
+      // Score: prefer venues where teams have fewer games, and prioritize balancing the max
+      let bestScore = Math.max(
+        homeTeamVenueCounts.get(slot.venueId) || 0,
+        awayTeamVenueCounts.get(slot.venueId) || 0
+      );
 
       // Check other venues that have games at this date/time
       const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
       for (const otherSlot of sameTimeSlots) {
         const homeCount = homeTeamVenueCounts.get(otherSlot.venueId) || 0;
         const awayCount = awayTeamVenueCounts.get(otherSlot.venueId) || 0;
-        const score = homeCount + awayCount;
+        // Use max of the two to prioritize balancing
+        const score = Math.max(homeCount, awayCount);
         if (score < bestScore) {
           bestScore = score;
           bestVenueId = otherSlot.venueId;
