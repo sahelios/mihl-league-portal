@@ -1101,7 +1101,17 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       
       const updateData: any = {};
-      if (input.name) updateData.name = input.name;
+      // Handle name field - split into firstName and lastName
+      if (input.name) {
+        const nameParts = input.name.trim().split(/\s+/);
+        if (nameParts.length >= 2) {
+          updateData.firstName = nameParts[0];
+          updateData.lastName = nameParts.slice(1).join(' ');
+        } else if (nameParts.length === 1) {
+          updateData.firstName = nameParts[0];
+          updateData.lastName = '';
+        }
+      }
       if (input.email) updateData.email = input.email;
       if (input.phone) updateData.phone = input.phone;
       if (input.rating !== undefined) updateData.rating = input.rating;
