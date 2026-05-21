@@ -30,9 +30,9 @@ export default function Players() {
   // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
   const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
-  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
+  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery({});
   const { data: statsData } = trpc.registration.getStats.useQuery();
-  const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery();
+  const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery({});
 
   // Mutations
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
@@ -152,7 +152,10 @@ export default function Players() {
     
     if (editData.phone !== editingPlayer.phone) updates.phone = editData.phone;
     if (editData.playerRating !== editingPlayer.playerRating) updates.rating = editData.playerRating;
-    if (editData.paymentMethod !== editingPlayer.paymentMethod) updates.paymentMethod = editData.paymentMethod;
+    // Only include paymentMethod if it's a valid value (not empty or 'none')
+    if (editData.paymentMethod && editData.paymentMethod !== editingPlayer.paymentMethod) {
+      updates.paymentMethod = editData.paymentMethod;
+    }
     if (editData.teamId !== editingPlayer.teamId) updates.teamId = editData.teamId;
     if (editData.seasonId !== editingPlayer.seasonId) updates.seasonId = editData.seasonId;
 
