@@ -30,7 +30,7 @@ export default function Players() {
   // Queries
   const { data: registrations = [] } = trpc.registration.getAll.useQuery();
   const { data: teams = [] } = trpc.admin.getTeams.useQuery({});
-  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery({});
+  const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
   const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery({});
 
