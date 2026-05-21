@@ -312,6 +312,9 @@ export default function GameScheduler() {
       teamLeagueWeekTueThuGames.set(teamId, new Map());
     });
 
+    // Calculate regular games (total games minus evaluation games)
+    const regularGames = totalGames - evaluationGameCount;
+
     // Separate slots into Tue/Thu and other days
     const tueThuSlots = gameSlots.filter(s => s.dayOfWeek === 2 || s.dayOfWeek === 4);
     const otherDaySlots = gameSlots.filter(s => s.dayOfWeek !== 2 && s.dayOfWeek !== 4);
