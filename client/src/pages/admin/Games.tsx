@@ -20,13 +20,17 @@ import { useAuth } from "@/_core/hooks/useAuth";
 export default function Games() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [playerScores, setPlayerScores] = useState<Record<number, { goals: number; assists: number }>>({});
 
   // tRPC Queries & Mutations
   const utils = trpc.useUtils();
-  const { data: upcomingGames = [], isLoading: loadingGames } = trpc.admin.getUpcomingGames.useQuery();
-  const { data: evaluationGames = [] } = trpc.admin.getEvaluationGames.useQuery();
+  const { data: seasons = [], isLoading: loadingSeasons } = trpc.admin.getSeasons.useQuery();
+  const { data: gamesBySeasonId = [], isLoading: loadingGames } = trpc.admin.getGamesBySeasonId.useQuery(
+    selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
+    { enabled: !!selectedSeasonId }
+  );
   const { data: allPlayers = [] } = trpc.registration.getAll.useQuery();
 
   const submitMutation = trpc.admin.submitGameScore.useMutation({
@@ -34,7 +38,7 @@ export default function Games() {
       toast.success("Score submitted successfully!");
       setSelectedGameId(null);
       setPlayerScores({});
-      utils.admin.getRecentGames.invalidate();
+      utils.admin.getGamesBySeasonId.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to submit score");
@@ -58,7 +62,7 @@ export default function Games() {
     );
   }
 
-  const selectedGame = [...upcomingGames, ...evaluationGames].find(g => g.id === selectedGameId);
+  const selectedGame = gamesBySeasonId.find(g => g.id === selectedGameId);
   const homeTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.homeTeamId) : [];
   const awayTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.awayTeamId) : [];
 
@@ -126,6 +130,18 @@ export default function Games() {
     });
   };
 
+  // Helper function to format team names
+  const getTeamName = (teamId: number) => {
+    const game = gamesBySeasonId.find(g => g.homeTeamId === teamId || g.awayTeamId === teamId);
+    if (game?.homeTeamId === teamId) {
+      return game.homeTeam?.name || `Team ${teamId}`;
+    }
+    if (game?.awayTeamId === teamId) {
+      return game.awayTeam?.name || `Team ${teamId}`;
+    }
+    return `Team ${teamId}`;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 md:p-6">
@@ -143,37 +159,67 @@ export default function Games() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Game Selection */}
+              {/* Season Selection */}
               <div className="space-y-2">
-                <Label htmlFor="game">Select Game</Label>
-                <Select value={selectedGameId?.toString() || ""} onValueChange={(val) => setSelectedGameId(parseInt(val))}>
+                <Label htmlFor="season">Select Season</Label>
+                <Select value={selectedSeasonId?.toString() || ""} onValueChange={(val) => {
+                  setSelectedSeasonId(parseInt(val));
+                  setSelectedGameId(null);
+                  setPlayerScores({});
+                }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a game" />
+                    <SelectValue placeholder="Choose a season" />
                   </SelectTrigger>
                   <SelectContent>
-                    {loadingGames ? (
+                    {loadingSeasons ? (
                       <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                    ) : seasons.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">No seasons available</div>
                     ) : (
-                      <>
-                        {upcomingGames.map(game => (
-                          <SelectItem key={game.id} value={game.id.toString()}>
-                            {game.gameId || `GAME-${game.id}`} - {game.homeTeamId} vs {game.awayTeamId} ({new Date(game.scheduledDate).toLocaleDateString()})
-                          </SelectItem>
-                        ))}
-                        {evaluationGames.length > 0 && (
-                          <>
-                            {evaluationGames.map(game => (
-                              <SelectItem key={`eval-${game.id}`} value={game.id.toString()}>
-                                {game.gameId || `EVAL-${game.id}`} - Evaluation Game ({new Date(game.scheduledDate).toLocaleDateString()})
-                              </SelectItem>
-                            ))}
-                          </>
-                        )}
-                      </>
+                      seasons.map(season => (
+                        <SelectItem key={season.id} value={season.id.toString()}>
+                          {season.name} ({new Date(season.startDate).toLocaleDateString()} - {new Date(season.endDate).toLocaleDateString()})
+                        </SelectItem>
+                      ))
                     )}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Game Selection - Only shown after season is selected */}
+              {selectedSeasonId && (
+                <div className="space-y-2">
+                  <Label htmlFor="game">Select Game</Label>
+                  <Select value={selectedGameId?.toString() || ""} onValueChange={(val) => {
+                    setSelectedGameId(parseInt(val));
+                    setPlayerScores({});
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a game" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingGames ? (
+                        <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                      ) : gamesBySeasonId.length === 0 ? (
+                        <div className="p-2 text-sm text-muted-foreground">No games in this season</div>
+                      ) : (
+                        gamesBySeasonId.map(game => {
+                          const homeTeamName = game.homeTeam?.name || `Team ${game.homeTeamId}`;
+                          const awayTeamName = game.awayTeam?.name || `Team ${game.awayTeamId}`;
+                          const isEvalGame = game.isEvaluationGame;
+                          const gameLabel = isEvalGame ? "Team White vs Team Black" : `${homeTeamName} vs ${awayTeamName}`;
+                          
+                          return (
+                            <SelectItem key={game.id} value={game.id.toString()}>
+                              {gameLabel} - {new Date(game.gameDate).toLocaleDateString()} @ {game.gameTime}
+                            </SelectItem>
+                          );
+                        })
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Player Score Entry */}
               {selectedGame && (
@@ -181,65 +227,77 @@ export default function Games() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Home Team */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-lg">Home Team</h3>
+                      <h3 className="font-semibold text-lg">
+                        {selectedGame.homeTeam?.name || `Team ${selectedGame.homeTeamId}`}
+                      </h3>
                       <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {homeTeamPlayers.map(player => (
-                          <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                            <span className="text-sm">{player.firstName} {player.lastName}</span>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePlayerGoal(player.id)}
-                              >
-                                <Plus className="h-3 w-3" />
-                                G: {playerScores[player.id]?.goals || 0}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePlayerAssist(player.id)}
-                              >
-                                <Plus className="h-3 w-3" />
-                                A: {playerScores[player.id]?.assists || 0}
-                              </Button>
+                        {homeTeamPlayers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No players found for this team</p>
+                        ) : (
+                          homeTeamPlayers.map(player => (
+                            <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                              <span className="text-sm">{player.firstName} {player.lastName}</span>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePlayerGoal(player.id)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  G: {playerScores[player.id]?.goals || 0}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePlayerAssist(player.id)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  A: {playerScores[player.id]?.assists || 0}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
 
                     {/* Away Team */}
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-lg">Away Team</h3>
+                      <h3 className="font-semibold text-lg">
+                        {selectedGame.awayTeam?.name || `Team ${selectedGame.awayTeamId}`}
+                      </h3>
                       <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {awayTeamPlayers.map(player => (
-                          <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                            <span className="text-sm">{player.firstName} {player.lastName}</span>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePlayerGoal(player.id)}
-                              >
-                                <Plus className="h-3 w-3" />
-                                G: {playerScores[player.id]?.goals || 0}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePlayerAssist(player.id)}
-                              >
-                                <Plus className="h-3 w-3" />
-                                A: {playerScores[player.id]?.assists || 0}
-                              </Button>
+                        {awayTeamPlayers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No players found for this team</p>
+                        ) : (
+                          awayTeamPlayers.map(player => (
+                            <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                              <span className="text-sm">{player.firstName} {player.lastName}</span>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePlayerGoal(player.id)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  G: {playerScores[player.id]?.goals || 0}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handlePlayerAssist(player.id)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  A: {playerScores[player.id]?.assists || 0}
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
