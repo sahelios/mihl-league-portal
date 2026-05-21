@@ -33,6 +33,7 @@ export default function Players() {
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
   const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery({});
+  const { data: evaluationGames = [] } = editData.seasonId ? trpc.admin.getEvaluationGamesBySeasonId.useQuery({ seasonId: editData.seasonId }) : { data: [] };
 
   // Mutations
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
@@ -80,6 +81,17 @@ export default function Players() {
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update email');
+    },
+  });
+
+  const assignPlayerToEvaluationGameMutation = trpc.admin.assignPlayerToEvaluationGame.useMutation({
+    onSuccess: () => {
+      toast.success('Evaluation game assignment updated!');
+      utils.registration.getAll.invalidate();
+      utils.admin.getEvaluationAttendance.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to assign evaluation game');
     },
   });
 
@@ -166,12 +178,20 @@ export default function Players() {
       });
     }
 
+    // Handle evaluation game assignment
+    if (editData.evaluationGameId !== undefined && editData.evaluationGameId !== editingPlayer.evaluationGameId) {
+      assignPlayerToEvaluationGameMutation.mutate({
+        registrationId: editingPlayer.id,
+        evaluationGameId: editData.evaluationGameId,
+      });
+    }
+
     if (Object.keys(updates).length > 0) {
       updatePlayerInfoMutation.mutate({
         registrationId: editingPlayer.id,
         ...updates,
       });
-    } else if (editData.email === editingPlayer.email) {
+    } else if (editData.email === editingPlayer.email && !editData.evaluationGameId) {
       setIsEditDialogOpen(false);
       toast.info('No changes made');
     }
@@ -305,6 +325,7 @@ export default function Players() {
                     <div><strong>Phone:</strong> {reg.phone}</div>
                     <div><strong>Payment:</strong> {reg.paymentMethod || 'Pending'}</div>
                     <div><strong>Position:</strong> {getPlayerPosition(reg)}</div>
+                    <div><strong>Season:</strong> {seasons.find(s => s.id === reg.seasonId)?.name || 'No Season'}</div>
                     <div><strong>Team:</strong> {getTeamDisplay(reg)}</div>
                   </div>
                   <div className="flex gap-2 flex-wrap">
@@ -413,6 +434,34 @@ export default function Players() {
                   <SelectItem value="cash">Cash</SelectItem>
                   <SelectItem value="eTransfer">E-Transfer</SelectItem>
                   <SelectItem value="arrangement">Arrangement</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Team (optional)</label>
+              <Select value={editData.teamId?.toString() || ''} onValueChange={v => setEditData({...editData, teamId: v ? parseInt(v) : null})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {editData.seasonId && teams.filter(t => t.seasonId === editData.seasonId).map(team => (
+                    <SelectItem key={team.id} value={team.id.toString()}>{team.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Evaluation Game (optional)</label>
+              <Select value={editData.evaluationGameId?.toString() || ''} onValueChange={v => setEditData({...editData, evaluationGameId: v ? parseInt(v) : null})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {editData.seasonId && evaluationGames.map(game => (
+                    <SelectItem key={game.id} value={game.id.toString()}>{game.gameDate} {game.gameTime}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

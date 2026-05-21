@@ -1019,6 +1019,88 @@ export const adminRouter = router({
       return result[0] || null;
     }),
 
+  getEvaluationGamesBySeasonId: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      try {
+        const result = await db.select({
+          id: games.id,
+          seasonId: games.seasonId,
+          gameDate: games.gameDate,
+          gameTime: games.gameTime,
+          venueId: games.venueId,
+        })
+          .from(games)
+          .where(and(
+            eq(games.seasonId, input.seasonId),
+            eq(games.isEvaluationGame, true)
+          ))
+          .orderBy(games.gameDate);
+        
+        return result;
+      } catch (error: any) {
+        console.error('Error fetching evaluation games:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  assignPlayerToEvaluationGame: adminProcedure
+    .input(z.object({ registrationId: z.number(), evaluationGameId: z.number().nullable() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      try {
+        // If evaluationGameId is null, remove from all evaluation games
+        if (!input.evaluationGameId) {
+          const assignments = await db.select()
+            .from(evaluationGameAssignments)
+            .where(eq(evaluationGameAssignments.registrationId, input.registrationId));
+          
+          for (const assignment of assignments) {
+            await db.delete(evaluationGameAssignments)
+              .where(and(
+                eq(evaluationGameAssignments.registrationId, input.registrationId),
+                eq(evaluationGameAssignments.evaluationDate, assignment.evaluationDate)
+              ));
+          }
+          return { success: true };
+        }
+        
+        // Get the evaluation game to find its date
+        const game = await db.select()
+          .from(games)
+          .where(eq(games.id, input.evaluationGameId))
+          .limit(1);
+        
+        if (!game || game.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Evaluation game not found" });
+        }
+        
+        const evaluationDate = game[0].gameDate ? game[0].gameDate.toISOString().split('T')[0] : '';
+        
+        // Remove from any other evaluation games
+        await db.delete(evaluationGameAssignments)
+          .where(eq(evaluationGameAssignments.registrationId, input.registrationId));
+        
+        // Add to the new evaluation game (default to white team)
+        await db.insert(evaluationGameAssignments)
+          .values({
+            registrationId: input.registrationId,
+            evaluationDate: evaluationDate,
+            team: 'white',
+          });
+        
+        return { success: true };
+      } catch (error: any) {
+        console.error('Error assigning player to evaluation game:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
   deletePlayer: adminProcedure
     .input(z.object({ registrationId: z.number() }))
     .mutation(async ({ input }) => {
