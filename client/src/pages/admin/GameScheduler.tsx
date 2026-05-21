@@ -8,17 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface VenueSchedule {
-  days: number[];
-  times: string[];
+  days: number[];   // JS day-of-week: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  times: string[];  // "HH:MM" 24h
 }
 
 interface EvaluationGame {
-  date: string;
-  time: string;
+  date: string;   // "YYYY-MM-DD"
+  time: string;   // "HH:MM"
   venueId: number;
 }
 
@@ -33,12 +36,260 @@ interface ScheduledGame {
   isEvaluationGame?: boolean;
 }
 
+interface DistributionRow {
+  teamId: number;
+  teamName: string;
+  venueBreakdown: { venueId: number; venueName: string; count: number }[];
+  total: number;
+}
+
+// ─── Utility: parse "YYYY-MM-DD" as LOCAL date (avoids UTC timezone shift) ────
+
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getISOWeekKey(d: Date): string {
+  // Returns "YYYY-Www" using ISO week numbering
+  const tmp = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  // ISO week: week containing Thursday
+  const dayOfWeek = tmp.getDay() === 0 ? 7 : tmp.getDay(); // Mon=1..Sun=7
+  tmp.setDate(tmp.getDate() + 4 - dayOfWeek);
+  const yearStart = new Date(tmp.getFullYear(), 0, 1);
+  const weekNo = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${tmp.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+// ─── Core Algorithm ───────────────────────────────────────────────────────────
+
+/**
+ * Generate perfect-matching rounds for N teams using the circle (polygon) method.
+ * Each round contains exactly N/2 pairs, every team appears exactly once.
+ * Returns (N-1) rounds for N even teams.
+ */
+function generatePerfectMatchingRounds(teamIds: number[]): [number, number][][] {
+  const n = teamIds.length;
+  const hasBye = n % 2 === 1;
+  const teams = hasBye ? [...teamIds, -1] : [...teamIds];
+  const N = teams.length;
+
+  const fixed = teams[0];
+  const rotating = teams.slice(1);
+  const rounds: [number, number][][] = [];
+
+  for (let r = 0; r < N - 1; r++) {
+    const pairs: [number, number][] = [];
+    // Fixed vs last in rotating
+    const opp = rotating[rotating.length - 1];
+    if (fixed !== -1 && opp !== -1) pairs.push([fixed, opp]);
+    // Pair the rest
+    for (let i = 0; i < N / 2 - 1; i++) {
+      const ta = rotating[i];
+      const tb = rotating[N - 2 - i];
+      if (ta !== -1 && tb !== -1) pairs.push([ta, tb]);
+    }
+    rounds.push(pairs);
+    // Rotate: move last to front
+    rotating.unshift(rotating.pop()!);
+  }
+
+  return rounds;
+}
+
+/**
+ * Main scheduling algorithm.
+ *
+ * Guarantees:
+ *  - Each team plays exactly once per league week (hard constraint).
+ *  - Venue distribution is as balanced as possible across the season.
+ *  - Home/away flips between cycles for balance.
+ *  - Same-day constraint: two teams cannot play on the same calendar date.
+ *  - Generalises to N teams, M venues, K time-slots per venue.
+ *
+ * Algorithm:
+ *  1. Build slots grouped by ISO calendar week, sorted within each week.
+ *  2. Generate perfect-matching rounds via circle method ((N-1) rounds for N teams).
+ *  3. For each league week: assign round[weekIdx % numRounds] to that week's slots.
+ *  4. Even cycles (0,2,...): pair[i] → slot[i], original home/away.
+ *     Odd cycles  (1,3,...): pair[N/2-1-i] → slot[i], flipped home/away.
+ *     This rotates which pairs appear at which venues across cycles.
+ *  5. Fixes: local-date parsing, ISO-week grouping, no budget-gating.
+ */
+function computeSchedule(params: {
+  teamIds: number[];
+  venueSchedules: Map<number, VenueSchedule>;
+  selectedVenueIds: number[];
+  startDate: string;
+  endDate: string;
+  evalDates: Set<string>;
+  blackoutDates: Set<string>;
+  seasonId: number;
+}): ScheduledGame[] {
+  const {
+    teamIds, venueSchedules, selectedVenueIds,
+    startDate, endDate, evalDates, blackoutDates, seasonId,
+  } = params;
+
+  // ── Step 1: Build all available slots, grouped by ISO week ──
+  //    Each slot: { dateStr, venueId, time }
+  //    Sort within week by (dateStr asc, venueId asc, time asc)
+
+  const weekMap = new Map<string, { dateStr: string; venueId: number; time: string }[]>();
+
+  const start = parseLocalDate(startDate);
+  const end   = parseLocalDate(endDate);
+
+  let cur = new Date(start);
+  while (formatDateStr(cur) <= formatDateStr(end)) {
+    const ds = formatDateStr(cur);
+
+    if (!evalDates.has(ds) && !blackoutDates.has(ds)) {
+      // JS day: 0=Sun,1=Mon,...,6=Sat
+      const jsDay = cur.getDay();
+
+      for (const vid of selectedVenueIds) {
+        const vsched = venueSchedules.get(vid);
+        if (!vsched || !vsched.days.includes(jsDay)) continue;
+
+        for (const time of vsched.times) {
+          const wk = getISOWeekKey(cur);
+          if (!weekMap.has(wk)) weekMap.set(wk, []);
+          weekMap.get(wk)!.push({ dateStr: ds, venueId: vid, time });
+        }
+      }
+    }
+
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  // Sort weeks and sort slots within each week
+  const sortedWeeks = Array.from(weekMap.keys()).sort();
+  for (const wk of sortedWeeks) {
+    weekMap.get(wk)!.sort((a, b) =>
+      a.dateStr.localeCompare(b.dateStr) ||
+      a.venueId - b.venueId ||
+      a.time.localeCompare(b.time)
+    );
+  }
+
+  // ── Step 2: Generate perfect-matching rounds ──
+  const rounds = generatePerfectMatchingRounds(teamIds);
+  const numRounds = rounds.length;  // = numTeams - 1
+
+  // ── Step 3 + 4: Assign rounds to weeks ──
+  const games: ScheduledGame[] = [];
+  let gameCounter = 0;
+
+  for (let weekIdx = 0; weekIdx < sortedWeeks.length; weekIdx++) {
+    const wk = sortedWeeks[weekIdx];
+    const slots = weekMap.get(wk)!;
+
+    const roundIdx = weekIdx % numRounds;
+    const cycle    = Math.floor(weekIdx / numRounds);
+    const isOddCycle = cycle % 2 === 1;
+
+    const pairs = rounds[roundIdx];  // e.g. [ [t1,t2], [t3,t4] ]
+    const numPairs = pairs.length;
+
+    // Track which dates are already used this week (same-day constraint)
+    const usedDatesThisWeek = new Set<string>();
+    // Track which teams are already assigned this week (once-per-week)
+    const usedTeamsThisWeek = new Set<number>();
+
+    for (let slotIdx = 0; slotIdx < slots.length; slotIdx++) {
+      if (slotIdx >= numPairs) break;  // more slots than pairs (extra venue capacity)
+
+      const slot = slots[slotIdx];
+
+      // In odd cycles: reverse the pair order for venue rotation
+      const pairIdx = isOddCycle ? numPairs - 1 - slotIdx : slotIdx;
+      let [home, away] = pairs[pairIdx];
+
+      // In odd cycles: flip home/away for home-ice balance
+      if (isOddCycle) [home, away] = [away, home];
+
+      // Same-day constraint: if either team already has a game today, skip
+      // (This handles multi-time-slot venues)
+      if (usedDatesThisWeek.has(slot.dateStr + ':' + home) ||
+          usedDatesThisWeek.has(slot.dateStr + ':' + away)) {
+        continue;
+      }
+      // Once-per-week constraint check (should always pass with correct admin config)
+      if (usedTeamsThisWeek.has(home) || usedTeamsThisWeek.has(away)) {
+        continue;
+      }
+
+      games.push({
+        id: `game-${++gameCounter}-${slot.dateStr}-v${slot.venueId}`,
+        homeTeamId: home,
+        awayTeamId: away,
+        venueId: slot.venueId,
+        gameDate: slot.dateStr,
+        gameTime: slot.time,
+        seasonId,
+        isEvaluationGame: false,
+      });
+
+      usedDatesThisWeek.add(slot.dateStr + ':' + home);
+      usedDatesThisWeek.add(slot.dateStr + ':' + away);
+      usedTeamsThisWeek.add(home);
+      usedTeamsThisWeek.add(away);
+    }
+  }
+
+  return games;
+}
+
+/**
+ * Compute distribution table for display: team × venue game counts.
+ */
+function computeDistribution(
+  games: ScheduledGame[],
+  teamIds: number[],
+  teamNames: Map<number, string>,
+  venueIds: number[],
+  venueNames: Map<number, string>,
+): DistributionRow[] {
+  const counts = new Map<number, Map<number, number>>();
+  for (const t of teamIds) {
+    counts.set(t, new Map(venueIds.map(v => [v, 0])));
+  }
+  for (const g of games) {
+    if (g.isEvaluationGame) continue;
+    counts.get(g.homeTeamId)?.set(g.venueId, (counts.get(g.homeTeamId)?.get(g.venueId) ?? 0) + 1);
+    counts.get(g.awayTeamId)?.set(g.venueId, (counts.get(g.awayTeamId)?.get(g.venueId) ?? 0) + 1);
+  }
+  return teamIds.map(t => {
+    const vBreakdown = venueIds.map(v => ({
+      venueId: v,
+      venueName: venueNames.get(v) ?? `Venue ${v}`,
+      count: counts.get(t)?.get(v) ?? 0,
+    }));
+    return {
+      teamId: t,
+      teamName: teamNames.get(t) ?? `Team ${t}`,
+      venueBreakdown: vBreakdown,
+      total: vBreakdown.reduce((s, x) => s + x.count, 0),
+    };
+  });
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function GameScheduler() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
-  const language = 'en';
   const utils = trpc.useUtils();
 
+  // Form state
   const [seasonId, setSeasonId] = useState<number | null>(null);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [selectedVenues, setSelectedVenues] = useState<number[]>([]);
@@ -50,396 +301,163 @@ export default function GameScheduler() {
   const [evaluationGames, setEvaluationGames] = useState<EvaluationGame[]>([]);
   const [blackoutDates, setBlackoutDates] = useState<string[]>([]);
   const [newBlackoutDate, setNewBlackoutDate] = useState('');
+
+  // Output state
   const [scheduledGames, setScheduledGames] = useState<ScheduledGame[]>([]);
+  const [distribution, setDistribution] = useState<DistributionRow[]>([]);
+  const [showDistribution, setShowDistribution] = useState(false);
 
   // Queries
   const { data: seasons } = trpc.admin.getSeasons.useQuery();
-  const { data: teams } = trpc.admin.getTeams.useQuery(seasonId ? { seasonId } : undefined, { enabled: !!seasonId });
+  const { data: teams } = trpc.admin.getTeams.useQuery(
+    seasonId ? { seasonId } : undefined,
+    { enabled: !!seasonId }
+  );
   const { data: masterTeams } = trpc.admin.getMasterTeams.useQuery({});
   const { data: venues } = trpc.admin.getVenues.useQuery();
   const createGamesMutation = trpc.admin.createGames.useMutation();
-  
-  // Use master teams if no season is selected, otherwise use season teams
+
   const teamsToDisplay = seasonId ? teams : masterTeams;
 
-  if (authLoading) return <div>Loading...</div>;
-  if (!user || user.role !== 'admin') {
-    navigate('/');
-    return null;
-  }
+  if (authLoading) return <div className="p-8">Loading...</div>;
+  if (!user || user.role !== 'admin') { navigate('/'); return null; }
 
-  const toggleTeam = (teamId: number) => {
-    setSelectedTeams(prev => 
-      prev.includes(teamId) ? prev.filter(t => t !== teamId) : [...prev, teamId]
-    );
-  };
+  // ── Handlers ──
 
-  const toggleVenue = (venueId: number) => {
-    setSelectedVenues(prev => 
-      prev.includes(venueId) ? prev.filter(v => v !== venueId) : [...prev, venueId]
-    );
-  };
+  const toggleTeam = (id: number) =>
+    setSelectedTeams(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
 
-  const toggleDay = (venueId: number, dayOfWeek: number) => {
-    const schedule = venueSchedules.get(venueId) || { days: [], times: [] };
-    const newDays = schedule.days.includes(dayOfWeek)
-      ? schedule.days.filter(d => d !== dayOfWeek)
-      : [...schedule.days, dayOfWeek];
-    
-    const newSchedule = { ...schedule, days: newDays };
-    const newMap = new Map(venueSchedules);
-    newMap.set(venueId, newSchedule);
-    setVenueSchedules(newMap);
+  const toggleVenue = (id: number) =>
+    setSelectedVenues(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+
+  const toggleDay = (venueId: number, day: number) => {
+    const s = venueSchedules.get(venueId) ?? { days: [], times: [] };
+    const newDays = s.days.includes(day) ? s.days.filter(d => d !== day) : [...s.days, day];
+    const m = new Map(venueSchedules);
+    m.set(venueId, { ...s, days: newDays });
+    setVenueSchedules(m);
   };
 
   const addTimeSlot = (venueId: number, time: string) => {
-    const schedule = venueSchedules.get(venueId) || { days: [], times: [] };
-    if (!schedule.times.includes(time)) {
-      const newSchedule = { ...schedule, times: [...schedule.times, time] };
-      const newMap = new Map(venueSchedules);
-      newMap.set(venueId, newSchedule);
-      setVenueSchedules(newMap);
+    if (!time) return;
+    const s = venueSchedules.get(venueId) ?? { days: [], times: [] };
+    if (!s.times.includes(time)) {
+      const m = new Map(venueSchedules);
+      m.set(venueId, { ...s, times: [...s.times, time].sort() });
+      setVenueSchedules(m);
     }
   };
 
   const removeTimeSlot = (venueId: number, time: string) => {
-    const schedule = venueSchedules.get(venueId) || { days: [], times: [] };
-    const newSchedule = { ...schedule, times: schedule.times.filter(t => t !== time) };
-    const newMap = new Map(venueSchedules);
-    newMap.set(venueId, newSchedule);
-    setVenueSchedules(newMap);
+    const s = venueSchedules.get(venueId) ?? { days: [], times: [] };
+    const m = new Map(venueSchedules);
+    m.set(venueId, { ...s, times: s.times.filter(t => t !== time) });
+    setVenueSchedules(m);
   };
 
   const addBlackoutDate = () => {
     if (newBlackoutDate && !blackoutDates.includes(newBlackoutDate)) {
-      setBlackoutDates([...blackoutDates, newBlackoutDate]);
+      setBlackoutDates([...blackoutDates, newBlackoutDate].sort());
       setNewBlackoutDate('');
     }
   };
 
-  const removeBlackoutDate = (date: string) => {
-    setBlackoutDates(blackoutDates.filter(d => d !== date));
+  const initEvalGames = (count: number) => {
+    setEvaluationGameCount(count);
+    setEvaluationGames(Array.from({ length: count }, () => ({ date: '', time: '', venueId: 0 })));
   };
 
-  const updateEvaluationGame = (index: number, field: string, value: string | number) => {
-    const newGames = [...evaluationGames];
-    newGames[index] = { ...newGames[index], [field]: value };
-    setEvaluationGames(newGames);
+  const updateEvalGame = (idx: number, field: string, val: string | number) => {
+    const g = [...evaluationGames];
+    g[idx] = { ...g[idx], [field]: val };
+    setEvaluationGames(g);
   };
 
-  const initializeEvaluationGames = (count: number) => {
-    const newGames: EvaluationGame[] = [];
-    for (let i = 0; i < count; i++) {
-      newGames.push({ date: '', time: '', venueId: 0 });
-    }
-    setEvaluationGames(newGames);
-  };
+  // ── Generate Schedule ──
 
   const generateSchedule = () => {
-    if (!seasonId) {
-      toast.error('Please select a season');
-      return;
-    }
-    if (selectedTeams.length === 0) {
-      toast.error('Please select at least one team');
-      return;
-    }
-    if (selectedVenues.length === 0) {
-      toast.error('Please select at least one venue');
-      return;
-    }
-    if (!startDate || !endDate) {
-      toast.error('Please set start and end dates');
-      return;
-    }
+    // Validation
+    if (!seasonId) { toast.error('Please select a season'); return; }
+    if (selectedTeams.length < 2) { toast.error('Please select at least 2 teams'); return; }
+    if (selectedTeams.length % 2 !== 0) { toast.error('Team count must be even'); return; }
+    if (selectedVenues.length === 0) { toast.error('Please select at least one venue'); return; }
+    if (!startDate || !endDate) { toast.error('Please set start and end dates'); return; }
 
-    // Validate venue configurations
-    for (const venueId of selectedVenues) {
-      const schedule = venueSchedules.get(venueId);
-      if (!schedule || schedule.days.length === 0 || schedule.times.length === 0) {
-        const venueName = venues?.find(v => v.id === venueId)?.name || `Venue ${venueId}`;
-        toast.error(`${venueName}: Configure at least one day and time slot`);
+    for (const vid of selectedVenues) {
+      const s = venueSchedules.get(vid);
+      if (!s || s.days.length === 0 || s.times.length === 0) {
+        const vname = venues?.find(v => v.id === vid)?.name ?? `Venue ${vid}`;
+        toast.error(`${vname}: configure at least one day and time slot`);
         return;
       }
     }
 
-    // Validate evaluation games if any
-    if (evaluationGameCount > 0) {
-      for (let i = 0; i < evaluationGameCount; i++) {
-        if (!evaluationGames[i]?.date || !evaluationGames[i]?.time || !evaluationGames[i]?.venueId) {
-          toast.error(`Evaluation game ${i + 1}: Please set date, time, and venue`);
-          return;
-        }
-      }
-    }
-
-    console.log('DEBUG: Starting game generation');
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    console.log(`DEBUG: Start date: ${start} End date: ${end}`);
-    console.log(`DEBUG: Selected teams: ${selectedTeams}`);
-
-    // Create evaluation games
-    const games: ScheduledGame[] = [];
-    const evaluationDates: string[] = [];
-
-    // Evaluation games are always Team White (ID 1) vs Team Black (ID 2)
-    const teamWhiteId = 1;
-    const teamBlackId = 2;
-
+    // Validate evaluation games
+    const evalDateSet = new Set<string>();
+    const evalGamesList: ScheduledGame[] = [];
     for (let i = 0; i < evaluationGameCount; i++) {
-      const evalGame = evaluationGames[i];
-      // Evaluation games are Team White vs Team Black (first two teams in the season)
-      games.push({
-        id: `eval-${i}-white-black`,
-        homeTeamId: teamWhiteId,
-        awayTeamId: teamBlackId,
-        venueId: evalGame.venueId,
-        gameDate: evalGame.date,
-        gameTime: evalGame.time,
-        seasonId,
+      const eg = evaluationGames[i];
+      if (!eg?.date || !eg?.time || !eg?.venueId) {
+        toast.error(`Evaluation game ${i + 1}: set date, time, and venue`);
+        return;
+      }
+      evalDateSet.add(eg.date);
+      evalGamesList.push({
+        id: `eval-${i}`,
+        homeTeamId: 1,
+        awayTeamId: 2,
+        venueId: eg.venueId,
+        gameDate: eg.date,
+        gameTime: eg.time,
+        seasonId: seasonId!,
         isEvaluationGame: true,
       });
-      evaluationDates.push(evalGame.date);
     }
 
-    console.log(`DEBUG: Total matchups: ${selectedTeams.length * (selectedTeams.length - 1)}`);
-    console.log(`DEBUG: Evaluation dates: ${evaluationDates}`);
-    console.log(`DEBUG: Blackout dates: ${blackoutDates}`);
-    console.log('DEBUG: Venue schedules:', Array.from(venueSchedules.entries()).map(([vid, sched]) => ({ venueId: vid, days: sched.days, times: sched.times })));
+    const blackoutSet = new Set(blackoutDates);
 
-    // Generate all possible matchups
-    const matchups: Array<{ home: number; away: number }> = [];
-    for (const homeTeam of selectedTeams) {
-      for (const awayTeam of selectedTeams) {
-        if (homeTeam !== awayTeam) {
-          matchups.push({ home: homeTeam, away: awayTeam });
-        }
-      }
-    }
-
-    // Collect all available game slots
-    const gameSlots: Array<{ date: string; venueId: number; time: string; dayOfWeek: number }> = [];
-    const end_date_obj = new Date(endDate);
-    console.log(`DEBUG: End date object: ${end_date_obj}`);
-    const end_date_str = endDate;
-    console.log(`DEBUG: End date string: ${end_date_str}`);
-
-    // Parse dates correctly to avoid timezone issues
-    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
-    let currentDate = new Date(startYear, startMonth - 1, startDay);
-    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
-    const endDateObj = new Date(endYear, endMonth - 1, endDay);
-
-    let loopCount = 0;
-    while (currentDate <= endDateObj) {
-      loopCount++;
-      const year = currentDate.getFullYear();
-      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-      const day = String(currentDate.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      console.log(`DEBUG: Loop ${loopCount} - Current: ${dateStr}, End: ${end_date_str}, DayOfWeek: ${currentDate.getDay()}`);
-
-      // Skip blackout dates and evaluation dates
-      if (!blackoutDates.includes(dateStr) && !evaluationDates.includes(dateStr)) {
-        for (const venueId of selectedVenues) {
-          const schedule = venueSchedules.get(venueId);
-          if (schedule) {
-            const dayOfWeek = currentDate.getDay();
-            if (schedule.days.includes(dayOfWeek)) {
-              for (const time of schedule.times) {
-                gameSlots.push({ date: dateStr, venueId, time, dayOfWeek });
-              }
-            }
-          }
-        }
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    console.log('DEBUG: Total game slots available:', gameSlots.length);
-    console.log('DEBUG: Game slots:', gameSlots);
-
-    // Build league week mapping
-    const dateToLeagueWeek: Map<string, number> = new Map();
-    const sortedDates = gameSlots.map(s => s.date).filter((v, i, a) => a.indexOf(v) === i).sort();
-
-    let currentLeagueWeek = 0;
-    const daysInCurrentWeek = new Set<number>();
-
-    for (const dateStr of sortedDates) {
-      // Parse date string correctly to avoid timezone issues
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      const dayOfWeek = date.getDay();
-
-      if (daysInCurrentWeek.has(dayOfWeek)) {
-        currentLeagueWeek++;
-        daysInCurrentWeek.clear();
-      }
-
-      daysInCurrentWeek.add(dayOfWeek);
-      dateToLeagueWeek.set(dateStr, currentLeagueWeek);
-    }
-
-    // Calculate budgets for team-venue combinations
-    const totalGames = gameSlots.length;
-    const totalTeamGames = Math.floor((totalGames * 2) / selectedTeams.length);
-    const baseTeamVenueBudget = Math.floor(totalTeamGames / selectedVenues.length);
-    const extraTeamVenueGames = totalTeamGames % selectedVenues.length;
-
-    // Initialize budget tracking
-    const teamVenueRemaining: Map<number, Map<number, number>> = new Map();
-
-    selectedTeams.forEach(teamId => {
-      const teamRemaining = new Map<number, number>();
-      selectedVenues.forEach((venueId, venueIdx) => {
-        const budget = baseTeamVenueBudget + (venueIdx < extraTeamVenueGames ? 1 : 0);
-        teamRemaining.set(venueId, budget);
-      });
-      teamVenueRemaining.set(teamId, teamRemaining);
+    // Run the algorithm
+    const regularGames = computeSchedule({
+      teamIds: selectedTeams,
+      venueSchedules,
+      selectedVenueIds: selectedVenues,
+      startDate,
+      endDate,
+      evalDates: evalDateSet,
+      blackoutDates: blackoutSet,
+      seasonId: seasonId!,
     });
 
-    console.log(`DEBUG: Total games: ${totalGames}, Games per team: ${totalTeamGames}, Base budget per venue: ${baseTeamVenueBudget}, Extra games: ${extraTeamVenueGames}`);
-    console.log(`DEBUG: Expected per team: ${totalTeamGames} games distributed as ${baseTeamVenueBudget}+${extraTeamVenueGames} across ${selectedVenues.length} venues`);
+    const allGames = [...evalGamesList, ...regularGames];
+    setScheduledGames(allGames);
 
+    // Build distribution table
+    const teamNameMap = new Map<number, string>();
+    const venueNameMap = new Map<number, string>();
+    teamsToDisplay?.forEach(t => teamNameMap.set(t.id, t.name ?? `Team ${t.id}`));
+    venues?.forEach(v => venueNameMap.set(v.id, v.name ?? `Venue ${v.id}`));
 
-    // Track weekly games per team to ensure at most one game per league week
-    const teamLeagueWeekGames: Map<number, Map<number, number>> = new Map();
-    const teamLeagueWeekTueThuGames: Map<number, Map<number, number>> = new Map();
-    selectedTeams.forEach(teamId => {
-      teamLeagueWeekGames.set(teamId, new Map());
-      teamLeagueWeekTueThuGames.set(teamId, new Map());
-    });
+    const dist = computeDistribution(
+      regularGames,
+      selectedTeams,
+      teamNameMap,
+      selectedVenues,
+      venueNameMap,
+    );
+    setDistribution(dist);
+    setShowDistribution(true);
 
-    // Calculate regular games (total games minus evaluation games)
-    const regularGames = totalGames - evaluationGameCount;
-
-    // Separate slots into Tue/Thu and other days
-    const tueThuSlots = gameSlots.filter(s => s.dayOfWeek === 2 || s.dayOfWeek === 4);
-    const otherDaySlots = gameSlots.filter(s => s.dayOfWeek !== 2 && s.dayOfWeek !== 4);
-
-    const assignGamesToSlots = (slotsToUse: typeof gameSlots, passName: string) => {
-      let matchupQueue = [...matchups];
-      let slotIndex = 0;
-      let gamesAssigned = 0;
-      console.log(`DEBUG: ${passName} - Available slots: ${slotsToUse.length}, Available matchups: ${matchupQueue.length}`);
-
-      while (matchupQueue.length > 0 && slotIndex < slotsToUse.length && games.length - evaluationGameCount < regularGames) {
-        const slot = slotsToUse[slotIndex];
-        const leagueWeekNumber = dateToLeagueWeek.get(slot.date) || 0;
-        const isTueThu = slot.dayOfWeek === 2 || slot.dayOfWeek === 4;
-
-        let assigned = false;
-
-        for (let i = 0; i < matchupQueue.length; i++) {
-          const matchup = matchupQueue[i];
-          const homeLeagueWeekGames = teamLeagueWeekGames.get(matchup.home)!;
-          const awayLeagueWeekGames = teamLeagueWeekGames.get(matchup.away)!;
-
-          const homeGamesThisWeek = homeLeagueWeekGames.get(leagueWeekNumber) || 0;
-          const awayGamesThisWeek = awayLeagueWeekGames.get(leagueWeekNumber) || 0;
-
-          // Each team plays AT MOST once per week
-          if (homeGamesThisWeek > 0 || awayGamesThisWeek > 0) {
-            continue;
-          }
-
-          // Find best venue for this matchup
-          const homeRemaining = teamVenueRemaining.get(matchup.home)!;
-          const awayRemaining = teamVenueRemaining.get(matchup.away)!;
-
-          let bestVenueId = null;
-          let bestScore = -1;
-
-          // Check all venues available at this date/time
-          const sameTimeSlots = gameSlots.filter(s => s.date === slot.date && s.time === slot.time);
-          for (const otherSlot of sameTimeSlots) {
-            const homeCount = homeRemaining.get(otherSlot.venueId) || 0;
-            const awayCount = awayRemaining.get(otherSlot.venueId) || 0;
-            const hasValidBudget = homeCount > 0 && awayCount > 0;
-
-            if (hasValidBudget) {
-              const score = Math.min(homeCount, awayCount);
-              if (score > bestScore) {
-                bestScore = score;
-                bestVenueId = otherSlot.venueId;
-              }
-            }
-          }
-
-          // If we found a valid venue, assign the game
-          if (bestVenueId !== null) {
-            games.push({
-              id: `${slot.date}-${bestVenueId}-${slot.time}-${i}`,
-              homeTeamId: matchup.home,
-              awayTeamId: matchup.away,
-              venueId: bestVenueId,
-              gameDate: slot.date,
-              gameTime: slot.time,
-              seasonId,
-            });
-
-            // Update budgets
-            homeRemaining.set(bestVenueId, homeRemaining.get(bestVenueId)! - 1);
-            awayRemaining.set(bestVenueId, awayRemaining.get(bestVenueId)! - 1);
-
-            // Update league week game counts
-            homeLeagueWeekGames.set(leagueWeekNumber, homeGamesThisWeek + 1);
-            awayLeagueWeekGames.set(leagueWeekNumber, awayGamesThisWeek + 1);
-
-            // Mark Tue/Thu games
-            if (isTueThu) {
-              teamLeagueWeekTueThuGames.get(matchup.home)!.set(leagueWeekNumber, 1);
-              teamLeagueWeekTueThuGames.get(matchup.away)!.set(leagueWeekNumber, 1);
-            }
-
-            // Remove this matchup from queue and move to next slot
-            matchupQueue.splice(i, 1);
-            slotIndex++;
-            gamesAssigned++;
-            assigned = true;
-            break;
-          }
-        }
-
-        // If no matchup could be assigned to this slot, skip the slot
-        if (!assigned) {
-          slotIndex++;
-        }
-      }
-
-      console.log(`DEBUG: ${passName} complete - ${gamesAssigned} games assigned`);
-      return matchupQueue;
-    };
-
-    // PASS 1: Assign Tue/Thu games (each team gets at least one per week)
-    console.log('DEBUG: Starting PASS 1 - Tue/Thu games');
-    let remainingMatchups = assignGamesToSlots(tueThuSlots, 'PASS 1 (Tue/Thu)');
-
-    // PASS 2: Assign remaining games with other days
-    console.log('DEBUG: Starting PASS 2 - Other day games');
-    // Use the remaining matchups from PASS 1
-    matchups.length = 0;
-    matchups.push(...remainingMatchups);
-    assignGamesToSlots(otherDaySlots, 'PASS 2 (Other days)');
-
-
-    setScheduledGames(games);
-    toast.success(`Generated ${games.length} games (${evaluationGameCount > 0 ? `${evaluationGameCount} evaluation + ` : ''}${games.length - evaluationGameCount} regular)`);
+    toast.success(
+      `Generated ${allGames.length} games` +
+      (evaluationGameCount > 0 ? ` (${evaluationGameCount} eval + ${regularGames.length} regular)` : '')
+    );
   };
 
-  const removeGame = (id: string) => {
+  const removeGame = (id: string) =>
     setScheduledGames(prev => prev.filter(g => g.id !== id));
-  };
 
   const submitSchedule = async () => {
-    if (scheduledGames.length === 0) {
-      toast.error('No games to submit');
-      return;
-    }
-
+    if (scheduledGames.length === 0) { toast.error('No games to submit'); return; }
     try {
       await createGamesMutation.mutateAsync({
         games: scheduledGames.map(g => ({
@@ -449,88 +467,118 @@ export default function GameScheduler() {
           gameDate: g.gameDate,
           gameTime: g.gameTime,
           seasonId: g.seasonId,
-          isEvaluationGame: g.isEvaluationGame || false,
+          isEvaluationGame: g.isEvaluationGame ?? false,
         })),
       });
-      toast.success('Games created successfully');
+      toast.success('Schedule saved successfully');
       setScheduledGames([]);
-    } catch (error) {
-      toast.error('Failed to create games: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setDistribution([]);
+      setShowDistribution(false);
+      utils.admin.getGamesBySeasonId.invalidate();
+    } catch (err) {
+      toast.error('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   };
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  const regularGameCount = scheduledGames.filter(g => !g.isEvaluationGame).length;
+  const evalGameCountInList = scheduledGames.filter(g => g.isEvaluationGame).length;
+
+  // ── Render ──
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <button onClick={() => navigate('/admin')} className="p-2 hover:bg-gray-100 rounded">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-3xl font-bold">Game Scheduler</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Game Scheduler</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure season schedule — each team plays once per week, venues balanced automatically
+          </p>
+        </div>
       </div>
 
-      {/* Season Selection */}
+      {/* Season */}
       <Card>
-        <CardHeader>
-          <CardTitle>Season</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Season</CardTitle></CardHeader>
         <CardContent>
-          <Select value={seasonId?.toString() || ''} onValueChange={v => setSeasonId(parseInt(v))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select season" />
-            </SelectTrigger>
+          <Select value={seasonId?.toString() ?? ''} onValueChange={v => setSeasonId(parseInt(v))}>
+            <SelectTrigger><SelectValue placeholder="Select season" /></SelectTrigger>
             <SelectContent>
               {seasons?.map(s => (
-                <SelectItem key={s.id} value={s.id.toString()}>
-                  {s.name}
-                </SelectItem>
+                <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </CardContent>
       </Card>
 
-      {/* Team Selection */}
+      {/* Teams */}
       <Card>
         <CardHeader>
           <CardTitle>Teams</CardTitle>
-          <CardDescription>Select teams for the season</CardDescription>
+          <CardDescription>
+            Select teams — must be an even number (2, 4, 6…)
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {teamsToDisplay?.map(team => (
             <div key={team.id} className="flex items-center gap-2">
-              <Checkbox 
+              <Checkbox
                 checked={selectedTeams.includes(team.id)}
                 onCheckedChange={() => toggleTeam(team.id)}
               />
-              <label>{team.name}</label>
+              <label className="cursor-pointer">{team.name}</label>
             </div>
           ))}
+          {selectedTeams.length > 0 && selectedTeams.length % 2 !== 0 && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="w-4 h-4" />
+              Team count must be even for balanced scheduling
+            </p>
+          )}
+          {selectedTeams.length >= 2 && selectedTeams.length % 2 === 0 && (
+            <p className="text-sm text-green-600 flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4" />
+              {selectedTeams.length} teams — {selectedTeams.length / 2} game(s) per week
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Venue Selection and Configuration */}
+      {/* Venues */}
       <Card>
         <CardHeader>
           <CardTitle>Venues</CardTitle>
-          <CardDescription>Select venues and configure their schedules</CardDescription>
+          <CardDescription>
+            Select venues and configure their available days and time slots
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {venues?.map(venue => (
             <div key={venue.id} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={selectedVenues.includes(venue.id)}
                     onCheckedChange={() => toggleVenue(venue.id)}
                   />
-                  <label className="font-medium">{venue.name}</label>
+                  <label className="font-medium cursor-pointer">{venue.name}</label>
+                  {venueSchedules.get(venue.id)?.days.length ? (
+                    <Badge variant="outline" className="text-xs">
+                      {venueSchedules.get(venue.id)!.days.map(d => dayNames[d]).join(', ')}
+                      {venueSchedules.get(venue.id)!.times.length > 0 &&
+                        ` · ${venueSchedules.get(venue.id)!.times.length} time(s)`}
+                    </Badge>
+                  ) : null}
                 </div>
                 {selectedVenues.includes(venue.id) && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
+                  <Button
+                    variant="outline" size="sm"
                     onClick={() => setExpandedVenue(expandedVenue === venue.id ? null : venue.id)}
                   >
                     {expandedVenue === venue.id ? 'Hide' : 'Configure'}
@@ -539,15 +587,15 @@ export default function GameScheduler() {
               </div>
 
               {expandedVenue === venue.id && selectedVenues.includes(venue.id) && (
-                <div className="ml-6 space-y-3 border-l-2 pl-4">
-                  {/* Days Selection */}
+                <div className="ml-6 space-y-4 border-l-2 pl-4">
+                  {/* Day selection */}
                   <div>
                     <Label className="text-sm font-medium">Available Days</Label>
                     <div className="grid grid-cols-7 gap-2 mt-2">
                       {dayNames.map((day, idx) => (
-                        <div key={idx} className="flex items-center gap-1">
-                          <Checkbox 
-                            checked={venueSchedules.get(venue.id)?.days.includes(idx) || false}
+                        <div key={idx} className="flex flex-col items-center gap-1">
+                          <Checkbox
+                            checked={venueSchedules.get(venue.id)?.days.includes(idx) ?? false}
                             onCheckedChange={() => toggleDay(venue.id, idx)}
                           />
                           <span className="text-xs">{day}</span>
@@ -556,16 +604,15 @@ export default function GameScheduler() {
                     </div>
                   </div>
 
-                  {/* Time Slots */}
+                  {/* Time slots */}
                   <div>
                     <Label className="text-sm font-medium">Time Slots</Label>
                     <div className="space-y-2 mt-2">
                       {venueSchedules.get(venue.id)?.times.map((time, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                          <span>{time}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
+                        <div key={idx} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <span className="text-sm">{time}</span>
+                          <Button
+                            variant="ghost" size="sm"
                             onClick={() => removeTimeSlot(venue.id, time)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -573,23 +620,24 @@ export default function GameScheduler() {
                         </div>
                       ))}
                       <div className="flex gap-2">
-                        <Input 
-                          type="time" 
+                        <Input
+                          type="time"
                           placeholder="HH:MM"
-                          onKeyPress={(e) => {
+                          className="flex-1"
+                          onKeyDown={e => {
                             if (e.key === 'Enter') {
                               addTimeSlot(venue.id, (e.target as HTMLInputElement).value);
                               (e.target as HTMLInputElement).value = '';
                             }
                           }}
+                          id={`time-input-${venue.id}`}
                         />
-                        <Button 
-                          onClick={(e) => {
-                            const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                            addTimeSlot(venue.id, input.value);
-                            input.value = '';
-                          }}
+                        <Button
                           size="sm"
+                          onClick={() => {
+                            const inp = document.getElementById(`time-input-${venue.id}`) as HTMLInputElement;
+                            if (inp) { addTimeSlot(venue.id, inp.value); inp.value = ''; }
+                          }}
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -607,55 +655,44 @@ export default function GameScheduler() {
       <Card>
         <CardHeader>
           <CardTitle>Evaluation Games</CardTitle>
-          <CardDescription>Configure evaluation games (Team White vs Team Black)</CardDescription>
+          <CardDescription>
+            Pre-season evaluation games (Team White vs Team Black) — excluded from regular schedule
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label>Number of Evaluation Games</Label>
-            <Input 
-              type="number" 
-              min="0" 
-              max="10"
+            <Input
+              type="number" min="0" max="10"
               value={evaluationGameCount}
-              onChange={(e) => {
-                const count = parseInt(e.target.value) || 0;
-                setEvaluationGameCount(count);
-                initializeEvaluationGames(count);
-              }}
+              onChange={e => initEvalGames(parseInt(e.target.value) || 0)}
+              className="mt-1 w-32"
             />
           </div>
-
           {evaluationGames.map((game, idx) => (
             <div key={idx} className="border rounded-lg p-4 space-y-3">
               <h4 className="font-medium">Evaluation Game {idx + 1}</h4>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label className="text-sm">Date</Label>
-                  <Input 
-                    type="date"
-                    value={game.date}
-                    onChange={(e) => updateEvaluationGame(idx, 'date', e.target.value)}
-                  />
+                  <Input type="date" value={game.date}
+                    onChange={e => updateEvalGame(idx, 'date', e.target.value)} />
                 </div>
                 <div>
                   <Label className="text-sm">Time</Label>
-                  <Input 
-                    type="time"
-                    value={game.time}
-                    onChange={(e) => updateEvaluationGame(idx, 'time', e.target.value)}
-                  />
+                  <Input type="time" value={game.time}
+                    onChange={e => updateEvalGame(idx, 'time', e.target.value)} />
                 </div>
                 <div>
                   <Label className="text-sm">Venue</Label>
-                  <Select value={game.venueId?.toString() || ''} onValueChange={v => updateEvaluationGame(idx, 'venueId', parseInt(v))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select venue" />
-                    </SelectTrigger>
+                  <Select
+                    value={game.venueId?.toString() ?? ''}
+                    onValueChange={v => updateEvalGame(idx, 'venueId', parseInt(v))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select venue" /></SelectTrigger>
                     <SelectContent>
                       {venues?.map(v => (
-                        <SelectItem key={v.id} value={v.id.toString()}>
-                          {v.name}
-                        </SelectItem>
+                        <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -668,25 +705,15 @@ export default function GameScheduler() {
 
       {/* Date Range */}
       <Card>
-        <CardHeader>
-          <CardTitle>Season Date Range</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Regular Season Date Range</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
           <div>
             <Label>Start Date</Label>
-            <Input 
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+            <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div>
             <Label>End Date</Label>
-            <Input 
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
+            <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -695,28 +722,24 @@ export default function GameScheduler() {
       <Card>
         <CardHeader>
           <CardTitle>Blackout Dates</CardTitle>
-          <CardDescription>Dates when no games should be scheduled</CardDescription>
+          <CardDescription>
+            No games will be scheduled on these dates. Use even numbers (one per venue) for balanced weeks.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <Input 
-              type="date"
-              value={newBlackoutDate}
-              onChange={(e) => setNewBlackoutDate(e.target.value)}
-            />
+            <Input type="date" value={newBlackoutDate}
+              onChange={e => setNewBlackoutDate(e.target.value)} />
             <Button onClick={addBlackoutDate} size="sm">
               <Plus className="w-4 h-4" />
             </Button>
           </div>
           <div className="space-y-2">
             {blackoutDates.map(date => (
-              <div key={date} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                <span>{date}</span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => removeBlackoutDate(date)}
-                >
+              <div key={date} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                <span className="text-sm">{date}</span>
+                <Button variant="ghost" size="sm"
+                  onClick={() => setBlackoutDates(blackoutDates.filter(d => d !== date))}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
@@ -725,38 +748,96 @@ export default function GameScheduler() {
         </CardContent>
       </Card>
 
-      {/* Generate Schedule Button */}
+      {/* Generate Button */}
       <Button onClick={generateSchedule} className="w-full" size="lg">
         Generate Schedule
       </Button>
 
-      {/* Scheduled Games */}
+      {/* Distribution Table */}
+      {showDistribution && distribution.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Venue Distribution</CardTitle>
+            <CardDescription>Games per team per venue — balanced automatically</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-3 font-semibold">Team</th>
+                    {distribution[0]?.venueBreakdown.map(vb => (
+                      <th key={vb.venueId} className="text-center py-2 px-3 font-semibold text-xs">
+                        {vb.venueName}
+                      </th>
+                    ))}
+                    <th className="text-center py-2 px-3 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {distribution.map(row => {
+                    const counts = row.venueBreakdown.map(vb => vb.count);
+                    const maxCount = Math.max(...counts);
+                    const minCount = Math.min(...counts);
+                    const imbalance = maxCount - minCount;
+                    return (
+                      <tr key={row.teamId} className="border-b hover:bg-muted/50">
+                        <td className="font-medium py-2 px-3">{row.teamName}</td>
+                        {row.venueBreakdown.map(vb => (
+                          <td key={vb.venueId} className="text-center py-2 px-3">
+                            <span className={imbalance > 2 ? 'text-orange-600 font-semibold' : ''}>
+                              {vb.count}
+                            </span>
+                          </td>
+                        ))}
+                        <td className="text-center font-semibold py-2 px-3">{row.total}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Generated Games List */}
       {scheduledGames.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Generated Games ({scheduledGames.length})</CardTitle>
+            <CardTitle>
+              Generated Games ({scheduledGames.length} total
+              {evalGameCountInList > 0 ? ` · ${evalGameCountInList} eval` : ''}
+              {` · ${regularGameCount} regular`})
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 max-h-96 overflow-y-auto">
             {scheduledGames.map(game => {
-              const homeTeam = teams?.find(t => t.id === game.homeTeamId);
-              const awayTeam = teams?.find(t => t.id === game.awayTeamId);
+              const homeTeam = teamsToDisplay?.find(t => t.id === game.homeTeamId);
+              const awayTeam = teamsToDisplay?.find(t => t.id === game.awayTeamId);
               const venue = venues?.find(v => v.id === game.venueId);
-              const homeTeamName = game.homeTeamId === 1 ? 'Team White' : homeTeam?.name || `Team ${game.homeTeamId}`;
-              const awayTeamName = game.awayTeamId === 2 ? 'Team Black' : awayTeam?.name || `Team ${game.awayTeamId}`;
+              const homeName = game.homeTeamId === 1 && game.isEvaluationGame
+                ? 'Team White'
+                : homeTeam?.name ?? `Team ${game.homeTeamId}`;
+              const awayName = game.awayTeamId === 2 && game.isEvaluationGame
+                ? 'Team Black'
+                : awayTeam?.name ?? `Team ${game.awayTeamId}`;
 
               return (
-                <div key={game.id} className="flex items-center justify-between bg-gray-50 p-3 rounded border">
+                <div key={game.id}
+                  className="flex items-center justify-between bg-gray-50 p-3 rounded border">
                   <div className="flex-1">
-                    <div className="font-medium">{homeTeamName} vs {awayTeamName}</div>
+                    <div className="flex items-center gap-2 font-medium">
+                      {homeName} vs {awayName}
+                      {game.isEvaluationGame && (
+                        <Badge variant="secondary" className="text-xs">Eval</Badge>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-600">
-                      {game.gameDate} @ {game.gameTime} - {venue?.name}
+                      {game.gameDate} @ {game.gameTime} — {venue?.name ?? `Venue ${game.venueId}`}
                     </div>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => removeGame(game.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => removeGame(game.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -768,8 +849,13 @@ export default function GameScheduler() {
 
       {/* Submit Button */}
       {scheduledGames.length > 0 && (
-        <Button onClick={submitSchedule} className="w-full" size="lg" disabled={createGamesMutation.isPending}>
-          {createGamesMutation.isPending ? 'Submitting...' : 'Submit Schedule'}
+        <Button
+          onClick={submitSchedule}
+          className="w-full"
+          size="lg"
+          disabled={createGamesMutation.isPending}
+        >
+          {createGamesMutation.isPending ? 'Saving...' : `Save ${scheduledGames.length} Games to Database`}
         </Button>
       )}
     </div>

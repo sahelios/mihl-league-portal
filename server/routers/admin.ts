@@ -1281,6 +1281,32 @@ export const adminRouter = router({
       return { success: true, message: "Game deleted successfully" };
     }),
 
+  deleteGamesBySeason: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      try {
+        // Delete all games for this season (does NOT delete the season itself,
+        // teams, or any other data — only the game rows)
+        const result = await db
+          .delete(games)
+          .where(eq(games.seasonId, input.seasonId));
+
+        return {
+          success: true,
+          message: `All games for season ${input.seasonId} deleted successfully`,
+        };
+      } catch (error: any) {
+        console.error("Error deleting games by season:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message || "Failed to delete games",
+        });
+      }
+    }),
+
   // ============ SEASON MANAGEMENT ============
   getAllSeasons: adminProcedure.query(async () => {
     const db = await getDb();
