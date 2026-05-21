@@ -206,6 +206,7 @@ export default function GameScheduler() {
     console.log(`DEBUG: Total matchups: ${selectedTeams.length * (selectedTeams.length - 1)}`);
     console.log(`DEBUG: Evaluation dates: ${evaluationDates}`);
     console.log(`DEBUG: Blackout dates: ${blackoutDates}`);
+    console.log('DEBUG: Venue schedules:', Array.from(venueSchedules.entries()).map(([vid, sched]) => ({ venueId: vid, days: sched.days, times: sched.times })));
 
     // Generate all possible matchups
     const matchups: Array<{ home: number; away: number }> = [];
@@ -218,7 +219,7 @@ export default function GameScheduler() {
     }
 
     // Collect all available game slots
-    const gameSlots: Array<{ date: string; venueId: number; time: string }> = [];
+    const gameSlots: Array<{ date: string; venueId: number; time: string; dayOfWeek: number }> = [];
     const end_date_obj = new Date(endDate);
     console.log(`DEBUG: End date object: ${end_date_obj}`);
     const end_date_str = endDate;
@@ -247,7 +248,7 @@ export default function GameScheduler() {
             const dayOfWeek = currentDate.getDay();
             if (schedule.days.includes(dayOfWeek)) {
               for (const time of schedule.times) {
-                gameSlots.push({ date: dateStr, venueId, time });
+                gameSlots.push({ date: dateStr, venueId, time, dayOfWeek });
               }
             }
           }
@@ -419,6 +420,9 @@ export default function GameScheduler() {
 
     // PASS 2: Assign remaining games with other days
     console.log('DEBUG: Starting PASS 2 - Other day games');
+    // Use the remaining matchups from PASS 1
+    matchups.length = 0;
+    matchups.push(...remainingMatchups);
     assignGamesToSlots(otherDaySlots, 'PASS 2 (Other days)');
 
 
