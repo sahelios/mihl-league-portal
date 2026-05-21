@@ -96,16 +96,24 @@ export const adminRouter = router({
       // For each evaluation game, get all players registered for that date
       const results = await Promise.all(
         evalGames.map(async (game) => {
-          const dateStr = game.gameDate instanceof Date 
-            ? game.gameDate.toISOString().split('T')[0]
-            : typeof game.gameDate === 'string'
-            ? game.gameDate.split('T')[0]
-            : '';
+          // Handle gameDate safely
+          let dateStr = '';
+          if (game.gameDate) {
+            if (game.gameDate instanceof Date) {
+              dateStr = game.gameDate.toISOString().split('T')[0];
+            } else if (typeof game.gameDate === 'string') {
+              dateStr = game.gameDate.split('T')[0];
+            }
+          }
           
-          const attendees = await db
-            .select()
-            .from(playerRegistrations)
-            .where(eq(playerRegistrations.evaluationDate, dateStr));
+          // Only fetch attendees if we have a valid date
+          let attendees: any[] = [];
+          if (dateStr) {
+            attendees = await db
+              .select()
+              .from(playerRegistrations)
+              .where(eq(playerRegistrations.evaluationDate, dateStr));
+          }
           
           const venue = venueMap.get(game.venueId);
           const gameTime = game.gameTime || '21:30';
@@ -115,11 +123,11 @@ export const adminRouter = router({
             label: 'Team White vs Team Black - ' + dateStr,
             venue: venue?.name || 'Unknown Venue',
             time: gameTime,
-            totalPlayers: attendees.length,
+            totalPlayers: attendees?.length || 0,
             maxPlayers: 26,
-            totalGoalies: attendees.filter(p => p.position?.toLowerCase() === 'goalie').length,
+            totalGoalies: (attendees || []).filter(p => p?.position?.toLowerCase() === 'goalie').length,
             maxGoalies: 2,
-            attendees: attendees
+            attendees: attendees || []
           };
         })
       );
