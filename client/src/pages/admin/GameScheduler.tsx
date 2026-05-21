@@ -412,7 +412,7 @@ export default function GameScheduler() {
 
     // PASS 1: Assign Tue/Thu games (each team gets at least one per week)
     console.log('DEBUG: Starting PASS 1 - Tue/Thu games');
-    matchups = assignGamesToSlots(tueThuSlots, 'PASS 1 (Tue/Thu)');
+    let remainingMatchups = assignGamesToSlots(tueThuSlots, 'PASS 1 (Tue/Thu)');
 
     // PASS 2: Assign remaining games with other days
     console.log('DEBUG: Starting PASS 2 - Other day games');
