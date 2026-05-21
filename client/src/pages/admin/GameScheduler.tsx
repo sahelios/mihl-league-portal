@@ -90,10 +90,10 @@ function generatePerfectMatchingRounds(teamIds: number[]): [number, number][][] 
     // Fixed vs last in rotating
     const opp = rotating[rotating.length - 1];
     if (fixed !== -1 && opp !== -1) pairs.push([fixed, opp]);
-    // Pair the rest
+    // Pair the rest: mirror from front and back, excluding last element (already used above)
     for (let i = 0; i < N / 2 - 1; i++) {
       const ta = rotating[i];
-      const tb = rotating[N - 2 - i];
+      const tb = rotating[N - 3 - i];  // N-2-1-i: excludes the last element used for fixed vs opp
       if (ta !== -1 && tb !== -1) pairs.push([ta, tb]);
     }
     rounds.push(pairs);
