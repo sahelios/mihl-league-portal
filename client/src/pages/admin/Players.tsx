@@ -33,7 +33,10 @@ export default function Players() {
   const { data: seasons = [] } = trpc.admin.getSeasons.useQuery();
   const { data: statsData } = trpc.registration.getStats.useQuery();
   const { data: playerTeams = [] } = trpc.admin.getPlayerTeams.useQuery({});
-  const { data: evaluationGames = [] } = editData.seasonId ? trpc.admin.getEvaluationGamesBySeasonId.useQuery({ seasonId: editData.seasonId }) : { data: [] };
+  const { data: evaluationGames = [] } = trpc.admin.getEvaluationGamesBySeasonId.useQuery(
+    { seasonId: editData.seasonId || 0 },
+    { enabled: !!editData.seasonId }
+  );
 
   // Mutations
   const updatePlayerInfoMutation = trpc.admin.updatePlayerInfo.useMutation({
