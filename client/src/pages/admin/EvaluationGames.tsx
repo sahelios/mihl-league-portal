@@ -3,10 +3,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Loader2, Users, Target, Trash2, Users2, ArrowLeft } from "lucide-react";
+import { Loader2, Users, Target, Trash2, Users2, ArrowLeft, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 type PlayerTeam = "white" | "black" | null;
 
@@ -25,6 +33,7 @@ export default function EvaluationGames() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [teamAssignments, setTeamAssignments] = useState<Record<string, Record<number, PlayerTeam>>>({});
+  const [selectedPlayerForGame, setSelectedPlayerForGame] = useState<Record<string, number | null>>({});
 
   // Redirect if not admin
   if (!loading && (!user || user.role !== "admin")) {
@@ -36,10 +45,15 @@ export default function EvaluationGames() {
   const { data: evaluationAttendance, isLoading: isLoadingAttendance, refetch } = 
     trpc.admin.getEvaluationAttendance.useQuery({});
 
+  // Fetch available players
+  const { data: availablePlayers = [], isLoading: isLoadingPlayers } =
+    trpc.admin.getAvailablePlayersForEvaluation.useQuery();
+
   // Mutations
   const removeFromGameMutation = trpc.admin.removeFromEvaluationGame.useMutation({
     onSuccess: () => {
       refetch();
+      toast.success("Player removed successfully");
     },
   });
 
@@ -49,17 +63,30 @@ export default function EvaluationGames() {
     },
   });
 
+  const addToGameMutation = trpc.admin.addToEvaluationGame.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("Player added to evaluation game");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add player");
+    },
+  });
+
   // Initialize team assignments from API
   useEffect(() => {
     if (evaluationAttendance) {
       const assignments: Record<string, Record<number, PlayerTeam>> = {};
+      const selectedPlayers: Record<string, number | null> = {};
       evaluationAttendance.forEach((game) => {
         assignments[game.date] = {};
+        selectedPlayers[game.date] = null;
         game.attendees.forEach((player) => {
           assignments[game.date][player.id] = (player as any).team || null;
         });
       });
       setTeamAssignments(assignments);
+      setSelectedPlayerForGame(selectedPlayers);
     }
   }, [evaluationAttendance]);
 
@@ -101,6 +128,16 @@ export default function EvaluationGames() {
     }));
     // Send to backend
     assignTeamMutation.mutate({ registrationId, evaluationDate, team });
+  };
+
+  const handleAddPlayerToGame = (gameDate: string) => {
+    const playerId = selectedPlayerForGame[gameDate];
+    if (!playerId) {
+      toast.error("Please select a player");
+      return;
+    }
+    addToGameMutation.mutate({ registrationId: playerId, evaluationDate: gameDate });
+    setSelectedPlayerForGame(prev => ({ ...prev, [gameDate]: null }));
   };
 
   const getPlayersByTeamAndPosition = (game: any, team: PlayerTeam) => {
@@ -279,8 +316,50 @@ export default function EvaluationGames() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
+                {/* Add Player Section */}
+                <div className="mb-8 p-4 bg-muted rounded-lg border border-border">
+                  <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Player to Evaluation Game
+                  </h3>
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <label className="text-sm text-muted-foreground mb-2 block">Select Player</label>
+                      <Select 
+                        value={selectedPlayerForGame[game.date]?.toString() || ""} 
+                        onValueChange={(val) => setSelectedPlayerForGame(prev => ({ ...prev, [game.date]: parseInt(val) }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a player" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {isLoadingPlayers ? (
+                            <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                          ) : availablePlayers.length === 0 ? (
+                            <div className="p-2 text-sm text-muted-foreground">No available players</div>
+                          ) : (
+                            availablePlayers.map(player => (
+                              <SelectItem key={player.id} value={player.id.toString()}>
+                                {player.firstName} {player.lastName} - {player.position} (Rating: {player.rating}) - {player.status}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      onClick={() => handleAddPlayerToGame(game.date)}
+                      disabled={addToGameMutation.isPending || !selectedPlayerForGame[game.date]}
+                    >
+                      {addToGameMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Add
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Team Assignments Section */}
                 {game.attendees.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No registrations yet</p>
+                  <p className="text-center text-muted-foreground py-8">No players registered yet. Add players using the form above.</p>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {renderTeamSection(game, "white")}

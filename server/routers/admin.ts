@@ -127,6 +127,39 @@ export const adminRouter = router({
       return results;
     }),
 
+  getAvailablePlayersForEvaluation: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const availablePlayers = await db
+      .select({
+        id: playerRegistrations.id,
+        firstName: playerRegistrations.firstName,
+        lastName: playerRegistrations.lastName,
+        email: playerRegistrations.email,
+        position: playerRegistrations.position,
+        status: playerRegistrations.status,
+        rating: playerRegistrations.rating,
+        evaluationDate: playerRegistrations.evaluationDate
+      })
+      .from(playerRegistrations)
+      .where(
+        and(
+          or(
+            eq(playerRegistrations.status, "approved"),
+            eq(playerRegistrations.status, "pending")
+          ),
+          or(
+            eq(playerRegistrations.evaluationDate, null),
+            eq(playerRegistrations.evaluationDate, "")
+          )
+        )
+      )
+      .orderBy(playerRegistrations.firstName);
+
+    return availablePlayers;
+  }),
+
   addToEvaluationGame: adminProcedure
     .input(z.object({ registrationId: z.number(), evaluationDate: z.string() }))
     .mutation(async ({ input }) => {
