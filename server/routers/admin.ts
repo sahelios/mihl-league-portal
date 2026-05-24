@@ -110,8 +110,20 @@ export const adminRouter = router({
           let attendees: any[] = [];
           if (dateStr) {
             attendees = await db
-              .select()
+              .select({
+                id: playerRegistrations.id,
+                firstName: playerRegistrations.firstName,
+                lastName: playerRegistrations.lastName,
+                position: playerRegistrations.position,
+                status: playerRegistrations.status,
+                playerRating: playerRegistrations.rating,
+                evalTeam: evaluationGameAssignments.team,
+              })
               .from(playerRegistrations)
+              .leftJoin(evaluationGameAssignments, and(
+                eq(playerRegistrations.id, evaluationGameAssignments.registrationId),
+                eq(evaluationGameAssignments.evaluationDate, dateStr)
+              ))
               .where(eq(playerRegistrations.evaluationDate, dateStr));
           }
           
