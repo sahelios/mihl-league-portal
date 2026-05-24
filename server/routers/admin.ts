@@ -1201,9 +1201,12 @@ export const adminRouter = router({
       if (input.teamId !== undefined) updateData.teamId = input.teamId;
       if (input.seasonId !== undefined) updateData.seasonId = input.seasonId;
       
-      await db.update(playerRegistrations)
-        .set(updateData)
-        .where(eq(playerRegistrations.id, input.registrationId));
+      // Only update if there's data to update
+      if (Object.keys(updateData).length > 0) {
+        await db.update(playerRegistrations)
+          .set(updateData)
+          .where(eq(playerRegistrations.id, input.registrationId));
+      }
       
       return { success: true };
     }),
