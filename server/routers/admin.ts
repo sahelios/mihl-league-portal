@@ -1583,26 +1583,11 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
     const assignments = await db.select().from(evaluationGameAssignments);
-    const gameIds = [...new Set(assignments.map(a => a.evalGameId).filter(Boolean))];
-
-    let gamesMap: Record<number, any> = {};
-    if (gameIds.length > 0) {
-      const gs = await db.select().from(games).where(inArray(games.id, gameIds as number[]));
-      gs.forEach(g => {
-        let dateStr = '';
-        if (g.gameDate instanceof Date) {
-          dateStr = g.gameDate.toISOString().split('T')[0];
-        } else if (typeof g.gameDate === 'string') {
-          dateStr = g.gameDate.split('T')[0];
-        }
-        gamesMap[g.id] = { ...g, dateStr };
-      });
-    }
 
     return assignments.map(a => ({
       registrationId: a.registrationId,
-      evalGameId: a.evalGameId ?? null,
-      evalGameDate: a.evalGameId && gamesMap[a.evalGameId] ? gamesMap[a.evalGameId].dateStr : null,
+      evalGameId: null,
+      evalGameDate: a.evaluationDate || null,
       team: a.team,
     }));
   }),

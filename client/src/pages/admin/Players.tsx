@@ -174,8 +174,8 @@ export default function Players() {
     if (editData.paymentMethod !== 'none' && editData.paymentMethod !== (editingPlayer.paymentMethod || 'none'))
       updates.paymentMethod = editData.paymentMethod;
     if (editData.seasonId !== editingPlayer.seasonId) updates.seasonId = editData.seasonId;
-    if (editData.position !== 'none' && editData.position !== (editingPlayer.position || 'none'))
-      updates.position = editData.position;
+    if (editData.position !== (editingPlayer.position || 'none'))
+      updates.position = editData.position === 'none' ? null : editData.position;
 
     // Email change — separate mutation
     if (editData.email !== editingPlayer.email) {
