@@ -182,16 +182,16 @@ export default function Players() {
     const fullName = `${editData.firstName} ${editData.lastName}`.trim();
 
     // 1. Always update basic player info
-    updateInfoMutation.mutate({
+    const updatePayload: any = {
       registrationId: editingPlayer.id,
-      name: fullName || undefined,
-      phone: editData.phone || undefined,
-      rating: editData.playerRating !== '' ? Number(editData.playerRating) : undefined,
-      paymentMethod: (editData.paymentMethod && editData.paymentMethod !== 'none')
-        ? editData.paymentMethod
-        : undefined,
-      seasonId: editData.seasonId || undefined,
-    });
+    };
+    if (fullName) updatePayload.name = fullName;
+    if (editData.phone) updatePayload.phone = editData.phone;
+    if (editData.playerRating !== '') updatePayload.rating = Number(editData.playerRating);
+    if (editData.paymentMethod && editData.paymentMethod !== 'none') updatePayload.paymentMethod = editData.paymentMethod;
+    if (editData.seasonId) updatePayload.seasonId = editData.seasonId;
+    
+    updateInfoMutation.mutate(updatePayload);
 
     // 2. Email — only if changed
     if (editData.email && editData.email !== editingPlayer.email) {
