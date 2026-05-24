@@ -1561,5 +1561,143 @@ export const adminRouter = router({
       await db.update(seasons).set({ isActive: true }).where(eq(seasons.id, input.seasonId));
 
       return { success: true, message: `Season set as active` };
+    }),
+
+  getAllEvalAssignments: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const assignments = await db.select().from(evaluationGameAssignments);
+    const gameIds = [...new Set(assignments.map(a => a.evalGameId).filter(Boolean))];
+
+    let gamesMap: Record<number, any> = {};
+    if (gameIds.length > 0) {
+      const gs = await db.select().from(games).where(inArray(games.id, gameIds as number[]));
+      gs.forEach(g => {
+        let dateStr = '';
+        if (g.gameDate instanceof Date) {
+          dateStr = g.gameDate.toISOString().split('T')[0];
+        } else if (typeof g.gameDate === 'string') {
+          dateStr = g.gameDate.split('T')[0];
+        }
+        gamesMap[g.id] = { ...g, dateStr };
+      });
+    }
+
+    return assignments.map(a => ({
+      registrationId: a.registrationId,
+      evalGameId: a.evalGameId ?? null,
+      evalGameDate: a.evalGameId ? gamesMap[a.evalGameId!]?.dateStr ?? null : null,
+      team: a.team,
+    }));
+  }),
+
+  getAllPlayersForEvaluation: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const players = await db.select().from(playerRegistrations);
+    const assignments = await db.select().from(evaluationGameAssignments);
+    const assignmentMap: Record<number, any> = {};
+    assignments.forEach(a => { assignmentMap[a.registrationId] = a; });
+
+    const gameIds = [...new Set(assignments.map(a => a.evalGameId).filter(Boolean))] as number[];
+    let gamesMap: Record<number, string> = {};
+    if (gameIds.length > 0) {
+      const gs = await db.select({ id: games.id, gameDate: games.gameDate }).from(games).where(inArray(games.id, gameIds as number[]));
+      gs.forEach(g => {
+        let dateStr = g.gameDate instanceof Date ? g.gameDate.toISOString().split('T')[0] : String(g.gameDate).split('T')[0];
+        gamesMap[g.id] = dateStr;
+      });
+    }
+
+    return players.map(p => ({
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      email: p.email,
+      position: null,
+      playerRating: p.playerRating ?? null,
+      status: p.status,
+      evalGameId: assignmentMap[p.id]?.evalGameId ?? null,
+      evalGameDate: assignmentMap[p.id]?.evalGameId ? gamesMap[assignmentMap[p.id].evalGameId] ?? null : null,
+      evalTeam: assignmentMap[p.id]?.team ?? null,
+    }));
+  }),
+
+  getAllPlayersForTeamManagement: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const ptRows = await db.select().from(playerTeams).where(eq(playerTeams.seasonId, input.seasonId));
+      const ptMap: Record<number, any> = {};
+      ptRows.forEach(pt => { ptMap[pt.registrationId] = pt; });
+
+      const regs = await db.select().from(playerRegistrations).where(eq(playerRegistrations.seasonId, input.seasonId));
+
+      return regs.map(r => ({
+        id: r.id,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+        phone: r.phone,
+        status: r.status,
+        position: ptMap[r.id]?.position ?? null,
+        playerRating: r.playerRating ?? null,
+        teamId: ptMap[r.id]?.teamId ?? null,
+        jerseyNumber: ptMap[r.id]?.jerseyNumber ?? null,
+        isCaptain: ptMap[r.id]?.isCaptain ?? false,
+      }));
+    }),
+
+  assignPlayerToTeam: adminProcedure
+    .input(z.object({
+      registrationId: z.number(),
+      teamId: z.number().nullable(),
+      seasonId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      if (!input.teamId) {
+        await db.delete(playerTeams)
+          .where(and(
+            eq(playerTeams.registrationId, input.registrationId),
+            eq(playerTeams.seasonId, input.seasonId),
+          ));
+        await db.update(playerRegistrations)
+          .set({ teamId: 1 })
+          .where(eq(playerRegistrations.id, input.registrationId));
+        return { success: true };
+      }
+
+      const existing = await db.select().from(playerTeams)
+        .where(and(
+          eq(playerTeams.registrationId, input.registrationId),
+          eq(playerTeams.seasonId, input.seasonId),
+        )).limit(1);
+
+      if (existing.length) {
+        await db.update(playerTeams)
+          .set({ teamId: input.teamId })
+          .where(and(
+            eq(playerTeams.registrationId, input.registrationId),
+            eq(playerTeams.seasonId, input.seasonId),
+          ));
+      } else {
+        await db.insert(playerTeams).values({
+          registrationId: input.registrationId,
+          teamId: input.teamId,
+          seasonId: input.seasonId,
+        });
+      }
+      await db.update(playerRegistrations)
+        .set({ teamId: input.teamId })
+        .where(eq(playerRegistrations.id, input.registrationId));
+
+      return { success: true };
     })
 });
