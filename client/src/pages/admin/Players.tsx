@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, ArrowLeft, Trash2, Grid3x3, List, Search, ChevronDown, ChevronUp, Calendar, Users, Shield, Star } from 'lucide-react';
+import { Loader2, ArrowLeft, Trash2, Grid3x3, List, Search, ChevronDown, ChevronUp, Calendar, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -30,20 +30,39 @@ const POSITION_LABELS: Record<string, string> = {
   goalie: 'Goalie',
 };
 
-function formatEvalDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
+// Safely convert any date value (Date object, ISO string, YYYY-MM-DD) to a YYYY-MM-DD string
+function toDateStr(val: any): string {
+  if (!val) return '';
+  if (val instanceof Date) {
+    const y = val.getUTCFullYear();
+    const m = String(val.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(val.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof val === 'string') return val.split('T')[0];
+  return String(val);
+}
+
+// Format a date value for readable display
+function formatDisplayDate(dateVal: any): string {
+  const str = toDateStr(dateVal);
+  if (!str || str === 'Invalid Date') return '—';
   try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+    const parts = str.split('-').map(Number);
+    if (parts.length < 3 || parts.some(isNaN)) return str;
+    const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+    return dt.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch {
-    return dateStr;
+    return str;
   }
 }
 
+// Format an eval game object for dropdown display
 function formatGameLabel(game: any): string {
-  const date = formatEvalDate(game.gameDate || game.date);
+  const dateStr = toDateStr(game.gameDate || game.date);
+  const displayDate = formatDisplayDate(dateStr);
   const time = game.gameTime || game.time || '';
-  return `${date}${time ? ' · ' + time : ''}`;
+  return time ? `${displayDate} · ${time}` : displayDate;
 }
 
 export default function Players() {
@@ -73,8 +92,7 @@ export default function Players() {
     { enabled: !!editData.seasonId }
   );
 
-  // Active season for defaulting the season selector
-  const activeSeason = seasons.find((s: any) => s.isActive);
+  const activeSeason = (seasons as any[]).find((s: any) => s.isActive);
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const invalidate = () => {
@@ -94,12 +112,12 @@ export default function Players() {
   });
 
   const assignEvalMutation = trpc.admin.assignPlayerToEvaluationGame.useMutation({
-    onSuccess: () => { toast.success('Eval game assignment updated'); invalidate(); },
+    onSuccess: () => { invalidate(); },
     onError: (e) => toast.error(e.message || 'Failed to assign eval game'),
   });
 
   const assignTeamMutation = trpc.admin.assignPlayerToTeam.useMutation({
-    onSuccess: () => { toast.success('Team assignment updated'); invalidate(); },
+    onSuccess: () => { invalidate(); },
     onError: (e) => toast.error(e.message || 'Failed to assign team'),
   });
 
@@ -114,18 +132,16 @@ export default function Players() {
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const getPlayerEvalAssignment = (registrationId: number) =>
-    evalAssignments.find((a: any) => a.registrationId === registrationId);
+  const getPlayerEvalAssignment = (id: number) =>
+    (evalAssignments as any[]).find((a: any) => a.registrationId === id);
 
-  const getPlayerTeam = (reg: any) => {
-    if (!reg.teamId) return null;
-    return teams.find((t: any) => t.id === reg.teamId);
-  };
+  const getPlayerTeam = (reg: any) =>
+    (teams as any[]).find((t: any) => t.id === reg.teamId);
 
   const getSeasonName = (seasonId: number | null) =>
-    seasons.find((s: any) => s.id === seasonId)?.name || '—';
+    (seasons as any[]).find((s: any) => s.id === seasonId)?.name || '—';
 
-  const filtered = registrations.filter((r: any) => {
+  const filtered = (registrations as any[]).filter((r: any) => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -138,7 +154,7 @@ export default function Players() {
     return true;
   });
 
-  // ── Edit dialog open ──────────────────────────────────────────────────────
+  // ── Open edit dialog ──────────────────────────────────────────────────────
   const openEdit = (player: any) => {
     const evalAssignment = getPlayerEvalAssignment(player.id);
     setEditingPlayer(player);
@@ -147,79 +163,67 @@ export default function Players() {
       lastName: player.lastName || '',
       email: player.email || '',
       phone: player.phone || '',
-      playerRating: player.playerRating ?? '',
-      registrationType: player.registrationType || 'individual',
+      playerRating: player.playerRating != null ? String(player.playerRating) : '',
       paymentMethod: player.paymentMethod || 'none',
       position: player.position || 'none',
       seasonId: player.seasonId || activeSeason?.id || null,
       teamId: player.teamId || null,
-      // Eval assignment
-      evalGameId: evalAssignment ? evalAssignment.evalGameId : null,
-      evalTeam: evalAssignment ? evalAssignment.team : 'none',
+      evalGameId: evalAssignment?.evalGameId ?? null,
+      evalTeam: evalAssignment?.team || 'none',
     });
     setIsEditOpen(true);
   };
 
-  // ── Save edit ─────────────────────────────────────────────────────────────
-  const handleSave = async () => {
+  // ── Save — always sends all fields, no change detection ───────────────────
+  const handleSave = () => {
     if (!editingPlayer) return;
 
-    const updates: any = {};
+    // Build name update
     const fullName = `${editData.firstName} ${editData.lastName}`.trim();
-    const currentName = `${editingPlayer.firstName} ${editingPlayer.lastName}`.trim();
-    if (fullName !== currentName) updates.name = fullName;
-    if (editData.phone !== editingPlayer.phone) updates.phone = editData.phone;
-    if (editData.playerRating !== (editingPlayer.playerRating ?? ''))
-      updates.rating = editData.playerRating === '' ? null : Number(editData.playerRating);
-    if (editData.paymentMethod !== 'none' && editData.paymentMethod !== (editingPlayer.paymentMethod || 'none'))
-      updates.paymentMethod = editData.paymentMethod;
-    if (editData.seasonId !== editingPlayer.seasonId) updates.seasonId = editData.seasonId;
-    if (editData.position !== (editingPlayer.position || 'none'))
-      updates.position = editData.position === 'none' ? null : editData.position;
 
-    // Email change — separate mutation
-    if (editData.email !== editingPlayer.email) {
-      updateEmailMutation.mutate({ registrationId: editingPlayer.id, newEmail: editData.email });
-    }
+    // 1. Always update basic player info
+    updateInfoMutation.mutate({
+      registrationId: editingPlayer.id,
+      name: fullName || undefined,
+      phone: editData.phone || undefined,
+      rating: editData.playerRating !== '' ? Number(editData.playerRating) : undefined,
+      paymentMethod: (editData.paymentMethod && editData.paymentMethod !== 'none')
+        ? editData.paymentMethod
+        : undefined,
+      seasonId: editData.seasonId || undefined,
+    });
 
-    // Team assignment
-    const newTeamId = editData.teamId || null;
-    if (newTeamId !== (editingPlayer.teamId || null)) {
-      assignTeamMutation.mutate({
+    // 2. Email — only if changed
+    if (editData.email && editData.email !== editingPlayer.email) {
+      updateEmailMutation.mutate({
         registrationId: editingPlayer.id,
-        teamId: newTeamId,
-        seasonId: editData.seasonId || activeSeason?.id || 0,
+        newEmail: editData.email,
       });
     }
 
-    // Eval game assignment
-    const prevEval = getPlayerEvalAssignment(editingPlayer.id);
-    const prevEvalGameId = prevEval?.evalGameId ?? null;
-    const newEvalGameId = editData.evalGameId || null;
-    const newEvalTeam = editData.evalTeam === 'none' ? 'white' : editData.evalTeam;
-    if (newEvalGameId !== prevEvalGameId || (newEvalGameId && editData.evalTeam !== 'none' && editData.evalTeam !== prevEval?.team)) {
-      assignEvalMutation.mutate({
-        registrationId: editingPlayer.id,
-        evaluationGameId: newEvalGameId,
-        team: newEvalTeam,
-      });
-    }
+    // 3. Team assignment — always sync
+    assignTeamMutation.mutate({
+      registrationId: editingPlayer.id,
+      teamId: editData.teamId || null,
+      seasonId: editData.seasonId || activeSeason?.id || 1,
+    });
 
-    if (Object.keys(updates).length > 0) {
-      updateInfoMutation.mutate({ registrationId: editingPlayer.id, ...updates });
-    } else if (editData.email === editingPlayer.email && newTeamId === (editingPlayer.teamId || null) && newEvalGameId === prevEvalGameId) {
-      toast.info('No changes made');
-      setIsEditOpen(false);
-    } else {
-      setIsEditOpen(false);
-    }
+    // 4. Eval game assignment — always sync
+    assignEvalMutation.mutate({
+      registrationId: editingPlayer.id,
+      evaluationGameId: editData.evalGameId || null,
+      team: (editData.evalTeam === 'black' ? 'black' : 'white') as 'white' | 'black',
+    });
   };
 
-  const isSaving = updateInfoMutation.isPending || updateEmailMutation.isPending || assignEvalMutation.isPending || assignTeamMutation.isPending;
+  const isSaving =
+    updateInfoMutation.isPending ||
+    updateEmailMutation.isPending ||
+    assignEvalMutation.isPending ||
+    assignTeamMutation.isPending;
 
   if (!user) return null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -249,7 +253,7 @@ export default function Players() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: statsData?.total ?? registrations.length, color: 'text-blue-600' },
+            { label: 'Total', value: statsData?.total ?? (registrations as any[]).length, color: 'text-blue-600' },
             { label: 'Pending', value: statsData?.pending ?? 0, color: 'text-yellow-600' },
             { label: 'Approved', value: statsData?.approved ?? 0, color: 'text-green-600' },
             { label: 'Rejected', value: statsData?.rejected ?? 0, color: 'text-red-600' },
@@ -277,8 +281,7 @@ export default function Players() {
           <div className="flex gap-2 flex-wrap">
             {(['all', 'pending', 'approved', 'rejected'] as StatusFilter[]).map(s => (
               <Button
-                key={s}
-                size="sm"
+                key={s} size="sm"
                 variant={statusFilter === s ? 'default' : 'outline'}
                 onClick={() => setStatusFilter(s)}
                 className="capitalize"
@@ -289,16 +292,14 @@ export default function Players() {
           </div>
         </div>
 
-        {/* Players List */}
+        {/* Players */}
         {loadingPlayers ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
         ) : filtered.length === 0 ? (
           <Card>
-            <CardContent className="py-12 text-center text-gray-500">
-              No players found
-            </CardContent>
+            <CardContent className="py-12 text-center text-gray-500">No players found</CardContent>
           </Card>
         ) : (
           <div className={viewMode === 'grid'
@@ -309,7 +310,6 @@ export default function Players() {
               const evalAssignment = getPlayerEvalAssignment(reg.id);
               const playerTeam = getPlayerTeam(reg);
               const isExpanded = expandedCards.has(reg.id);
-
               return (
                 <Card key={reg.id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
@@ -326,7 +326,6 @@ export default function Players() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {/* Key info always visible */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div className="text-gray-500">Phone</div>
                       <div className="font-medium">{reg.phone || '—'}</div>
@@ -338,21 +337,23 @@ export default function Players() {
                       <div className="font-medium">{reg.paymentMethod || '—'}</div>
                     </div>
 
-                    {/* Eval & Team assignments — highlighted */}
                     <div className="rounded-md bg-blue-50 border border-blue-100 px-3 py-2 space-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-blue-700">
-                        <Calendar className="w-3 h-3" />
-                        <span className="font-medium">Eval Game:</span>
-                        <span>{evalAssignment ? `${formatEvalDate(evalAssignment.evalGameDate)} · ${evalAssignment.team === 'white' ? '⬜ White' : '⬛ Black'}` : 'Not assigned'}</span>
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium">Eval:</span>
+                        <span>
+                          {evalAssignment
+                            ? `${formatDisplayDate(evalAssignment.evalGameDate)} · ${evalAssignment.team === 'white' ? '⬜ White' : '⬛ Black'}`
+                            : 'Not assigned'}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-blue-700">
-                        <Shield className="w-3 h-3" />
+                        <Shield className="w-3 h-3 flex-shrink-0" />
                         <span className="font-medium">Team:</span>
                         <span>{playerTeam?.name || '—'}</span>
                       </div>
                     </div>
 
-                    {/* Expandable extra details */}
                     {isExpanded && (
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs border-t pt-2">
                         <div className="text-gray-500">Season</div>
@@ -366,12 +367,10 @@ export default function Players() {
                       </div>
                     )}
 
-                    {/* Actions */}
                     <div className="flex gap-2 flex-wrap pt-1">
                       <Button size="sm" onClick={() => openEdit(reg)} className="flex-1">
                         Edit / Assign
                       </Button>
-                      {/* Quick status toggle */}
                       <Select
                         value={reg.status}
                         onValueChange={v => updateStatusMutation.mutate({ registrationId: reg.id, status: v as any })}
@@ -385,24 +384,15 @@ export default function Players() {
                           <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2"
+                      <Button size="sm" variant="ghost" className="h-8 px-2"
                         onClick={() => setExpandedCards(prev => {
                           const next = new Set(prev);
                           next.has(reg.id) ? next.delete(reg.id) : next.add(reg.id);
                           return next;
-                        })}
-                      >
+                        })}>
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 px-2"
-                        onClick={() => setDeleteId(reg.id)}
-                      >
+                      <Button size="sm" variant="destructive" className="h-8 px-2" onClick={() => setDeleteId(reg.id)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -414,13 +404,11 @@ export default function Players() {
         )}
       </div>
 
-      {/* ── Edit Dialog ──────────────────────────────────────────────────────── */}
+      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Edit Player — {editingPlayer?.firstName} {editingPlayer?.lastName}
-            </DialogTitle>
+            <DialogTitle>Edit — {editingPlayer?.firstName} {editingPlayer?.lastName}</DialogTitle>
           </DialogHeader>
 
           {editingPlayer && (
@@ -435,9 +423,7 @@ export default function Players() {
                     setEditingPlayer({ ...editingPlayer, status: v });
                   }}
                 >
-                  <SelectTrigger className="w-36">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
@@ -474,13 +460,9 @@ export default function Players() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs text-gray-600">Rating (1–10)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10"
+                  <Input type="number" min="1" max="10"
                     value={editData.playerRating ?? ''}
-                    onChange={e => setEditData({ ...editData, playerRating: e.target.value })}
-                  />
+                    onChange={e => setEditData({ ...editData, playerRating: e.target.value })} />
                 </div>
                 <div>
                   <Label className="text-xs text-gray-600">Position</Label>
@@ -520,7 +502,7 @@ export default function Players() {
                   <SelectTrigger><SelectValue placeholder="Select season" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Not set</SelectItem>
-                    {seasons.map((s: any) => (
+                    {(seasons as any[]).map((s: any) => (
                       <SelectItem key={s.id} value={s.id.toString()}>
                         {s.name}{s.isActive ? ' (Active)' : ''}
                       </SelectItem>
@@ -529,10 +511,10 @@ export default function Players() {
                 </Select>
               </div>
 
-              {/* Evaluation Game Assignment */}
+              {/* Eval Game */}
               <div className="border rounded-lg p-3 space-y-3 bg-blue-50/50">
                 <Label className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4" /> Evaluation Game Assignment
+                  <Calendar className="w-4 h-4" /> Evaluation Game
                 </Label>
                 <div>
                   <Label className="text-xs text-gray-600">Eval Game</Label>
@@ -545,7 +527,7 @@ export default function Players() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Not assigned</SelectItem>
-                      {evalGames.map((g: any) => (
+                      {(evalGames as any[]).map((g: any) => (
                         <SelectItem key={g.id} value={g.id.toString()}>
                           {formatGameLabel(g)}
                         </SelectItem>
@@ -568,10 +550,10 @@ export default function Players() {
                 )}
               </div>
 
-              {/* Team Assignment (post-eval) */}
-              <div className="border rounded-lg p-3 space-y-3 bg-green-50/50">
-                <Label className="text-sm font-semibold text-green-800 flex items-center gap-1.5">
-                  <Shield className="w-4 h-4" /> League Team Assignment
+              {/* League Team */}
+              <div className="border rounded-lg p-3 bg-green-50/50">
+                <Label className="text-sm font-semibold text-green-800 flex items-center gap-1.5 mb-2">
+                  <Shield className="w-4 h-4" /> League Team
                 </Label>
                 <Select
                   value={editData.teamId?.toString() || 'none'}
@@ -582,7 +564,7 @@ export default function Players() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
-                    {teams
+                    {(teams as any[])
                       .filter((t: any) => !editData.seasonId || t.seasonId === editData.seasonId)
                       .map((t: any) => (
                         <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
@@ -591,7 +573,7 @@ export default function Players() {
                 </Select>
               </div>
 
-              {/* Actions */}
+              {/* Save / Cancel */}
               <div className="flex gap-2 justify-end pt-2">
                 <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
                 <Button onClick={handleSave} disabled={isSaving}>
@@ -604,7 +586,7 @@ export default function Players() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmation ───────────────────────────────────────────────── */}
+      {/* Delete confirmation */}
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
