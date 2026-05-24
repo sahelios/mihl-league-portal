@@ -1602,7 +1602,7 @@ export const adminRouter = router({
     return assignments.map(a => ({
       registrationId: a.registrationId,
       evalGameId: a.evalGameId ?? null,
-      evalGameDate: a.evalGameId ? gamesMap[a.evalGameId!]?.dateStr ?? null : null,
+      evalGameDate: a.evalGameId && gamesMap[a.evalGameId] ? gamesMap[a.evalGameId].dateStr : null,
       team: a.team,
     }));
   }),
