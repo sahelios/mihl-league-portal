@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, homeTeamId, awayTeamId, gameDate, isEvaluationGame, seasonId FROM games WHERE seasonId = '240001' AND isEvaluationGame = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, homeTeamId, awayTeamId, gameDate, isEvaluationGame, seasonId FROM games WHERE seasonId = '240001' AND isEvaluationGame = 1;",
+  "rows": [
+    {
+      "id": "420001",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-23",
+      "isEvaluationGame": "1",
+      "seasonId": "240001"
+    },
+    {
+      "id": "420002",
+      "homeTeamId": "1",
+      "awayTeamId": "2",
+      "gameDate": "2026-06-25",
+      "isEvaluationGame": "1",
+      "seasonId": "240001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\thomeTeamId\tawayTeamId\tgameDate\tisEvaluationGame\tseasonId\n420001\t1\t2\t2026-06-23\t1\t240001\n420002\t1\t2\t2026-06-25\t1\t240001\n",
+  "stderr": "",
+  "execution_time_ms": 575
+}
