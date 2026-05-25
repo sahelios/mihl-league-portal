@@ -304,12 +304,21 @@ export const leagueRouter = router({
           ))
           .limit(1);
         
-        // Override position from playerTeams if available (admin-set position takes precedence)
-        if (playerTeamResult.length && playerTeamResult[0].position) {
-          return {
-            ...registration,
-            position: playerTeamResult[0].position,
-          };
+        // Override teamId and position from playerTeams if available (admin-set values take precedence)
+        if (playerTeamResult.length) {
+          const overrides: any = {};
+          if (playerTeamResult[0].position) {
+            overrides.position = playerTeamResult[0].position;
+          }
+          if (playerTeamResult[0].teamId) {
+            overrides.teamId = playerTeamResult[0].teamId;
+          }
+          if (Object.keys(overrides).length > 0) {
+            return {
+              ...registration,
+              ...overrides,
+            };
+          }
         }
         
         return registration;

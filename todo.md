@@ -705,3 +705,11 @@
 - [x] Created emergency rollback instructions
 - [x] Added checklist for future changes
 - [x] Documented common mistakes to avoid
+
+
+## TEAM ASSIGNMENT FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Fixed PlayerPortal showing "Unassigned" instead of actual team
+- [x] Updated getPlayerRegistration to fetch teamId from playerTeams for active season
+- [x] Admin team changes now properly reflected in PlayerPortal
+- [x] Created 3 vitest tests for team assignment scenarios (all passing)
+- [x] Verified teamId override logic works correctly
