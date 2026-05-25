@@ -1135,21 +1135,37 @@ export const adminRouter = router({
           .where(eq(playerTeams.registrationId, input.registrationId));
         
         for (const pt of playerTeamsData) {
-          // Delete player stats
-          await db.delete(playerStats)
-            .where(eq(playerStats.playerTeamId, pt.id));
+          try {
+            // Delete player stats
+            await db.delete(playerStats)
+              .where(eq(playerStats.playerTeamId, pt.id));
+          } catch (e) {
+            console.error('Error deleting playerStats:', e);
+          }
           
-          // Delete game stats
-          await db.delete(gameStats)
-            .where(eq(gameStats.playerTeamId, pt.id));
+          try {
+            // Delete game stats
+            await db.delete(gameStats)
+              .where(eq(gameStats.playerTeamId, pt.id));
+          } catch (e) {
+            console.error('Error deleting gameStats:', e);
+          }
           
-          // Delete badges
-          await db.delete(badges)
-            .where(eq(badges.playerTeamId, pt.id));
+          try {
+            // Delete badges
+            await db.delete(badges)
+              .where(eq(badges.playerTeamId, pt.id));
+          } catch (e) {
+            console.error('Error deleting badges:', e);
+          }
           
-          // Delete team messages from this player
-          await db.delete(teamMessages)
-            .where(eq(teamMessages.fromPlayerId, input.registrationId));
+          try {
+            // Delete team messages from this player
+            await db.delete(teamMessages)
+              .where(eq(teamMessages.fromPlayerId, input.registrationId));
+          } catch (e) {
+            console.error('Error deleting teamMessages:', e);
+          }
         }
         
         // 4. Delete playerTeams entries

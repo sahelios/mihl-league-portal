@@ -211,12 +211,18 @@ export default function Home() {
           <p className="text-lg text-primary-foreground/80 mb-6">
             A recreational ice hockey league dedicated to community, competition, and camaraderie.
           </p>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <Button 
               className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
               onClick={() => setLocation("/register")}
             >
-              Register Now
+              Players Register Now
+            </Button>
+            <Button 
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              onClick={() => setLocation("/referee-scorekeeper-apply")}
+            >
+              Referee/Scorekeeper Register Now
             </Button>
             <Button 
               variant="outline" 
