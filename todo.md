@@ -669,3 +669,12 @@
 - [x] Added dialog state management and proper close on success
 - [x] Added vitest tests for player availability procedures (4 tests passing)
 - [x] Verified mutation invalidation and UI updates after availability change
+
+
+## PLAYER PORTAL INFO DISPLAY - May 25, 2026 (Session 12 - Continued)
+- [x] Added player name display in header (already working)
+- [x] Added team assignment display in header
+- [x] Added position display in header
+- [x] Added player rating display in header
+- [x] Reorganized stats cards to show Games Played, Goals, and Points
+- [x] Improved header layout with card styling and grid layout

@@ -119,26 +119,32 @@ export default function PlayerPortal() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Player Portal</h1>
-          <p className="text-muted-foreground mt-1">
-            {playerReg.firstName} {playerReg.lastName} • {team?.name || "Team"}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">{playerReg.firstName} {playerReg.lastName}</h1>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Team</p>
+                  <p className="text-lg font-semibold text-foreground">{team?.name || "Unassigned"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Position</p>
+                  <p className="text-lg font-semibold text-foreground capitalize">{playerReg.position || "Not Set"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Rating</p>
+                  <p className="text-lg font-semibold text-foreground">{playerReg.playerRating ? `${playerReg.playerRating}/10` : "Not Rated"}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">Your Rating</p>
-                  <TrendingUp size={20} className="text-amber-500" />
-                </div>
-                <p className="text-2xl font-bold">{playerReg?.playerRating || 'N/A'}/10</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-2">
