@@ -713,3 +713,9 @@
 - [x] Admin team changes now properly reflected in PlayerPortal
 - [x] Created 3 vitest tests for team assignment scenarios (all passing)
 - [x] Verified teamId override logic works correctly
+
+
+## TEAM DISPLAY FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Fixed getTeamDetails to join with masterTeams to get team name
+- [x] PlayerPortal now displays correct team name (e.g., "Iron Lions" instead of "Unassigned")
+- [x] Created 3 vitest tests for team details scenarios (all passing)

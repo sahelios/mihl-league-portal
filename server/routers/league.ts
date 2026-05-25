@@ -334,7 +334,17 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db.select().from(teams).where(eq(teams.id, input.teamId)).limit(1);
+        // Join teams with masterTeams to get team name
+        const result = await db.select({
+          id: teams.id,
+          masterTeamId: teams.masterTeamId,
+          seasonId: teams.seasonId,
+          name: masterTeams.name,
+          logoUrl: masterTeams.logoUrl,
+        }).from(teams)
+          .leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id))
+          .where(eq(teams.id, input.teamId))
+          .limit(1);
         return result[0] || null;
       } catch (error) {
         console.error('Error fetching team details:', error);
