@@ -653,3 +653,10 @@
 **Why this matters:** Database DATE fields (YYYY-MM-DD) are serialized without timezone info. When parsed with `new Date()`, they're interpreted as UTC, causing off-by-one-day bugs. The centralized utility ensures consistent local-time parsing across the entire app.
 
 **Going forward:** Always use dateUtils functions instead of `new Date()` directly when working with date strings.
+
+
+## PLAYER PORTAL ERROR FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Fixed "Cannot read properties of undefined (reading 'split')" error in PlayerPortal
+- [x] Added missing `time: game.gameTime` field to getTeamSchedule return object
+- [x] Added null checks for game.date and game.time in PlayerPortal display
+- [x] Improved error handling in getTeamSchedule to throw proper TRPC error

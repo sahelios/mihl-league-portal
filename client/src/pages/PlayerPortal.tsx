@@ -209,7 +209,13 @@ export default function PlayerPortal() {
                                 {game.teamHome?.name} vs {game.teamAway?.name}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {formatDate(game.date)} at {formatTime(game.time)}
+                                {game.date && game.time ? (
+                                  <>
+                                    {formatDate(game.date)} at {formatTime(game.time)}
+                                  </>
+                                ) : (
+                                  'Time TBA'
+                                )}
                               </p>
                               <p className="text-sm text-muted-foreground">{game.venue?.name}</p>
                             </div>

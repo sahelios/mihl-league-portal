@@ -361,10 +361,11 @@ export const leagueRouter = router({
           teamAway: { name: game.isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`) },
           venue: { name: venueMap.get(game.venueId) || 'TBA' },
           date: game.gameDate,
+          time: game.gameTime,
         }));
       } catch (error) {
         console.error('Error fetching team schedule:', error);
-        return [];
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch team schedule' });
       }
     }),
 
