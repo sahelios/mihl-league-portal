@@ -1208,7 +1208,7 @@ export const adminRouter = router({
       }
       if (input.email) updateData.email = input.email;
       if (input.phone) updateData.phone = input.phone;
-      if (input.rating !== undefined) updateData.rating = input.rating;
+      if (input.rating !== undefined) updateData.playerRating = input.rating;
       if (input.paymentMethod) updateData.paymentMethod = input.paymentMethod;
       if (input.teamId !== undefined) updateData.teamId = input.teamId;
       if (input.seasonId !== undefined) updateData.seasonId = input.seasonId;
@@ -1372,16 +1372,17 @@ export const adminRouter = router({
       const venueMap = new Map(venuesList.map(v => [v.id, v]));
 
       // Map games with team and venue info
-      return gamesList.map(g => {
+      return gamesList.map((g: any) => {
         // Convert Date to YYYY-MM-DD string to avoid timezone issues
         let dateStr = '';
-        if (g.gameDate instanceof Date) {
-          const year = g.gameDate.getUTCFullYear();
-          const month = String(g.gameDate.getUTCMonth() + 1).padStart(2, '0');
-          const day = String(g.gameDate.getUTCDate()).padStart(2, '0');
+        const gameDate = g.gameDate as Date | string | null;
+        if (gameDate instanceof Date) {
+          const year = gameDate.getUTCFullYear();
+          const month = String(gameDate.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(gameDate.getUTCDate()).padStart(2, '0');
           dateStr = `${year}-${month}-${day}`;
-        } else if (typeof g.gameDate === 'string') {
-          dateStr = g.gameDate.split('T')[0];
+        } else if (typeof gameDate === 'string') {
+          dateStr = gameDate.split('T')[0];
         }
         
         let homeTeamName = teamMap.get(g.homeTeamId) || 'Unknown';
@@ -1657,6 +1658,7 @@ export const adminRouter = router({
       registrationId: z.number(),
       teamId: z.number().nullable(),
       seasonId: z.number(),
+      position: z.enum(["forward", "defense", "goalie"]).optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
@@ -1680,9 +1682,12 @@ export const adminRouter = router({
           eq(playerTeams.seasonId, input.seasonId),
         )).limit(1);
 
+      const ptUpdateData: any = { teamId: input.teamId };
+      if (input.position) ptUpdateData.position = input.position;
+
       if (existing.length) {
         await db.update(playerTeams)
-          .set({ teamId: input.teamId })
+          .set(ptUpdateData)
           .where(and(
             eq(playerTeams.registrationId, input.registrationId),
             eq(playerTeams.seasonId, input.seasonId),
@@ -1692,6 +1697,7 @@ export const adminRouter = router({
           registrationId: input.registrationId,
           teamId: input.teamId,
           seasonId: input.seasonId,
+          position: input.position || null,
         });
       }
       await db.update(playerRegistrations)

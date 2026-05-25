@@ -32,6 +32,8 @@ export default function Registration() {
   const [isFirstTime, setIsFirstTime] = useState(false);
   const [registrationType, setRegistrationType] = useState("individual");
   const [playerRating, setPlayerRating] = useState("");
+  const [position, setPosition] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("eTransfer");
   const [agreeToWaiver, setAgreeToWaiver] = useState(false);
   
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +78,7 @@ export default function Registration() {
   const handleLeagueRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!firstName || !lastName || !phone || !evaluationDate || (registrationType === "individual" && !playerRating)) {
+    if (!firstName || !lastName || !phone || !evaluationDate || (registrationType === "individual" && !playerRating) || (registrationType === "individual" && !position)) {
       toast.error(language === "en" ? "Please fill in all required fields" : "Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -96,6 +98,8 @@ export default function Registration() {
         phone,
         evaluationDate,
         playerRating: registrationType === "individual" ? parseInt(playerRating) : undefined,
+        position: registrationType === "individual" ? position : undefined,
+        paymentMethod: registrationType === "individual" ? paymentMethod : undefined,
         emergencyName: "",
         emergencyPhone: "",
         emergencyRelationship: "",
@@ -112,6 +116,8 @@ export default function Registration() {
       setPhone("");
       setEvaluationDate("");
       setPlayerRating("");
+      setPosition("");
+      setPaymentMethod("eTransfer");
       setIsFirstTime(false);
       setRegistrationType("individual");
       setAgreeToWaiver(false);
@@ -269,7 +275,7 @@ export default function Registration() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="individual">{language === "en" ? "Player ($350)" : "Joueur ($350)"}</SelectItem>
+                    <SelectItem value="individual">{language === "en" ? "Player ($315)" : "Joueur ($315)"}</SelectItem>
                     <SelectItem value="referee">{language === "en" ? "Referee" : "Arbitre"}</SelectItem>
                     <SelectItem value="scorekeeper">{language === "en" ? "Scorekeeper" : "Gardien de Pointage"}</SelectItem>
                   </SelectContent>
@@ -310,6 +316,34 @@ export default function Registration() {
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
                           <SelectItem key={rating} value={rating.toString()}>{rating}</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="position">{language === "en" ? "Position" : "Position"} *</Label>
+                    <Select value={position} onValueChange={setPosition}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={language === "en" ? "Select your position" : "Sélectionner votre position"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="forward">{language === "en" ? "Forward" : "Attaquant"}</SelectItem>
+                        <SelectItem value="defense">{language === "en" ? "Defense" : "Défense"}</SelectItem>
+                        <SelectItem value="goalie">{language === "en" ? "Goalie" : "Gardien"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="paymentMethod">{language === "en" ? "Payment Method" : "Méthode de Paiement"} *</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="eTransfer">{language === "en" ? "E-Transfer" : "Virement Électronique"}</SelectItem>
+                        <SelectItem value="cash">{language === "en" ? "Cash" : "Comptant"}</SelectItem>
+                        <SelectItem value="arrangement">{language === "en" ? "Arrangement" : "Arrangement"}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

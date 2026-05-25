@@ -67,7 +67,7 @@ export default function Home() {
       id: 2,
       title: "Registration Now Open",
       content:
-        "Players can now register for the upcoming season. Individual registration is $350, or join a full team for $6,500. Jersey and socks set coming soon!",
+        "Players can now register for the upcoming season. Individual registration is $315, or join a full team for $3,000. Jersey and socks set coming soon!",
       date: "2026-06-10",
     },
     {

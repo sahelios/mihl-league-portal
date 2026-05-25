@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
-import { playerRegistrations, seasons } from '../../drizzle/schema';
+import { playerRegistrations, seasons, playerTeams } from '../../drizzle/schema';
 import { eq, and, sql, or } from 'drizzle-orm';
 
 // Evaluation game dates and capacity
@@ -27,8 +27,9 @@ const registrationSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().regex(/^\d{10,}/),
-  rating: z.number().min(1).max(10).optional(),
-  position: z.enum(['forward', 'defenseman', 'goalie']).optional(),
+  playerRating: z.number().min(1).max(10).optional(),
+  position: z.enum(['forward', 'defense', 'goalie']).optional(),
+  paymentMethod: z.enum(['eTransfer', 'cash', 'arrangement']).optional(),
   preferredTeam: z.string().optional(),
   friendRequests: z.array(z.string()).optional(),
   wantsCaptain: z.boolean().optional(),
@@ -39,7 +40,7 @@ const registrationSchema = z.object({
     email: z.string().email(),
     phone: z.string(),
     position: z.enum(['forward', 'defenseman', 'goalie']),
-    rating: z.number().min(1).max(10),
+        playerRating: z.number().min(1).max(10),
   })).optional(),
   emergencyName: z.string(),
   emergencyPhone: z.string(),
@@ -224,7 +225,8 @@ export const registrationRouter = router({
           paymentConfirmed: false,
           jerseyOrderConfirmed: false,
           evaluationDate: input.evaluationDate || null,
-          playerRating: input.rating || null,
+          playerRating: input.playerRating || null,
+          paymentMethod: input.paymentMethod || null,
         });
 
         // Send admin notification
@@ -256,7 +258,32 @@ export const registrationRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      return await db.select().from(playerRegistrations);
+      return await db.select({
+        id: playerRegistrations.id,
+        firstName: playerRegistrations.firstName,
+        lastName: playerRegistrations.lastName,
+        email: playerRegistrations.email,
+        phone: playerRegistrations.phone,
+        teamId: playerRegistrations.teamId,
+        seasonId: playerRegistrations.seasonId,
+        isFirstTime: playerRegistrations.isFirstTime,
+        registrationType: playerRegistrations.registrationType,
+        status: playerRegistrations.status,
+        waitingListStatus: playerRegistrations.waitingListStatus,
+        paymentConfirmed: playerRegistrations.paymentConfirmed,
+        paymentMethod: playerRegistrations.paymentMethod,
+        jerseyOrderConfirmed: playerRegistrations.jerseyOrderConfirmed,
+        evaluationDate: playerRegistrations.evaluationDate,
+        playerRating: playerRegistrations.playerRating,
+        playerPictureUrl: playerRegistrations.playerPictureUrl,
+        createdAt: playerRegistrations.createdAt,
+        updatedAt: playerRegistrations.updatedAt,
+        position: playerTeams.position,
+      }).from(playerRegistrations)
+        .leftJoin(playerTeams, and(
+          eq(playerRegistrations.id, playerTeams.registrationId),
+          eq(playerRegistrations.seasonId, playerTeams.seasonId)
+        ));
     }),
 
   getPending: protectedProcedure

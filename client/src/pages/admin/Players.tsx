@@ -111,8 +111,8 @@ export default function Players() {
     onError: (e) => toast.error(e.message || 'Failed to update status'),
   });
 
-  const assignEvalMutation = trpc.admin.assignPlayerToEvaluationGame.useMutation({
-    onSuccess: () => { invalidate(); },
+  const assignEvalMutation = trpc.admin.assignEvaluationTeam.useMutation({
+    onSuccess: () => { toast.success('Eval game assigned'); invalidate(); },
     onError: (e) => toast.error(e.message || 'Failed to assign eval game'),
   });
 
@@ -168,7 +168,7 @@ export default function Players() {
       position: player.position || 'none',
       seasonId: player.seasonId || activeSeason?.id || null,
       teamId: player.teamId || null,
-      evalGameId: evalAssignment?.evalGameId ?? null,
+      evalGameDate: evalAssignment?.evalGameDate ?? null,
       evalTeam: evalAssignment?.team || 'none',
     });
     setIsEditOpen(true);
@@ -206,14 +206,17 @@ export default function Players() {
       registrationId: editingPlayer.id,
       teamId: editData.teamId || null,
       seasonId: editData.seasonId || activeSeason?.id || 1,
+      position: editData.position && editData.position !== 'none' ? editData.position : undefined,
     });
 
-    // 4. Eval game assignment — always sync
-    assignEvalMutation.mutate({
-      registrationId: editingPlayer.id,
-      evaluationGameId: editData.evalGameId || null,
-      team: (editData.evalTeam === 'black' ? 'black' : 'white') as 'white' | 'black',
-    });
+    // 4. Eval game assignment — only if evalGameDate is set
+    if (editData.evalGameDate) {
+      assignEvalMutation.mutate({
+        registrationId: editingPlayer.id,
+        evaluationDate: editData.evalGameDate,
+        team: (editData.evalTeam === 'black' ? 'black' : 'white') as 'white' | 'black',
+      });
+    }
   };
 
   const isSaving =
@@ -471,7 +474,7 @@ export default function Players() {
                     <SelectContent>
                       <SelectItem value="none">Not set</SelectItem>
                       <SelectItem value="forward">Forward</SelectItem>
-                      <SelectItem value="defenseman">Defense</SelectItem>
+                      <SelectItem value="defense">Defense</SelectItem>
                       <SelectItem value="goalie">Goalie</SelectItem>
                     </SelectContent>
                   </Select>
@@ -497,7 +500,7 @@ export default function Players() {
                 <Label className="text-xs text-gray-600">Season</Label>
                 <Select
                   value={editData.seasonId?.toString() || 'none'}
-                  onValueChange={v => setEditData({ ...editData, seasonId: v === 'none' ? null : parseInt(v), teamId: null, evalGameId: null })}
+                    onValueChange={v => setEditData({ ...editData, seasonId: v === 'none' ? null : parseInt(v), teamId: null, evalGameDate: null })}
                 >
                   <SelectTrigger><SelectValue placeholder="Select season" /></SelectTrigger>
                   <SelectContent>
@@ -519,23 +522,30 @@ export default function Players() {
                 <div>
                   <Label className="text-xs text-gray-600">Eval Game</Label>
                   <Select
-                    value={editData.evalGameId?.toString() || 'none'}
-                    onValueChange={v => setEditData({ ...editData, evalGameId: v === 'none' ? null : parseInt(v) })}
+                    value={editData.evalGameDate || 'none'}
+                    onValueChange={v => setEditData({ ...editData, evalGameDate: v === 'none' ? null : v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={editData.seasonId ? 'Select eval game' : 'Select a season first'} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Not assigned</SelectItem>
-                      {(evalGames as any[]).map((g: any) => (
-                        <SelectItem key={g.id} value={g.id.toString()}>
-                          {formatGameLabel(g)}
-                        </SelectItem>
-                      ))}
+                      {(evalGames as any[]).map((g: any) => {
+                        const gameDate = g.gameDate instanceof Date 
+                          ? g.gameDate.toISOString().split('T')[0]
+                          : typeof g.gameDate === 'string'
+                          ? g.gameDate.split('T')[0]
+                          : g.gameDate;
+                        return (
+                          <SelectItem key={g.id} value={gameDate}>
+                            {formatGameLabel(g)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
-                {editData.evalGameId && (
+                {editData.evalGameDate && (
                   <div>
                     <Label className="text-xs text-gray-600">Eval Team</Label>
                     <Select value={editData.evalTeam || 'none'} onValueChange={v => setEditData({ ...editData, evalTeam: v })}>

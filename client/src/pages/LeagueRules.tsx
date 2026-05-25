@@ -90,12 +90,12 @@ export default function LeagueRules() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Individual Registration</h3>
-                  <p className="text-2xl font-bold text-accent mb-2">$350</p>
+                  <p className="text-2xl font-bold text-accent mb-2">$315</p>
                   <p className="text-sm">Per player for the full season (10 weeks)</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Team Registration</h3>
-                  <p className="text-2xl font-bold text-accent mb-2">$6,500</p>
+                  <p className="text-2xl font-bold text-accent mb-2">$3,000</p>
                   <p className="text-sm">For a full team (12 players)</p>
                 </div>
                 <div>
