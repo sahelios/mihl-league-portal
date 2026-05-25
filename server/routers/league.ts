@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams } from "../../drizzle/schema";
 import { eq, desc, and, or, inArray } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -266,8 +266,33 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db.select().from(playerRegistrations).where(eq(playerRegistrations.email, input.email)).limit(1);
-        return result[0] || null;
+        // Get player registration
+        const regResult = await db.select().from(playerRegistrations).where(eq(playerRegistrations.email, input.email)).limit(1);
+        if (!regResult.length) return null;
+        
+        const registration = regResult[0];
+        
+        // Get active season
+        const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
+        if (!activeSeason.length) return registration;
+        
+        // Get player team info for active season (includes position)
+        const playerTeamResult = await db.select().from(playerTeams)
+          .where(and(
+            eq(playerTeams.registrationId, registration.id),
+            eq(playerTeams.seasonId, activeSeason[0].id)
+          ))
+          .limit(1);
+        
+        // Merge position from playerTeams if available
+        if (playerTeamResult.length && playerTeamResult[0].position) {
+          return {
+            ...registration,
+            position: playerTeamResult[0].position,
+          };
+        }
+        
+        return registration;
       } catch (error) {
         console.error('Error fetching player registration:', error);
         return null;

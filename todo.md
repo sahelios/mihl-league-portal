@@ -678,3 +678,11 @@
 - [x] Added player rating display in header
 - [x] Reorganized stats cards to show Games Played, Goals, and Points
 - [x] Improved header layout with card styling and grid layout
+
+
+## POSITION AND TEAM ASSIGNMENT FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Updated getPlayerRegistration to fetch position from playerTeams table for active season
+- [x] Implemented position merging from playerTeams into registration object
+- [x] Added vitest tests for position retrieval from playerTeams (3 tests passing)
+- [x] Verified position displays correctly in PlayerPortal when assigned in /admin/players
+- [x] Verified team assignment persists correctly across admin and player portals
