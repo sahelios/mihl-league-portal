@@ -212,6 +212,15 @@ export const registrationRouter = router({
           'scorekeeper': 'individual',
         };
 
+        // Get the active season
+        const activeSeason = await getActiveSeason();
+        if (!activeSeason) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'No active season found',
+          });
+        }
+
         const result = await db.insert(playerRegistrations).values({
           firstName: input.firstName,
           lastName: input.lastName,
@@ -219,7 +228,7 @@ export const registrationRouter = router({
           phone: input.phone,
           registrationType: typeMap[input.registrationType],
           status: 'pending',
-          seasonId: 1,
+          seasonId: activeSeason.id,
           teamId: 1,
           isFirstTime: false,
           paymentConfirmed: false,

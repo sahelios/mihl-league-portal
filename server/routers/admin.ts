@@ -1705,5 +1705,20 @@ export const adminRouter = router({
         .where(eq(playerRegistrations.id, input.registrationId));
 
       return { success: true };
-    })
+    }),
+
+  toggleRegistrationStatus: adminProcedure
+    .input(z.object({
+      seasonId: z.number(),
+      registrationOpen: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      
+      await db.update(seasons)
+        .set({ registrationOpen: input.registrationOpen })
+        .where(eq(seasons.id, input.seasonId));
+
+      return { success: true, registrationOpen: input.registrationOpen };
+    }),
 });

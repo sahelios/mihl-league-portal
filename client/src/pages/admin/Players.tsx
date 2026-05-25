@@ -343,7 +343,14 @@ export default function Players() {
                     <div className="rounded-md bg-blue-50 border border-blue-100 px-3 py-2 space-y-1 text-xs">
                       <div className="flex items-center gap-1.5 text-blue-700">
                         <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span className="font-medium">Eval:</span>
+                        <span className="font-medium">Eval Requested:</span>
+                        <span>
+                          {reg.evaluationDate ? formatDisplayDate(reg.evaluationDate) : 'Not specified'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-blue-700">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium">Eval Assigned:</span>
                         <span>
                           {evalAssignment
                             ? `${formatDisplayDate(evalAssignment.evalGameDate)} · ${evalAssignment.team === 'white' ? '⬜ White' : '⬛ Black'}`

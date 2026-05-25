@@ -1,0 +1,42 @@
+{
+  "query": "SELECT id, firstName, lastName, playerRating, paymentMethod, seasonId FROM playerRegistrations ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4Tr7sytVxCuD6SR.root --database Fde3d448vCxuYB8KePk65W --execute SELECT id, firstName, lastName, playerRating, paymentMethod, seasonId FROM playerRegistrations ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "210001",
+      "firstName": "Test2",
+      "lastName": "Test2",
+      "playerRating": "NULL",
+      "paymentMethod": "NULL",
+      "seasonId": "1"
+    },
+    {
+      "id": "150001",
+      "firstName": "Noa",
+      "lastName": "Arzouan",
+      "playerRating": "7",
+      "paymentMethod": "cash",
+      "seasonId": "240001"
+    },
+    {
+      "id": "120001",
+      "firstName": "Shira",
+      "lastName": "Arzouan",
+      "playerRating": "1",
+      "paymentMethod": "cash",
+      "seasonId": "240001"
+    },
+    {
+      "id": "90001",
+      "firstName": "Simon",
+      "lastName": "Arzouan",
+      "playerRating": "4",
+      "paymentMethod": "arrangement",
+      "seasonId": "240001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\tplayerRating\tpaymentMethod\tseasonId\n210001\tTest2\tTest2\tNULL\tNULL\t1\n150001\tNoa\tArzouan\t7\tcash\t240001\n120001\tShira\tArzouan\t1\tcash\t240001\n90001\tSimon\tArzouan\t4\tarrangement\t240001\n",
+  "stderr": "",
+  "execution_time_ms": 693
+}

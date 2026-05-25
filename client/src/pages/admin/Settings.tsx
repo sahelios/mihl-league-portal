@@ -72,6 +72,17 @@ export default function AdminSettings() {
     onError: (err) => toast.error(err.message),
   });
 
+  const toggleRegistration = trpc.admin.toggleRegistrationStatus.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.registrationOpen 
+        ? (language === "en" ? "Registration opened!" : "Inscription ouverte !")
+        : (language === "en" ? "Registration closed!" : "Inscription fermée !")
+      );
+      seasonUtils.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   // ---------------------------------------------------------------------------
   // Team State & tRPC
   // ---------------------------------------------------------------------------
@@ -293,8 +304,25 @@ export default function AdminSettings() {
                       <div>
                         <h3 className="font-bold text-lg text-foreground">{season.name}</h3>
                         <p className="text-sm text-muted-foreground">{season.startDate} - {season.endDate}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {language === "en" ? "Registration: " : "Inscription: "}
+                          <span className={season.registrationOpen ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
+                            {season.registrationOpen ? (language === "en" ? "Open" : "Ouverte") : (language === "en" ? "Closed" : "Fermée")}
+                          </span>
+                        </p>
                       </div>
-                      <div className="flex gap-2 w-full sm:w-auto">
+                      <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                        <Button 
+                          variant={season.registrationOpen ? "destructive" : "default"} 
+                          size="sm" 
+                          className="flex-1 sm:flex-none"
+                          onClick={() => toggleRegistration.mutate({ seasonId: season.id, registrationOpen: !season.registrationOpen })}
+                        >
+                          {season.registrationOpen 
+                            ? (language === "en" ? "Close Registration" : "Fermer l'Inscription")
+                            : (language === "en" ? "Open Registration" : "Ouvrir l'Inscription")
+                          }
+                        </Button>
                         <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => { setEditingSeason(season); setSeasonForm({ name: season.name, startDate: season.startDate, endDate: season.endDate }); }}>
                           <Edit className="h-4 w-4 mr-2" /> {language === "en" ? "Edit" : "Modifier"}
                         </Button>

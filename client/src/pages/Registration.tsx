@@ -43,6 +43,9 @@ export default function Registration() {
   const signupMutation = trpc.auth.signup.useMutation();
   const registerMutation = trpc.registration.submit.useMutation();
   const evaluationCapacityQuery = trpc.registration.getEvaluationCapacity.useQuery();
+  const seasonsQuery = trpc.admin.getSeasons.useQuery();
+  const activeSeason = seasonsQuery.data?.find(s => s.isActive);
+  const registrationOpen = activeSeason?.registrationOpen ?? true;
   
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +91,21 @@ export default function Registration() {
       return;
     }
     
+    if (registrationType === "individual") {
+      if (!playerRating) {
+        toast.error(language === "en" ? "Please select your rating" : "Veuillez sélectionner votre classement");
+        return;
+      }
+      if (!position) {
+        toast.error(language === "en" ? "Please select your position" : "Veuillez sélectionner votre position");
+        return;
+      }
+      if (!paymentMethod) {
+        toast.error(language === "en" ? "Please select a payment method" : "Veuillez sélectionner une méthode de paiement");
+        return;
+      }
+    }
+    
     setIsLoading(true);
     try {
       await registerMutation.mutateAsync({
@@ -97,9 +115,9 @@ export default function Registration() {
         email: user?.email || email,
         phone,
         evaluationDate,
-        playerRating: registrationType === "individual" ? parseInt(playerRating) : undefined,
-        position: registrationType === "individual" ? position : undefined,
-        paymentMethod: registrationType === "individual" ? paymentMethod : undefined,
+        playerRating: registrationType === "individual" && playerRating ? parseInt(playerRating) : undefined,
+        position: registrationType === "individual" && position ? position : undefined,
+        paymentMethod: registrationType === "individual" && paymentMethod ? paymentMethod : undefined,
         emergencyName: "",
         emergencyPhone: "",
         emergencyRelationship: "",
@@ -218,6 +236,16 @@ export default function Registration() {
             {language === "en" ? "FR" : "EN"}
           </button>
         </div>
+        
+        {!registrationOpen && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 font-semibold">
+              {language === "en" 
+                ? "Registration is now closed. All players registering now will join our waiting list." 
+                : "L'inscription est maintenant fermée. Tous les joueurs qui s'inscrivent maintenant rejoindront notre liste d'attente."}
+            </p>
+          </div>
+        )}
         
         <Card>
           <CardHeader>
@@ -346,6 +374,11 @@ export default function Registration() {
                         <SelectItem value="arrangement">{language === "en" ? "Arrangement" : "Arrangement"}</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-600 mt-2">
+                      {language === "en" 
+                        ? "Please send all e-transfer payments to payments@mihl.ca"
+                        : "Veuillez envoyer tous les paiements par virement électronique à payments@mihl.ca"}
+                    </p>
                   </div>
                   
                   <div className="flex items-center space-x-2">
