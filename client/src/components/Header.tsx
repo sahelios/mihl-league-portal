@@ -29,18 +29,10 @@ export default function Header({ isAdmin = false }: HeaderProps) {
     { href: "/player-portal", label: "Player Portal", highlight: true },
   ];
 
-  const adminLinks = [
-    { href: "/admin", label: "Admin Portal", highlight: true },
-    { href: "/admin/players", label: "Players" },
-    { href: "/admin/games", label: "Games" },
-    { href: "/admin/news", label: "News" },
-    { href: "/admin/stars", label: "Stars" },
-    { href: "/admin/suspensions", label: "Suspensions" },
-    { href: "/admin/messages", label: "Messages" },
-    { href: "/admin/settings", label: "Settings" },
-  ];
-
-  const links = isUserAdmin ? adminLinks : publicLinks;
+  // For admins, show public links but add Admin Portal at the beginning
+  const links = isUserAdmin 
+    ? [{ href: "/admin", label: "Admin Portal", highlight: true }, ...publicLinks]
+    : publicLinks;
 
   return (
     <header className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-md">
