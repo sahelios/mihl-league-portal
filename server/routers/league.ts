@@ -266,8 +266,28 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get player registration
-        const regResult = await db.select().from(playerRegistrations).where(eq(playerRegistrations.email, input.email)).limit(1);
+        // Get player registration - explicitly select all fields including position
+        const regResult = await db.select({
+          id: playerRegistrations.id,
+          firstName: playerRegistrations.firstName,
+          lastName: playerRegistrations.lastName,
+          email: playerRegistrations.email,
+          phone: playerRegistrations.phone,
+          teamId: playerRegistrations.teamId,
+          seasonId: playerRegistrations.seasonId,
+          registrationType: playerRegistrations.registrationType,
+          status: playerRegistrations.status,
+          playerRating: playerRegistrations.playerRating,
+          position: playerRegistrations.position,
+          paymentMethod: playerRegistrations.paymentMethod,
+          evaluationDate: playerRegistrations.evaluationDate,
+          isFirstTime: playerRegistrations.isFirstTime,
+          paymentConfirmed: playerRegistrations.paymentConfirmed,
+          jerseyOrderConfirmed: playerRegistrations.jerseyOrderConfirmed,
+          playerPictureUrl: playerRegistrations.playerPictureUrl,
+          createdAt: playerRegistrations.createdAt,
+          updatedAt: playerRegistrations.updatedAt,
+        }).from(playerRegistrations).where(eq(playerRegistrations.email, input.email)).limit(1);
         if (!regResult.length) return null;
         
         const registration = regResult[0];
@@ -276,7 +296,7 @@ export const leagueRouter = router({
         const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
         if (!activeSeason.length) return registration;
         
-        // Get player team info for active season (includes position)
+        // Get player team info for active season (includes position override)
         const playerTeamResult = await db.select().from(playerTeams)
           .where(and(
             eq(playerTeams.registrationId, registration.id),
@@ -284,7 +304,7 @@ export const leagueRouter = router({
           ))
           .limit(1);
         
-        // Merge position from playerTeams if available
+        // Override position from playerTeams if available (admin-set position takes precedence)
         if (playerTeamResult.length && playerTeamResult[0].position) {
           return {
             ...registration,
