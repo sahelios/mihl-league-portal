@@ -3,7 +3,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams } from "../../drizzle/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or } from "drizzle-orm";
 
 export const leagueRouter = router({
   // Public queries
@@ -289,18 +289,79 @@ export const leagueRouter = router({
     }),
 
   getTeamSchedule: protectedProcedure
-    .input(z.object({ teamId: z.number() }))
-    .query(async ({ input }) => {
+    .input(z.object({ teamId: z.number(), playerRegistrationId: z.number().optional() }))
+    .query(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const result = await db.select().from(games).where(
+        // Get active season
+        const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+        const seasonId = activeSeason.length > 0 ? activeSeason[0].id : 30001;
+        
+        // Filter games for this team (either home or away)
+        const regularGames = await db.select().from(games).where(
           and(
-            eq(games.status, 'scheduled'),
-            eq(games.seasonId, 30001)
+            or(
+              eq(games.homeTeamId, input.teamId),
+              eq(games.awayTeamId, input.teamId)
+            ),
+            eq(games.seasonId, seasonId),
+            eq(games.status, 'scheduled')
           )
-        );
-        return result || [];
+        ).orderBy(games.gameDate);
+        
+        // Get evaluation games if player is assigned
+        let evalGames: typeof games.$inferSelect[] = [];
+        if (input.playerRegistrationId) {
+          const evalAssignments = await db.select().from(evaluationGameAssignments).where(
+            eq(evaluationGameAssignments.registrationId, input.playerRegistrationId)
+          );
+          
+          if (evalAssignments.length > 0) {
+            // Get the evaluation game dates
+            const evalDates = evalAssignments.map(a => a.evaluationDate);
+            evalGames = await db.select().from(games).where(
+              and(
+                eq(games.seasonId, seasonId),
+                eq(games.isEvaluationGame, true),
+                // Match by game date (evaluation games are marked with dates like "JUN 23")
+                // Since we can't easily match string dates, we'll get all eval games and filter in JS
+              )
+            );
+            // Filter to only evaluation games that match the player's assigned dates
+            evalGames = evalGames.filter(g => {
+              const gameDate = g.gameDate instanceof Date ? g.gameDate.toISOString().split('T')[0] : g.gameDate;
+              return evalDates.some(d => gameDate.includes(d.replace('JUN ', '06-')));
+            });
+          }
+        }
+        
+        // Combine regular and evaluation games
+        const allGames = [...regularGames, ...evalGames].sort((a, b) => {
+          const dateA = a.gameDate instanceof Date ? a.gameDate.getTime() : new Date(a.gameDate).getTime();
+          const dateB = b.gameDate instanceof Date ? b.gameDate.getTime() : new Date(b.gameDate).getTime();
+          return dateA - dateB;
+        });
+        
+        // Fetch team names from masterTeams via teams join
+        const teamsWithMasters = await db.select({
+          teamId: teams.id,
+          teamName: masterTeams.name,
+        }).from(teams).leftJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id));
+        const teamMap = new Map(teamsWithMasters.map(t => [t.teamId, t.teamName]));
+        
+        // Fetch venues
+        const allVenues = await db.select().from(gameVenues);
+        const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
+        
+        // Enrich games with team and venue names
+        return allGames.map(game => ({
+          ...game,
+          teamHome: { name: game.isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`) },
+          teamAway: { name: game.isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`) },
+          venue: { name: venueMap.get(game.venueId) || 'TBA' },
+          date: game.gameDate,
+        }));
       } catch (error) {
         console.error('Error fetching team schedule:', error);
         return [];

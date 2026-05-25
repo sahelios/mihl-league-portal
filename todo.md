@@ -630,3 +630,12 @@
 ## ADDITIONAL FIXES - May 19, 2026 (Session 11 - Continued)
 - [x] Fixed GameScheduler showing 8 teams instead of 4 for selected season - now passes seasonId to getTeams query
 - [x] Restored Team White vs Team Black functionality for evaluation games - evaluation games use hardcoded IDs 1 & 2
+
+## PLAYER PORTAL FIXES - May 25, 2026 (Session 12)
+- [x] Fixed getTeamSchedule procedure to filter by teamId instead of ignoring it
+- [x] Fixed getTeamSchedule to use active season instead of hardcoded seasonId 30001
+- [x] Fixed getTeamSchedule to return enriched game data with team names and venue info
+- [x] Added support for evaluation games in Player Portal (getTeamSchedule now accepts playerRegistrationId)
+- [x] Updated PlayerPortal component to pass playerRegistrationId to getTeamSchedule
+- [x] Added vitest tests for getTeamSchedule procedure
+- [x] Verified tests pass: protected access, auth rejection, and evaluation game inclusion

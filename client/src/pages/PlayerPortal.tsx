@@ -30,7 +30,7 @@ export default function PlayerPortal() {
 
   // Fetch upcoming games for team
   const { data: upcomingGames = [], isLoading: gamesLoading } = trpc.league.getTeamSchedule.useQuery(
-    { teamId: playerReg?.teamId || 0 },
+    { teamId: playerReg?.teamId || 0, playerRegistrationId: playerReg?.id },
     { enabled: !!playerReg?.teamId }
   );
 
