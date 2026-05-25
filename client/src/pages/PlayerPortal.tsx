@@ -15,7 +15,7 @@ export default function PlayerPortal() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [selectedGame, setSelectedGame] = useState<number | null>(null);
-  const [gameAvailability, setGameAvailability] = useState<Record<number, boolean>>({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch player team and registration
   const { data: playerReg, isLoading: regLoading } = trpc.league.getPlayerRegistration.useQuery(
@@ -51,6 +51,8 @@ export default function PlayerPortal() {
   const updateAvailabilityMutation = trpc.league.updatePlayerAvailability.useMutation({
     onSuccess: () => {
       utils.league.getPlayerAvailability.invalidate();
+      setIsDialogOpen(false);
+      setSelectedGame(null);
     },
   });
 
@@ -224,12 +226,23 @@ export default function PlayerPortal() {
                             </Badge>
                           </div>
 
-                          <Dialog>
+                          <Dialog open={selectedGame === game.id} onOpenChange={(open) => {
+                            if (!open) {
+                              setSelectedGame(null);
+                              setIsDialogOpen(false);
+                            } else {
+                              setSelectedGame(game.id);
+                              setIsDialogOpen(true);
+                            }
+                          }}>
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setSelectedGame(game.id)}
+                                onClick={() => {
+                                  setSelectedGame(game.id);
+                                  setIsDialogOpen(true);
+                                }}
                               >
                                 {isAvailable ? "Mark Unavailable" : "Mark Available"}
                               </Button>
@@ -251,9 +264,8 @@ export default function PlayerPortal() {
                                       updateAvailabilityMutation.mutate({
                                         playerTeamId: playerReg.id,
                                         gameId: game.id,
-                                        isAvailable: !isAvailable,
+                                        available: !isAvailable,
                                       });
-                                      setSelectedGame(null);
                                     }}
                                     disabled={updateAvailabilityMutation.isPending}
                                   >

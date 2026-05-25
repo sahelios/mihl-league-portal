@@ -660,3 +660,12 @@
 - [x] Added missing `time: game.gameTime` field to getTeamSchedule return object
 - [x] Added null checks for game.date and game.time in PlayerPortal display
 - [x] Improved error handling in getTeamSchedule to throw proper TRPC error
+
+
+## PLAYER AVAILABILITY FUNCTIONALITY - May 25, 2026 (Session 12 - Continued)
+- [x] Implemented getPlayerAvailability query to fetch player availability from database
+- [x] Implemented updatePlayerAvailability mutation to insert/update availability records
+- [x] Fixed PlayerPortal to pass correct parameter name (available instead of isAvailable)
+- [x] Added dialog state management and proper close on success
+- [x] Added vitest tests for player availability procedures (4 tests passing)
+- [x] Verified mutation invalidation and UI updates after availability change

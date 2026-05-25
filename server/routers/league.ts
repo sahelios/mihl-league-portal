@@ -2,8 +2,8 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams } from "../../drizzle/schema";
-import { eq, desc, and, or } from "drizzle-orm";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability } from "../../drizzle/schema";
+import { eq, desc, and, or, inArray } from "drizzle-orm";
 
 export const leagueRouter = router({
   // Public queries
@@ -383,12 +383,68 @@ export const leagueRouter = router({
   getPlayerAvailability: protectedProcedure
     .input(z.object({ playerTeamId: z.number() }))
     .query(async ({ input }) => {
-      return {};
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const availabilityRecords = await db
+          .select()
+          .from(playerAvailability)
+          .where(eq(playerAvailability.playerTeamId, input.playerTeamId));
+        
+        // Convert to a map of gameId -> isAvailable for easy lookup
+        const availabilityMap: Record<number, boolean> = {};
+        availabilityRecords.forEach(record => {
+          availabilityMap[record.gameId] = record.isAvailable;
+        });
+        
+        return availabilityMap;
+      } catch (error) {
+        console.error('Error fetching player availability:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      }
     }),
 
   updatePlayerAvailability: protectedProcedure
     .input(z.object({ playerTeamId: z.number(), gameId: z.number(), available: z.boolean() }))
     .mutation(async ({ input }) => {
-      return { success: true };
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        // Check if record already exists
+        const existing = await db
+          .select()
+          .from(playerAvailability)
+          .where(
+            and(
+              eq(playerAvailability.playerTeamId, input.playerTeamId),
+              eq(playerAvailability.gameId, input.gameId)
+            )
+          );
+        
+        if (existing.length > 0) {
+          // Update existing record
+          await db
+            .update(playerAvailability)
+            .set({ isAvailable: input.available })
+            .where(
+              and(
+                eq(playerAvailability.playerTeamId, input.playerTeamId),
+                eq(playerAvailability.gameId, input.gameId)
+              )
+            );
+        } else {
+          // Insert new record
+          await db.insert(playerAvailability).values({
+            playerTeamId: input.playerTeamId,
+            gameId: input.gameId,
+            isAvailable: input.available,
+          });
+        }
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Error updating player availability:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update availability' });
+      }
     }),
 });
