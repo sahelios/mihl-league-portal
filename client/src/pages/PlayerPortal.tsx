@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertCircle, Loader2, Users, Calendar, TrendingUp, CheckCircle, XCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { formatDate, formatTime } from "@/lib/dateUtils";
 
 export default function PlayerPortal() {
   const { user, loading: authLoading } = useAuth();
@@ -208,7 +209,7 @@ export default function PlayerPortal() {
                                 {game.teamHome?.name} vs {game.teamAway?.name}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(game.date).toLocaleDateString()} at {game.time}
+                                {formatDate(game.date)} at {formatTime(game.time)}
                               </p>
                               <p className="text-sm text-muted-foreground">{game.venue?.name}</p>
                             </div>

@@ -8,44 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trash2, AlertCircle, Loader2, CalendarDays, Trophy, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDate, formatTime, getISOWeekKey } from '@/lib/dateUtils';
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-
-/** Parse "YYYY-MM-DD" as a local date to avoid UTC timezone shifts. */
-function parseLocalDate(dateStr: string): Date {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-/** Format a date string or Date object for display. */
-function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? parseLocalDate(date.split('T')[0]) : date;
-  return d.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month:   'short',
-    day:     'numeric',
-    year:    'numeric',
-  });
-}
-
-/** Format "HH:MM" → "9:30 PM" */
-function formatTime(time: string): string {
-  const [h, m] = time.split(':');
-  const hour = parseInt(h);
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  return `${hour % 12 || 12}:${m} ${ampm}`;
-}
-
-/** Get ISO week key "YYYY-Www" for a YYYY-MM-DD string. */
-function getISOWeekKey(dateStr: string): string {
-  const d = parseLocalDate(dateStr);
-  const tmp = new Date(d);
-  const dow = tmp.getDay() === 0 ? 7 : tmp.getDay(); // Mon=1..Sun=7
-  tmp.setDate(tmp.getDate() + 4 - dow);
-  const yearStart = new Date(tmp.getFullYear(), 0, 1);
-  const weekNo = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  return `${tmp.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -639,3 +639,17 @@
 - [x] Updated PlayerPortal component to pass playerRegistrationId to getTeamSchedule
 - [x] Added vitest tests for getTeamSchedule procedure
 - [x] Verified tests pass: protected access, auth rejection, and evaluation game inclusion
+
+
+## DATE HANDLING FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Created centralized date utility module at client/src/lib/dateUtils.ts
+- [x] Documented the root cause: Direct new Date(dateString) causes UTC timezone shifts on date-only fields
+- [x] Fixed Games.tsx to use formatDate and formatTime utilities
+- [x] Fixed Home.tsx to use formatDate for news and blog post dates
+- [x] Fixed PlayerPortal.tsx to use formatDate and formatTime
+- [x] Updated ScheduleManagement.tsx to use centralized utilities
+- [x] All date display now uses parseLocalDate() to parse YYYY-MM-DD strings as local time (not UTC)
+
+**Why this matters:** Database DATE fields (YYYY-MM-DD) are serialized without timezone info. When parsed with `new Date()`, they're interpreted as UTC, causing off-by-one-day bugs. The centralized utility ensures consistent local-time parsing across the entire app.
+
+**Going forward:** Always use dateUtils functions instead of `new Date()` directly when working with date strings.

@@ -16,6 +16,7 @@ import { Loader2, AlertCircle, ArrowLeft, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatDate, formatTime } from "@/lib/dateUtils";
 
 export default function Games() {
   const { user } = useAuth();
@@ -211,7 +212,7 @@ export default function Games() {
                           
                           return (
                             <SelectItem key={game.id} value={game.id.toString()}>
-                              {gameLabel} - {new Date(game.gameDate).toLocaleDateString()} @ {game.gameTime}
+                              {gameLabel} - {formatDate(game.gameDate)} @ {formatTime(game.gameTime)}
                             </SelectItem>
                           );
                         })

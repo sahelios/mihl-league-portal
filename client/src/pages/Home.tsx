@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, User } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "wouter";
@@ -247,7 +248,7 @@ export default function Home() {
                   <CardTitle className="text-lg">{item.title}</CardTitle>
                   <p className="text-sm text-muted-foreground flex items-center gap-2 mt-2">
                     <Calendar size={16} />
-                    {new Date(item.date).toLocaleDateString()}
+                    {formatDate(item.date)}
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -274,7 +275,7 @@ export default function Home() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar size={14} />
-                        {new Date(post.date).toLocaleDateString()}
+                        {formatDate(post.date)}
                       </span>
                     </div>
                   </CardHeader>
