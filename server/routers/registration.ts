@@ -236,6 +236,7 @@ export const registrationRouter = router({
           evaluationDate: input.evaluationDate || null,
           playerRating: input.playerRating || null,
           paymentMethod: input.paymentMethod || null,
+          position: input.position || null,
         });
 
         // Send admin notification

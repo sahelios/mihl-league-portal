@@ -686,3 +686,12 @@
 - [x] Added vitest tests for position retrieval from playerTeams (3 tests passing)
 - [x] Verified position displays correctly in PlayerPortal when assigned in /admin/players
 - [x] Verified team assignment persists correctly across admin and player portals
+
+
+## POSITION STORAGE FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Added position field to registration submit mutation (was missing)
+- [x] Position now saved to playerRegistrations table during registration
+- [x] getPlayerRegistration query returns position from playerRegistrations
+- [x] Admin can still override position via assignPlayerToTeam (stored in playerTeams)
+- [x] Created vitest tests for position storage (4 tests passing)
+- [x] Verified position displays correctly in PlayerPortal header
