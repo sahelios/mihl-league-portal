@@ -322,7 +322,7 @@ function TeamSection({
         <div className="space-y-2">
           {players.map(player => (
             <div
-              key={`player-${player.id}`}
+              key={player.id}
               className={`p-3 rounded-lg border flex items-center justify-between gap-2 ${isWhite ? 'bg-white border-slate-200' : 'bg-gray-800 border-gray-700'}`}
             >
               <div className="flex-1 min-w-0">

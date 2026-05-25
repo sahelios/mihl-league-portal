@@ -3,6 +3,21 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
+// Helper function to parse YYYY-MM-DD as local date (not UTC)
+function parseLocalDate(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) {
+    return dateInput;
+  }
+  const [year, month, day] = dateInput.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Helper function to format date safely
+function formatLocalDate(dateInput: string | Date, locale: string): string {
+  const date = parseLocalDate(dateInput);
+  return date.toLocaleDateString(locale === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" });
+}
+
 export default function UpcomingGamesSlider() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [language] = useState<"en" | "fr">("en"); // Can be wired up to global state later if needed
@@ -94,7 +109,7 @@ export default function UpcomingGamesSlider() {
                         : (language === "en" ? "REGULAR SEASON" : "SAISON RÉGULIÈRE"))}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
-                    {game.gameDate ? new Date(game.gameDate).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" }) : "TBD"}
+                    {game.gameDate ? formatLocalDate(game.gameDate, language) : "TBD"}
                   </span>
                 </div>
 

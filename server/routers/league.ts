@@ -66,8 +66,16 @@ export const leagueRouter = router({
           // Use the isEvaluationGame field from the games table
           const isEvaluationGame = game.isEvaluationGame === true;
           
+          // Convert gameDate to ISO string (YYYY-MM-DD) to avoid timezone issues
+          const gameDateStr = game.gameDate instanceof Date 
+            ? game.gameDate.toISOString().split('T')[0]
+            : typeof game.gameDate === 'string'
+            ? game.gameDate
+            : '';
+          
           return {
             ...game,
+            gameDate: gameDateStr,
             teamAName: isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`),
             teamBName: isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`),
             venueName: venueMap.get(game.venueId) || 'TBA',

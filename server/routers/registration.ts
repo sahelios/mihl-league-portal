@@ -287,12 +287,8 @@ export const registrationRouter = router({
         playerPictureUrl: playerRegistrations.playerPictureUrl,
         createdAt: playerRegistrations.createdAt,
         updatedAt: playerRegistrations.updatedAt,
-        position: playerTeams.position,
-      }).from(playerRegistrations)
-        .leftJoin(playerTeams, and(
-          eq(playerRegistrations.id, playerTeams.registrationId),
-          eq(playerRegistrations.seasonId, playerTeams.seasonId)
-        ));
+        position: playerRegistrations.position,
+      }).from(playerRegistrations);
     }),
 
   getPending: protectedProcedure

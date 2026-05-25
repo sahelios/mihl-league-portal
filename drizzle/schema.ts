@@ -113,6 +113,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   evaluationDate: varchar("evaluationDate", { length: 20 }),
   playerRating: int("playerRating"),
   playerPictureUrl: text("playerPictureUrl"),
+  position: mysqlEnum("position", ["forward", "defense", "goalie"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

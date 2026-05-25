@@ -85,7 +85,7 @@ export const adminRouter = router({
         .from(games)
         .where(and(
           eq(games.seasonId, activeSeason[0].id),
-          eq(games.isEvaluationGame, 1)
+          eq(games.isEvaluationGame, true)
         ))
         .orderBy(games.gameDate);
 
@@ -116,7 +116,7 @@ export const adminRouter = router({
                 lastName: playerRegistrations.lastName,
                 position: playerRegistrations.position,
                 status: playerRegistrations.status,
-                playerRating: playerRegistrations.rating,
+                playerRating: playerRegistrations.playerRating,
                 evalTeam: evaluationGameAssignments.team,
               })
               .from(playerRegistrations)
