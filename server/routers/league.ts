@@ -61,19 +61,10 @@ export const leagueRouter = router({
         // Fetch venues
         const allVenues = await db.select().from(gameVenues);
         const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
-        
-        // Get all evaluation game dates to identify evaluation games
-        const evalAssignments = await db.select().from(evaluationGameAssignments);
-        const evalDates = new Set(evalAssignments.map(a => a.evaluationDate));
 
         return allGames.map(game => {
-          // Format game date for comparison
-          const gameDateStr = game.gameDate instanceof Date 
-            ? game.gameDate.toISOString().split('T')[0]
-            : game.gameDate;
-          
-          // Check if this is an evaluation game
-          const isEvaluationGame = evalDates.has(gameDateStr);
+          // Use the isEvaluationGame field from the games table
+          const isEvaluationGame = game.isEvaluationGame === true;
           
           return {
             ...game,

@@ -89,7 +89,9 @@ export default function UpcomingGamesSlider() {
                   <span className="text-[10px] font-bold tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded uppercase">
                     {game.status === "completed" 
                       ? (language === "en" ? "FINAL" : "TERMINÉ") 
-                      : (language === "en" ? "SCHEDULED" : "PRÉVU")}
+                      : (game.isEvaluationGame 
+                        ? (language === "en" ? "EVALUATION" : "ÉVALUATION")
+                        : (language === "en" ? "REGULAR SEASON" : "SAISON RÉGULIÈRE"))}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
                     {game.gameDate ? new Date(game.gameDate).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", { month: "short", day: "numeric" }) : "TBD"}
