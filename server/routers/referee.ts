@@ -13,7 +13,10 @@ const applicationSchema = z.object({
   interacEmail: z.string().email(),
   role: z.enum(['referee', 'scorekeeper']),
   isCertified: z.boolean(),
-  certifications: z.array(z.string()),
+  certifications: z.array(z.union([
+    z.string(),
+    z.object({ type: z.string(), year: z.number() })
+  ])),
   yearsOfExperience: z.number().min(0),
   hockeyLevels: z.array(z.string()),
 });
@@ -34,8 +37,12 @@ export const refereeRouter = router({
         interacEmail: input.interacEmail,
         role: input.role,
         isCertified: input.isCertified,
-        // Transform array of strings to array of objects with type and year
-        certifications: input.certifications.map(c => ({ type: c, year: new Date().getFullYear() })),
+        // Transform certifications - handle both strings and objects
+        certifications: input.certifications.map(c => 
+          typeof c === 'string' 
+            ? { type: c, year: new Date().getFullYear() }
+            : c
+        ),
         yearsOfExperience: input.yearsOfExperience,
         hockeyLevels: input.hockeyLevels,
         status: 'pending',

@@ -719,3 +719,9 @@
 - [x] Fixed getTeamDetails to join with masterTeams to get team name
 - [x] PlayerPortal now displays correct team name (e.g., "Iron Lions" instead of "Unassigned")
 - [x] Created 3 vitest tests for team details scenarios (all passing)
+
+
+## REFEREE APPLICATION FIX - May 25, 2026 (Session 12 - Continued)
+- [x] Fixed referee application schema to accept both string and object certifications
+- [x] Updated certifications transformation logic to handle mixed formats
+- [x] Created 4 vitest tests for application submission scenarios (all passing)
