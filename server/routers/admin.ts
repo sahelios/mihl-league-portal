@@ -159,7 +159,7 @@ export const adminRouter = router({
         email: playerRegistrations.email,
         position: playerRegistrations.position,
         status: playerRegistrations.status,
-        rating: playerRegistrations.rating,
+        rating: playerRegistrations.playerRating,
         evaluationDate: playerRegistrations.evaluationDate
       })
       .from(playerRegistrations)
@@ -254,10 +254,10 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
     const results = await db.select().from(playerRegistrations)
-      .where(and(
-        or(eq(playerRegistrations.registrationType, 'referee'), eq(playerRegistrations.registrationType, 'scorekeeper')),
-        eq(playerRegistrations.status, 'pending')
-      ));
+      .where(eq(playerRegistrations.status, 'pending'));
+    
+    // Filter for referee/scorekeeper applications from refereeApplications table instead
+    // This procedure currently returns empty as referee/scorekeeper registrations are handled separately
 
     return results.map(app => ({
       id: app.id,
@@ -1618,7 +1618,11 @@ export const adminRouter = router({
     const assignmentMap: Record<number, any> = {};
     assignments.forEach(a => { assignmentMap[a.registrationId] = a; });
 
-    const gameIds = [...new Set(assignments.map(a => a.evalGameId).filter(Boolean))] as number[];
+    const gameIdSet = new Set<number>();
+    assignments.forEach(a => {
+      if (a.evalGameId) gameIdSet.add(a.evalGameId);
+    });
+    const gameIds = Array.from(gameIdSet) as number[];
     let gamesMap: Record<number, string> = {};
     if (gameIds.length > 0) {
       const gs = await db.select({ id: games.id, gameDate: games.gameDate }).from(games).where(inArray(games.id, gameIds as number[]));

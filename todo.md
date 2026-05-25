@@ -397,6 +397,11 @@
 - [ ] Display pictures in Player Portal (deferred)
 - [ ] Display pictures in Stars of the Week (deferred)
 
+## TYPESCRIPT FIXES - May 25, 2026
+- [x] Fix playerRegistrations.rating field name to playerRegistrations.playerRating in getAvailablePlayersForEvaluation
+- [x] Fix getPendingRefereeApplications to not filter by 'referee'/'scorekeeper' (not in enum)
+- [x] Fix Set iteration warning by using Array.from() instead of spread operator
+
 ## REMAINING TASKS (Lower Priority)
 - [ ] Complete player picture upload functionality
 - [x] Fix pricing issues on Referee/Scorekeeper application pages (Pricing is flexible - allows custom input)
