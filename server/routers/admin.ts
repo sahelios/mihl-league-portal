@@ -1618,20 +1618,6 @@ export const adminRouter = router({
     const assignmentMap: Record<number, any> = {};
     assignments.forEach(a => { assignmentMap[a.registrationId] = a; });
 
-    const gameIdSet = new Set<number>();
-    assignments.forEach(a => {
-      if (a.evalGameId) gameIdSet.add(a.evalGameId);
-    });
-    const gameIds = Array.from(gameIdSet) as number[];
-    let gamesMap: Record<number, string> = {};
-    if (gameIds.length > 0) {
-      const gs = await db.select({ id: games.id, gameDate: games.gameDate }).from(games).where(inArray(games.id, gameIds as number[]));
-      gs.forEach(g => {
-        let dateStr = g.gameDate instanceof Date ? g.gameDate.toISOString().split('T')[0] : String(g.gameDate).split('T')[0];
-        gamesMap[g.id] = dateStr;
-      });
-    }
-
     return players.map(p => ({
       id: p.id,
       firstName: p.firstName,
@@ -1640,8 +1626,7 @@ export const adminRouter = router({
       position: null,
       playerRating: p.playerRating ?? null,
       status: p.status,
-      evalGameId: assignmentMap[p.id]?.evalGameId ?? null,
-      evalGameDate: assignmentMap[p.id]?.evalGameId ? gamesMap[assignmentMap[p.id].evalGameId] ?? null : null,
+      evalGameDate: assignmentMap[p.id]?.evaluationDate ?? null,
       evalTeam: assignmentMap[p.id]?.team ?? null,
     }));
   }),
