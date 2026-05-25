@@ -131,6 +131,7 @@ export const adminRouter = router({
           const gameTime = game.gameTime || '21:30';
           
           return {
+            id: game.id,
             date: dateStr,
             label: 'Team White vs Team Black - ' + dateStr,
             venue: venue?.name || 'Unknown Venue',
