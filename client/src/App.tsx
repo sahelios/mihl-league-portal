@@ -47,6 +47,7 @@ import RefereeGameSelection from "./pages/RefereeGameSelection";
 
 // Player Portal
 import PlayerPortal from "./pages/PlayerPortal";
+import MagicLinkLogin from "./pages/MagicLinkLogin";
 
 import NotFound from "./pages/NotFound";
 
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />
       <Route path="/referee-game-selection" component={RefereeGameSelection} />
       <Route path="/player-portal" component={PlayerPortal} />
+      <Route path="/magic-login" component={MagicLinkLogin} />
 
       {/* Admin Pages */}
       <Route path="/admin" component={AdminDashboard} />

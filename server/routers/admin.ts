@@ -2,6 +2,8 @@ import { router, protectedProcedure, publicProcedure } from '../_core/trpc';
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
+import { generateLoginToken, createAdminRegisteredPlayer } from "../_core/adminRegistrationService";
+import { sendAdminRegistrationEmail } from "../_core/emailService";
 import { eq, and, sql, or, inArray, desc } from "drizzle-orm";
 import {
   playerRegistrations,
@@ -26,6 +28,8 @@ import {
   badges,
   teamMessages,
   adminMessages,
+  loginTokens,
+  adminRegisteredPlayers,
 } from "../../drizzle/schema";
 
 // Helper to ensure admin access
@@ -1726,5 +1730,75 @@ export const adminRouter = router({
         .where(eq(seasons.id, input.seasonId));
 
       return { success: true, registrationOpen: input.registrationOpen };
+    }),
+
+  // ============ ADMIN PLAYER REGISTRATION ============
+  registerPlayer: adminProcedure
+    .input(z.object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      position: z.enum(["forward", "defense", "goalie"]).optional(),
+      teamId: z.number(),
+      seasonId: z.number(),
+      evaluationGameDate: z.string().optional(),
+      evaluationTeam: z.enum(["white", "black"]).optional(),
+      playerRating: z.number().min(1).max(10).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Get season to determine token expiration
+      const [season] = await db.select().from(seasons).where(eq(seasons.id, input.seasonId));
+      if (!season) throw new TRPCError({ code: "NOT_FOUND", message: "Season not found" });
+
+      // Create player registration
+      const result = await db.insert(playerRegistrations).values({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        phone: input.phone,
+        teamId: input.teamId,
+        seasonId: input.seasonId,
+        position: input.position,
+        playerRating: input.playerRating,
+        status: "pending",
+        registrationType: "individual",
+        isFirstTime: true,
+      });
+
+      const registrationId = result[0].insertId;
+
+      // Create admin-registered player record
+      await createAdminRegisteredPlayer(registrationId);
+
+      // Generate magic login token (expires at season start)
+      const token = await generateLoginToken(registrationId, season.startDate);
+
+      // Assign to evaluation game if provided
+      if (input.evaluationGameDate && input.evaluationTeam) {
+        await db.insert(evaluationGameAssignments).values({
+          registrationId,
+          evaluationDate: input.evaluationGameDate,
+          team: input.evaluationTeam,
+        });
+      }
+
+      // Send admin registration email with magic link
+      const loginUrl = `${process.env.VITE_OAUTH_PORTAL_URL || "https://mihl.ca"}/magic-login?token=${token}`;
+      await sendAdminRegistrationEmail(
+        input.email,
+        input.firstName,
+        loginUrl,
+        "en"
+      );
+
+      return {
+        success: true,
+        registrationId,
+        message: "Player registered successfully. Email sent with login link.",
+      };
     }),
 });

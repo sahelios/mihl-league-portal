@@ -78,6 +78,19 @@ export default function Players() {
   const [editData, setEditData] = useState<any>({});
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [registerData, setRegisterData] = useState<any>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    position: '',
+    teamId: '',
+    seasonId: '',
+    evaluationGameDate: '',
+    evaluationTeam: '',
+    playerRating: '',
+  });
 
   // ── Queries ──────────────────────────────────────────────────────────────
   const { data: registrations = [], isLoading: loadingPlayers } = trpc.registration.getAll.useQuery();
@@ -92,7 +105,37 @@ export default function Players() {
     { enabled: !!editData.seasonId }
   );
 
+  // Eval games for registration form
+  const { data: registerEvalGames = [] } = trpc.admin.getEvaluationGamesBySeasonId.useQuery(
+    { seasonId: registerData.seasonId ? parseInt(registerData.seasonId) : 0 },
+    { enabled: !!registerData.seasonId }
+  );
+
   const activeSeason = (seasons as any[]).find((s: any) => s.isActive);
+
+  // Register player mutation
+  const registerPlayerMutation = trpc.admin.registerPlayer.useMutation({
+    onSuccess: () => {
+      toast.success('Player registered successfully!');
+      setIsRegisterOpen(false);
+      setRegisterData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        position: '',
+        teamId: '',
+        seasonId: '',
+        evaluationGameDate: '',
+        evaluationTeam: '',
+        playerRating: '',
+      });
+      invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to register player');
+    },
+  });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const invalidate = () => {
@@ -303,6 +346,10 @@ export default function Players() {
               </Button>
             ))}
           </div>
+          <Button onClick={() => setIsRegisterOpen(true)} className="ml-auto">
+            <Shield className="w-4 h-4 mr-2" />
+            Admin Register Player
+          </Button>
         </div>
 
         {/* Players */}
@@ -649,6 +696,204 @@ export default function Players() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin Register Player Dialog */}
+      <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Player</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>First Name *</Label>
+                <Input
+                  value={registerData.firstName}
+                  onChange={e => setRegisterData({ ...registerData, firstName: e.target.value })}
+                  placeholder="First name"
+                />
+              </div>
+              <div>
+                <Label>Last Name *</Label>
+                <Input
+                  value={registerData.lastName}
+                  onChange={e => setRegisterData({ ...registerData, lastName: e.target.value })}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={registerData.email}
+                  onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                  placeholder="player@example.com"
+                />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input
+                  value={registerData.phone}
+                  onChange={e => setRegisterData({ ...registerData, phone: e.target.value })}
+                  placeholder="Phone number"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Position</Label>
+                <Select
+                  value={registerData.position}
+                  onValueChange={v => setRegisterData({ ...registerData, position: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select position" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="forward">Forward</SelectItem>
+                    <SelectItem value="defense">Defense</SelectItem>
+                    <SelectItem value="goalie">Goalie</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Player Rating (1-10)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={registerData.playerRating}
+                  onChange={e => setRegisterData({ ...registerData, playerRating: e.target.value })}
+                  placeholder="Rating"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Season *</Label>
+                <Select
+                  value={registerData.seasonId}
+                  onValueChange={v => setRegisterData({ ...registerData, seasonId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select season" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(seasons as any[]).map(s => (
+                      <SelectItem key={s.id} value={s.id.toString()}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Team *</Label>
+                <Select
+                  value={registerData.teamId}
+                  onValueChange={v => setRegisterData({ ...registerData, teamId: v })}
+                  disabled={!registerData.seasonId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={registerData.seasonId ? 'Select team' : 'Select a season first'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(teams as any[]).map(t => (
+                      <SelectItem key={t.id} value={t.id.toString()}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-sm mb-3">Evaluation Game Assignment (Optional)</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Evaluation Game</Label>
+                  <Select
+                    value={registerData.evaluationGameDate}
+                    onValueChange={v => setRegisterData({ ...registerData, evaluationGameDate: v })}
+                    disabled={!registerData.seasonId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select evaluation game" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {(registerEvalGames as any[]).map(g => (
+                        <SelectItem key={g.gameDate} value={g.gameDate}>
+                          {formatGameLabel(g)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Eval Team</Label>
+                  <Select
+                    value={registerData.evaluationTeam}
+                    onValueChange={v => setRegisterData({ ...registerData, evaluationTeam: v })}
+                    disabled={!registerData.evaluationGameDate}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="white">Team White</SelectItem>
+                      <SelectItem value="black">Team Black</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4">
+              <Button variant="outline" onClick={() => setIsRegisterOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!registerData.firstName || !registerData.lastName || !registerData.email || !registerData.seasonId || !registerData.teamId) {
+                    toast.error('Please fill in all required fields');
+                    return;
+                  }
+                  registerPlayerMutation.mutate({
+                    firstName: registerData.firstName,
+                    lastName: registerData.lastName,
+                    email: registerData.email,
+                    phone: registerData.phone || undefined,
+                    position: registerData.position as 'forward' | 'defense' | 'goalie' | undefined,
+                    teamId: parseInt(registerData.teamId),
+                    seasonId: parseInt(registerData.seasonId),
+                    evaluationGameDate: registerData.evaluationGameDate || undefined,
+                    evaluationTeam: (registerData.evaluationTeam as 'white' | 'black') || undefined,
+                    playerRating: registerData.playerRating ? parseInt(registerData.playerRating) : undefined,
+                  });
+                }}
+                disabled={registerPlayerMutation.isPending}
+              >
+                {registerPlayerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Registering...
+                  </>
+                ) : (
+                  'Register Player'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

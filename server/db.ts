@@ -331,3 +331,35 @@ export async function updateUserLastSignedIn(userId: number) {
     return false;
   }
 }
+
+export async function getPlayerRegistration(registrationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  try {
+    const result = await db
+      .select()
+      .from(playerRegistrations)
+      .where(eq(playerRegistrations.id, registrationId))
+      .limit(1);
+    
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting player registration:", error);
+    return null;
+  }
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+    const updatedUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    return updatedUser[0] || null;
+  } catch (error) {
+    console.error("[Database] Error updating user password:", error);
+    throw error;
+  }
+}

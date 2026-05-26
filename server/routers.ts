@@ -10,6 +10,7 @@ import { z } from "zod";
 import * as bcrypt from "bcryptjs";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import { validateLoginToken, markTokenAsUsed } from "./_core/adminRegistrationService";
 
 const COOKIE_NAME = "session";
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
@@ -114,6 +115,101 @@ export const appRouter = router({
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Login failed',
+          });
+        }
+      }),
+    validateMagicLink: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const registrationId = await validateLoginToken(input.token);
+          if (!registrationId) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: 'Invalid or expired magic link',
+            });
+          }
+
+          return {
+            valid: true,
+            registrationId,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Link validation failed',
+          });
+        }
+      }),
+    loginWithMagicLink: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        password: z.string().min(6),
+        name: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Validate magic link token
+          const registrationId = await validateLoginToken(input.token);
+          if (!registrationId) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: 'Invalid or expired magic link',
+            });
+          }
+
+          // Get player registration to get email
+          const registration = await db.getPlayerRegistration(registrationId);
+          if (!registration) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'Player registration not found',
+            });
+          }
+
+          // Check if user already exists
+          let user = await db.getUserByEmail(registration.email);
+          if (!user) {
+            // Create new user with email from registration
+            const passwordHash = await bcrypt.hash(input.password, 10);
+            user = await db.createUser({
+              email: registration.email,
+              passwordHash,
+              name: input.name || `${registration.firstName} ${registration.lastName}`,
+              loginMethod: 'magic-link',
+              emailVerified: true,
+            });
+          } else if (!user.passwordHash) {
+            // User exists but has no password, set it now
+            const passwordHash = await bcrypt.hash(input.password, 10);
+            user = await db.updateUserPassword(user.id, passwordHash);
+          }
+
+          // Mark token as used
+          await markTokenAsUsed(input.token);
+
+          // Create session token
+          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
+            name: user.name || '',
+            expiresInMs: ONE_YEAR_MS,
+          });
+
+          // Set session cookie
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+          return {
+            success: true,
+            registrationId,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Magic link login failed',
           });
         }
       }),

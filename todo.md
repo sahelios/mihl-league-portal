@@ -787,3 +787,34 @@
 - [x] Convert Date objects to YYYY-MM-DD strings before returning to frontend
 - [x] Added 6 vitest tests for date serialization
 - [x] PlayerPortal now displays correct game dates matching ScheduleManagement
+
+
+## ADMIN PLAYER REGISTRATION FEATURE - May 26, 2026
+- [ ] Create loginTokens table in database schema
+- [ ] Add adminRegisteredPlayers table to track admin-registered players
+- [ ] Create backend mutation for admin player registration
+- [ ] Implement magic link token generation with season-start expiration
+- [ ] Create magic link validation and login flow
+- [ ] Build admin UI form in /admin/players for player registration
+- [ ] Implement "Complete Profile" page for first-time login
+- [ ] Add password setup flow for admin-registered players
+- [ ] Create email notification for admin-registered players
+- [ ] Write vitest tests for admin registration flow
+- [ ] Write vitest tests for magic link token validation
+- [ ] Write vitest tests for email notifications
+- [ ] Verify existing self-registration still works
+- [ ] Test end-to-end admin registration flow
+
+
+## NEW: Admin Register Player Feature (Phase 5/6 - Nearly Complete)
+- [x] Database schema: loginTokens and adminRegisteredPlayers tables
+- [x] Backend service: adminRegistrationService.ts with token generation/validation
+- [x] Admin router: registerPlayer mutation implemented
+- [x] Email service: sendAdminRegistrationEmail function added
+- [x] Auth router: Magic link validation and auto-login flow (validateMagicLink, loginWithMagicLink)
+- [x] Complete Profile page: MagicLinkLogin.tsx with password setup
+- [x] Admin UI: Register Player form in /admin/players
+- [x] Database helpers: getPlayerRegistration and updateUserPassword
+- [x] Route: /magic-login endpoint added
+- [x] Vitest tests: admin.register-player.test.ts
+- [ ] End-to-end testing: Full registration flow (manual testing)

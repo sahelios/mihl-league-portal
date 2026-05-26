@@ -523,3 +523,29 @@ export const evaluationGameAssignments = mysqlTable("evaluationGameAssignments",
 
 export type EvaluationGameAssignment = typeof evaluationGameAssignments.$inferSelect;
 export type InsertEvaluationGameAssignment = typeof evaluationGameAssignments.$inferInsert;
+
+// Magic login tokens for admin-registered players
+export const loginTokens = mysqlTable("loginTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  token: varchar("token", { length: 255 }).unique().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LoginToken = typeof loginTokens.$inferSelect;
+export type InsertLoginToken = typeof loginTokens.$inferInsert;
+
+// Track admin-registered players for password setup flow
+export const adminRegisteredPlayers = mysqlTable("adminRegisteredPlayers", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull(),
+  passwordSet: boolean("passwordSet").default(false).notNull(),
+  profileCompleted: boolean("profileCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AdminRegisteredPlayer = typeof adminRegisteredPlayers.$inferSelect;
+export type InsertAdminRegisteredPlayer = typeof adminRegisteredPlayers.$inferInsert;

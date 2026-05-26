@@ -141,3 +141,24 @@ export async function verifyEmailConnection() {
     return false;
   }
 }
+
+export async function sendAdminRegistrationEmail(
+  playerEmail: string,
+  playerName: string,
+  magicLoginUrl: string,
+  language: 'en' | 'fr' = 'en'
+) {
+  const subject = language === 'en'
+    ? 'Welcome to MIHL - Your Login Link'
+    : 'Bienvenue à la Ligue MIHL - Votre Lien de Connexion';
+
+  const text = language === 'en'
+    ? `Hi ${playerName},\n\nAn admin has registered you for the Mensches Ice Hockey League!\n\nClick the link below to log in and complete your profile:\n${magicLoginUrl}\n\nThis link will expire at the start of the season.\n\nIf you have any questions, please contact registration@mihl.ca or call 514-965-2842.\n\nBest regards,\nMIHL Team`
+    : `Bonjour ${playerName},\n\nUn administrateur vous a inscrit à la Ligue de Hockey Mensches!\n\nCliquez sur le lien ci-dessous pour vous connecter et compléter votre profil:\n${magicLoginUrl}\n\nCe lien expirera au début de la saison.\n\nSi vous avez des questions, veuillez contacter registration@mihl.ca ou appeler 514-965-2842.\n\nCordialement,\nÉquipe MIHL`;
+
+  const html = language === 'en'
+    ? `<p>Hi ${playerName},</p><p>An admin has registered you for the Mensches Ice Hockey League!</p><p><a href="${magicLoginUrl}">Click here to log in and complete your profile</a></p><p>This link will expire at the start of the season.</p><p>If you have any questions, please contact <a href="mailto:registration@mihl.ca">registration@mihl.ca</a> or call 514-965-2842.</p><p>Best regards,<br/>MIHL Team</p>`
+    : `<p>Bonjour ${playerName},</p><p>Un administrateur vous a inscrit à la Ligue de Hockey Mensches!</p><p><a href="${magicLoginUrl}">Cliquez ici pour vous connecter et compléter votre profil</a></p><p>Ce lien expirera au début de la saison.</p><p>Si vous avez des questions, veuillez contacter <a href="mailto:registration@mihl.ca">registration@mihl.ca</a> ou appeler 514-965-2842.</p><p>Cordialement,<br/>Équipe MIHL</p>`;
+
+  return sendEmail(playerEmail, subject, text, html);
+}
