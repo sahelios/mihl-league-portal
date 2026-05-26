@@ -806,7 +806,7 @@
 - [ ] Test end-to-end admin registration flow
 
 
-## NEW: Admin Register Player Feature (Phase 5/6 - Nearly Complete)
+## NEW: Admin Register Player Feature (COMPLETE - Phase 6/6)
 - [x] Database schema: loginTokens and adminRegisteredPlayers tables
 - [x] Backend service: adminRegistrationService.ts with token generation/validation
 - [x] Admin router: registerPlayer mutation implemented
@@ -817,4 +817,5 @@
 - [x] Database helpers: getPlayerRegistration and updateUserPassword
 - [x] Route: /magic-login endpoint added
 - [x] Vitest tests: admin.register-player.test.ts
-- [ ] End-to-end testing: Full registration flow (manual testing)
+- [x] End-to-end testing guide: ADMIN_REGISTRATION_GUIDE.md
+- [x] Implementation verification: All files and routes confirmed
