@@ -283,6 +283,7 @@ export const registrationRouter = router({
       language: z.enum(['en', 'fr']).default('en'),
     }))
     .mutation(async ({ input, ctx }) => {
+      console.log(`[APPROVE MUTATION] Starting approve for registration ${input.registrationId}`);
       if (ctx.user?.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -291,6 +292,7 @@ export const registrationRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
       const registration = await db.select().from(playerRegistrations).where(eq(playerRegistrations.id, input.registrationId));
+      console.log(`[APPROVE MUTATION] Found registration:`, registration.length > 0 ? 'YES' : 'NO');
       if (!registration.length) throw new TRPCError({ code: 'NOT_FOUND' });
 
       const reg = registration[0];
@@ -315,13 +317,14 @@ export const registrationRouter = router({
 
       const { sendApprovalEmail: sendApprovalEmailService } = await import('../_core/emailService');
       // Send email non-blocking
+      console.log(`[APPROVAL] Sending approval email to ${reg.email} for registration ${input.registrationId}`);
       sendApprovalEmailService(
         reg.email,
         `${reg.firstName} ${reg.lastName}`,
-        input.language,
+        input.language || 'en',
         evaluationGameInfo
       ).catch(err => {
-        console.error('Failed to send approval email:', err);
+        console.error(`[APPROVAL EMAIL ERROR] Failed to send approval email to ${reg.email}:`, err);
       });
 
       return { success: true };

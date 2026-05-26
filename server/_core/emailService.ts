@@ -11,6 +11,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Log email configuration on startup (without passwords)
+console.log('[EMAIL CONFIG] Host:', process.env.EMAIL_HOST, 'Port:', process.env.EMAIL_PORT, 'User:', process.env.EMAIL_USER);
+
+// Verify connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[EMAIL] SMTP connection verification failed:', error);
+  } else {
+    console.log('[EMAIL] SMTP connection verified successfully');
+  }
+});
+
 export async function sendEmail(
   to: string,
   subject: string,
@@ -18,6 +30,7 @@ export async function sendEmail(
   html?: string
 ) {
   try {
+    console.log(`[EMAIL] Attempting to send email to ${to} with subject: ${subject}`);
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || 'registration@mihl.ca',
       to,
@@ -29,7 +42,7 @@ export async function sendEmail(
     console.log(`[EMAIL SENT] To: ${to}, Subject: ${subject}, Message ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error(`[EMAIL ERROR] Failed to send email to ${to}:`, error);
+    console.error(`[EMAIL ERROR] Failed to send email to ${to}:`, error instanceof Error ? error.message : error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -78,6 +91,7 @@ export async function sendApprovalEmail(
   language: 'en' | 'fr' = 'en',
   evaluationGameInfo?: { date: string; team: string } | null
 ) {
+  console.log(`[APPROVAL EMAIL] Starting sendApprovalEmail for ${playerEmail}, language: ${language}`);
   const subject = language === 'en'
     ? 'Your MIHL Registration Has Been Approved!'
     : 'Votre Inscription à la Ligue MIHL a été Approuvée!';

@@ -126,6 +126,16 @@ export default function Players() {
     onError: (e) => toast.error(e.message || 'Failed to delete player'),
   });
 
+  const approveMutation = trpc.registration.approve.useMutation({
+    onSuccess: () => { toast.success('Player approved'); invalidate(); },
+    onError: (e) => toast.error(e.message || 'Failed to approve player'),
+  });
+
+  const rejectMutation = trpc.registration.reject.useMutation({
+    onSuccess: () => { toast.success('Player rejected'); invalidate(); },
+    onError: (e) => toast.error(e.message || 'Failed to reject player'),
+  });
+
   const updateEmailMutation = trpc.admin.updatePlayerEmail.useMutation({
     onSuccess: () => { toast.success('Email updated'); invalidate(); },
     onError: (e) => toast.error(e.message || 'Failed to update email'),
@@ -381,19 +391,35 @@ export default function Players() {
                       <Button size="sm" onClick={() => openEdit(reg)} className="flex-1">
                         Edit / Assign
                       </Button>
-                      <Select
-                        value={reg.status}
-                        onValueChange={v => updateStatusMutation.mutate({ registrationId: reg.id, status: v as any })}
-                      >
-                        <SelectTrigger className="w-auto h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="approved">Approved</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {reg.status === 'pending' && (
+                        <>
+                          <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => approveMutation.mutate({ registrationId: reg.id })}
+                            disabled={approveMutation.isPending}>
+                            Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-8 px-2"
+                            onClick={() => rejectMutation.mutate({ registrationId: reg.id })}
+                            disabled={rejectMutation.isPending}>
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {reg.status !== 'pending' && (
+                        <Select
+                          value={reg.status}
+                          onValueChange={v => updateStatusMutation.mutate({ registrationId: reg.id, status: v as any })}
+                        >
+                          <SelectTrigger className="w-auto h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                       <Button size="sm" variant="ghost" className="h-8 px-2"
                         onClick={() => setExpandedCards(prev => {
                           const next = new Set(prev);

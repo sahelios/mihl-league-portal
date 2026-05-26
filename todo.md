@@ -772,3 +772,11 @@
 - [x] Added error handling for background email operations
 - [x] Created 13 vitest tests for performance (all passing)
 - [x] Verified registration now completes in < 1 second instead of 5 minutes
+
+
+## APPROVAL EMAIL FUNCTIONALITY FIX - May 26, 2026
+- [x] Added approve and reject mutations to Players admin component
+- [x] Added Approve/Reject buttons for pending player registrations
+- [x] Integrated registration.approve and registration.reject tRPC procedures
+- [x] Approval email now sends with evaluation game details and Player Portal login instructions
+- [x] Fixed missing approve button in admin/players UI
