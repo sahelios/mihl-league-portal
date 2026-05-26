@@ -743,3 +743,11 @@
 - [x] Updated approve/reject mutations to send real approval/rejection emails
 - [x] Created 14 vitest tests for email service (all passing)
 - [x] All emails now sent via SMTP instead of console logging
+
+
+## LOGOUT FUNCTIONALITY FIX - May 26, 2026 (Session 12 - Continued)
+- [x] Added missing useState import to Header.tsx
+- [x] Updated useAuth logout to redirect to home page after logout
+- [x] Added redirect in finally block to ensure it happens even on error
+- [x] Created 12 vitest tests for logout functionality (all passing)
+- [x] Verified logout clears session and redirects properly
