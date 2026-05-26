@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
-import { playerRegistrations, seasons, playerTeams } from '../../drizzle/schema';
+import { playerRegistrations, seasons, playerTeams, evaluationGameAssignments } from '../../drizzle/schema';
 import { eq, and, sql, or } from 'drizzle-orm';
 import { sendRegistrationConfirmationEmail, sendRegistrationAdminNotification } from '../_core/emailService';
 
@@ -296,8 +296,28 @@ export const registrationRouter = router({
         .set({ status: 'approved' })
         .where(eq(playerRegistrations.id, input.registrationId));
 
+      // Fetch evaluation game assignment
+      let evaluationGameInfo = null;
+      const evalAssignment = await db.select()
+        .from(evaluationGameAssignments)
+        .where(eq(evaluationGameAssignments.registrationId, input.registrationId))
+        .limit(1);
+      
+      if (evalAssignment.length > 0) {
+        const assignment = evalAssignment[0];
+        evaluationGameInfo = {
+          date: assignment.evaluationDate,
+          team: assignment.team === 'white' ? 'Team White' : 'Team Black',
+        };
+      }
+
       const { sendApprovalEmail: sendApprovalEmailService } = await import('../_core/emailService');
-      await sendApprovalEmailService(reg.email, `${reg.firstName} ${reg.lastName}`, input.language);
+      await sendApprovalEmailService(
+        reg.email,
+        `${reg.firstName} ${reg.lastName}`,
+        input.language,
+        evaluationGameInfo
+      );
 
       return { success: true };
     }),

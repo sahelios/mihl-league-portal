@@ -75,15 +75,27 @@ export async function sendRegistrationAdminNotification(
 export async function sendApprovalEmail(
   playerEmail: string,
   playerName: string,
-  language: 'en' | 'fr' = 'en'
+  language: 'en' | 'fr' = 'en',
+  evaluationGameInfo?: { date: string; team: string } | null
 ) {
   const subject = language === 'en'
     ? 'Your MIHL Registration Has Been Approved!'
     : 'Votre Inscription à la Ligue MIHL a été Approuvée!';
 
+  let evaluationDetails = '';
+  if (evaluationGameInfo) {
+    evaluationDetails = language === 'en'
+      ? `\n\nEvaluation Game Assignment:\nDate: ${evaluationGameInfo.date}\nTeam: ${evaluationGameInfo.team}`
+      : `\n\nAssignation au Match d'Évaluation:\nDate: ${evaluationGameInfo.date}\nÉquipe: ${evaluationGameInfo.team}`;
+  }
+
+  const portalInstructions = language === 'en'
+    ? `\n\nNext Steps:\n1. Log in to the MIHL Player Portal at https://mihl.ca/player-portal\n2. Use your email (${playerEmail}) to sign in\n3. View your evaluation game details and team assignment\n4. Mark your availability for upcoming games\n\nIf you have any questions, please contact registration@mihl.ca or call 514-965-2842.`
+    : `\n\nProchaines Étapes:\n1. Connectez-vous au Portail des Joueurs MIHL à https://mihl.ca/player-portal\n2. Utilisez votre courriel (${playerEmail}) pour vous connecter\n3. Consultez les détails de votre match d'évaluation et votre assignation d'équipe\n4. Indiquez votre disponibilité pour les matchs à venir\n\nSi vous avez des questions, veuillez contacter registration@mihl.ca ou appeler 514-965-2842.`;
+
   const text = language === 'en'
-    ? `Hi ${playerName},\n\nYour registration for the MIHL league has been approved! You will receive your team assignment after the evaluation games on June 24-26.`
-    : `Bonjour ${playerName},\n\nVotre inscription à la ligue MIHL a été approuvée! Vous recevrez votre assignation d'équipe après les matchs d'évaluation du 24-26 juin.`;
+    ? `Hi ${playerName},\n\nYour registration for the MIHL league has been approved!${evaluationDetails}${portalInstructions}`
+    : `Bonjour ${playerName},\n\nVotre inscription à la ligue MIHL a été approuvée!${evaluationDetails}${portalInstructions}`;
 
   return sendEmail(playerEmail, subject, text);
 }

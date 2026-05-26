@@ -751,3 +751,14 @@
 - [x] Added redirect in finally block to ensure it happens even on error
 - [x] Created 12 vitest tests for logout functionality (all passing)
 - [x] Verified logout clears session and redirects properly
+
+
+## APPROVAL EMAIL ENHANCEMENT - May 26, 2026 (Session 12 - Continued)
+- [x] Updated sendApprovalEmail to include evaluation game assignment details
+- [x] Added Player Portal login instructions to approval email
+- [x] Added bilingual support (English/French) for all email content
+- [x] Included contact information (registration@mihl.ca, 514-965-2842)
+- [x] Updated approve mutation to fetch evaluation game info from database
+- [x] Created 15 vitest tests for approval email content (all passing)
+- [x] Verified email includes team assignment (Team White/Team Black)
+- [x] Verified email includes evaluation game dates (JUN 23, JUN 25)
