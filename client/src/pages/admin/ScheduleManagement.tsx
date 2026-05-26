@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trash2, AlertCircle, Loader2, CalendarDays, Trophy, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDate, formatTime, getISOWeekKey } from '@/lib/dateUtils';
+import { formatDate, formatTime, getISOWeekKey, parseLocalDate } from '@/lib/dateUtils';
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
