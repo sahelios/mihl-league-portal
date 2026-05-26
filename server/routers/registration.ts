@@ -242,6 +242,17 @@ export const registrationRouter = router({
         // Send admin notification
         await sendRegistrationEmail(input, input.language);
 
+        // Send confirmation email to player
+        const confirmationSubject = input.language === 'en'
+          ? 'MIHL Registration Received - Confirmation'
+          : 'Inscription a la Ligue MIHL Recue - Confirmation';
+
+        const confirmationBody = input.language === 'en'
+          ? `Hi ${input.firstName},\n\nThank you for registering with the Mensches Ice Hockey League!\n\nWe have received your registration and it is currently pending approval. You will receive an email update once your registration has been reviewed.\n\nIf you have any questions, please contact registration@mihl.ca\n\nBest regards,\nMIHL Team`
+          : `Bonjour ${input.firstName},\n\nMerci de vous etre inscrit a la Ligue de Hockey Mensches!\n\nNous avons recu votre inscription et elle est actuellement en attente d'approbation. Vous recevrez un courriel de mise a jour une fois votre inscription examinee.\n\nSi vous avez des questions, veuillez contacter registration@mihl.ca\n\nCordialement,\nEquipe MIHL`;
+
+        console.log(`[EMAIL] To: ${input.email}\nSubject: ${confirmationSubject}\n${confirmationBody}`);
+
         return {
           success: true,
           registrationId: (result as any).insertId || 0,

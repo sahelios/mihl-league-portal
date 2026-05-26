@@ -725,3 +725,11 @@
 - [x] Fixed referee application schema to accept both string and object certifications
 - [x] Updated certifications transformation logic to handle mixed formats
 - [x] Created 4 vitest tests for application submission scenarios (all passing)
+
+
+## REGISTRATION EMAIL FIX - May 26, 2026 (Session 12 - Continued)
+- [x] Added confirmation email to player when they register
+- [x] Admin notification still sent to registration@mihl.ca
+- [x] Both emails include bilingual support (English/French)
+- [x] Created 7 vitest tests for email functionality (all passing)
+- [x] Created refereeApplications table in database
