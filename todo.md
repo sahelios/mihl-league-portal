@@ -780,3 +780,10 @@
 - [x] Integrated registration.approve and registration.reject tRPC procedures
 - [x] Approval email now sends with evaluation game details and Player Portal login instructions
 - [x] Fixed missing approve button in admin/players UI
+
+
+## DATE SERIALIZATION FIX - May 26, 2026
+- [x] Fixed date serialization in getTeamSchedule to prevent timezone shifts
+- [x] Convert Date objects to YYYY-MM-DD strings before returning to frontend
+- [x] Added 6 vitest tests for date serialization
+- [x] PlayerPortal now displays correct game dates matching ScheduleManagement

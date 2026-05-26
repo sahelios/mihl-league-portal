@@ -419,14 +419,24 @@ export const leagueRouter = router({
         const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
         
         // Enrich games with team and venue names
-        return allGames.map(game => ({
-          ...game,
-          teamHome: { name: game.isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`) },
-          teamAway: { name: game.isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`) },
-          venue: { name: venueMap.get(game.venueId) || 'TBA' },
-          date: game.gameDate,
-          time: game.gameTime,
-        }));
+        return allGames.map(game => {
+          // Convert date to YYYY-MM-DD string to prevent timezone shifts
+          let dateStr = '';
+          if (game.gameDate instanceof Date) {
+            dateStr = game.gameDate.toISOString().split('T')[0];
+          } else if (typeof game.gameDate === 'string') {
+            dateStr = game.gameDate;
+          }
+          
+          return {
+            ...game,
+            teamHome: { name: game.isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`) },
+            teamAway: { name: game.isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`) },
+            venue: { name: venueMap.get(game.venueId) || 'TBA' },
+            date: dateStr,
+            time: game.gameTime,
+          };
+        });
       } catch (error) {
         console.error('Error fetching team schedule:', error);
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch team schedule' });
