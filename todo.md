@@ -733,3 +733,13 @@
 - [x] Both emails include bilingual support (English/French)
 - [x] Created 7 vitest tests for email functionality (all passing)
 - [x] Created refereeApplications table in database
+
+
+## EMAIL SERVICE IMPLEMENTATION - May 26, 2026 (Session 12 - Continued)
+- [x] Installed Nodemailer for SMTP email sending
+- [x] Created emailService.ts with Nodemailer configuration
+- [x] Configured SMTP credentials for registration@mihl.ca (mail.mihl.ca:465)
+- [x] Updated registration submit to send real confirmation and admin emails
+- [x] Updated approve/reject mutations to send real approval/rejection emails
+- [x] Created 14 vitest tests for email service (all passing)
+- [x] All emails now sent via SMTP instead of console logging

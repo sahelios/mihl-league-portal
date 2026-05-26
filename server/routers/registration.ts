@@ -4,6 +4,7 @@ import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
 import { playerRegistrations, seasons, playerTeams } from '../../drizzle/schema';
 import { eq, and, sql, or } from 'drizzle-orm';
+import { sendRegistrationConfirmationEmail, sendRegistrationAdminNotification } from '../_core/emailService';
 
 // Evaluation game dates and capacity
 const EVALUATION_DATES = [
@@ -53,41 +54,7 @@ const registrationSchema = z.object({
 
 
 
-async function sendRegistrationEmail(data: any, language: 'en' | 'fr') {
-  const subject = language === 'en' 
-    ? 'New Player Registration - MIHL League'
-    : 'Nouvelle Inscription de Joueur - Ligue MIHL';
 
-  const emailBody = language === 'en'
-    ? `New registration received:\n\nName: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\nType: ${data.registrationType}\nRating: ${data.rating || 'N/A'}\nEvaluation Date: ${data.evaluationDate || 'N/A'}`
-    : `Nouvelle inscription reçue:\n\nNom: ${data.firstName} ${data.lastName}\nCourriel: ${data.email}\nType: ${data.registrationType}\nNiveau: ${data.rating || 'N/A'}\nDate d'évaluation: ${data.evaluationDate || 'N/A'}`;
-
-  console.log(`[EMAIL] To: registration@mihl.ca\nSubject: ${subject}\n${emailBody}`);
-}
-
-async function sendApprovalEmail(playerEmail: string, playerName: string, language: 'en' | 'fr') {
-  const subject = language === 'en'
-    ? 'Your MIHL Registration Has Been Approved!'
-    : 'Votre Inscription à la Ligue MIHL a été Approuvée!';
-
-  const body = language === 'en'
-    ? `Hi ${playerName},\n\nYour registration for the MIHL league has been approved! You will receive your team assignment after the evaluation games on June 24-26.`
-    : `Bonjour ${playerName},\n\nVotre inscription à la ligue MIHL a été approuvée! Vous recevrez votre assignation d'équipe après les matchs d'évaluation du 24-26 juin.`;
-
-  console.log(`[EMAIL] To: ${playerEmail}\nSubject: ${subject}\n${body}`);
-}
-
-async function sendRejectionEmail(playerEmail: string, playerName: string, reason: string, language: 'en' | 'fr') {
-  const subject = language === 'en'
-    ? 'MIHL Registration Status Update'
-    : 'Mise à Jour du Statut d\'Inscription MIHL';
-
-  const body = language === 'en'
-    ? `Hi ${playerName},\n\nUnfortunately, your registration could not be approved at this time.\n\nReason: ${reason}\n\nPlease contact registration@mihl.ca for more information.`
-    : `Bonjour ${playerName},\n\nMalheureusement, votre inscription n'a pas pu être approuvée à ce moment.\n\nRaison: ${reason}\n\nVeuillez contacter registration@mihl.ca pour plus d'informations.`;
-
-  console.log(`[EMAIL] To: ${playerEmail}\nSubject: ${subject}\n${body}`);
-}
 
 // Add getActiveSeason procedure
 export const registrationRouter = router({
@@ -239,19 +206,11 @@ export const registrationRouter = router({
           position: input.position || null,
         });
 
-        // Send admin notification
-        await sendRegistrationEmail(input, input.language);
-
-        // Send confirmation email to player
-        const confirmationSubject = input.language === 'en'
-          ? 'MIHL Registration Received - Confirmation'
-          : 'Inscription a la Ligue MIHL Recue - Confirmation';
-
-        const confirmationBody = input.language === 'en'
-          ? `Hi ${input.firstName},\n\nThank you for registering with the Mensches Ice Hockey League!\n\nWe have received your registration and it is currently pending approval. You will receive an email update once your registration has been reviewed.\n\nIf you have any questions, please contact registration@mihl.ca\n\nBest regards,\nMIHL Team`
-          : `Bonjour ${input.firstName},\n\nMerci de vous etre inscrit a la Ligue de Hockey Mensches!\n\nNous avons recu votre inscription et elle est actuellement en attente d'approbation. Vous recevrez un courriel de mise a jour une fois votre inscription examinee.\n\nSi vous avez des questions, veuillez contacter registration@mihl.ca\n\nCordialement,\nEquipe MIHL`;
-
-        console.log(`[EMAIL] To: ${input.email}\nSubject: ${confirmationSubject}\n${confirmationBody}`);
+        // Send admin notification and player confirmation
+        await Promise.all([
+          sendRegistrationAdminNotification(input, input.language),
+          sendRegistrationConfirmationEmail(input.email, input.firstName, input.language),
+        ]);
 
         return {
           success: true,
@@ -337,7 +296,8 @@ export const registrationRouter = router({
         .set({ status: 'approved' })
         .where(eq(playerRegistrations.id, input.registrationId));
 
-      await sendApprovalEmail(reg.email, `${reg.firstName} ${reg.lastName}`, input.language);
+      const { sendApprovalEmail: sendApprovalEmailService } = await import('../_core/emailService');
+      await sendApprovalEmailService(reg.email, `${reg.firstName} ${reg.lastName}`, input.language);
 
       return { success: true };
     }),
@@ -364,7 +324,8 @@ export const registrationRouter = router({
         .set({ status: 'rejected' })
         .where(eq(playerRegistrations.id, input.registrationId));
 
-      await sendRejectionEmail(reg.email, `${reg.firstName} ${reg.lastName}`, input.reason, input.language);
+      const { sendRejectionEmail: sendRejectionEmailService } = await import('../_core/emailService');
+      await sendRejectionEmailService(reg.email, `${reg.firstName} ${reg.lastName}`, input.reason, input.language);
 
       return { success: true };
     }),
