@@ -762,3 +762,13 @@
 - [x] Created 15 vitest tests for approval email content (all passing)
 - [x] Verified email includes team assignment (Team White/Team Black)
 - [x] Verified email includes evaluation game dates (JUN 23, JUN 25)
+
+
+## REGISTRATION PERFORMANCE FIX - May 26, 2026 (Session 12 - Continued)
+- [x] Fixed 5-minute registration delay by making email sending non-blocking
+- [x] Updated submit mutation to not await email sending
+- [x] Updated approve mutation to not await email sending
+- [x] Updated reject mutation to not await email sending
+- [x] Added error handling for background email operations
+- [x] Created 13 vitest tests for performance (all passing)
+- [x] Verified registration now completes in < 1 second instead of 5 minutes

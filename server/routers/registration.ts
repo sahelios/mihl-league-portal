@@ -206,11 +206,13 @@ export const registrationRouter = router({
           position: input.position || null,
         });
 
-        // Send admin notification and player confirmation
-        await Promise.all([
+        // Send admin notification and player confirmation (non-blocking)
+        Promise.all([
           sendRegistrationAdminNotification(input, input.language),
           sendRegistrationConfirmationEmail(input.email, input.firstName, input.language),
-        ]);
+        ]).catch(err => {
+          console.error('Failed to send registration emails:', err);
+        });
 
         return {
           success: true,
@@ -312,12 +314,15 @@ export const registrationRouter = router({
       }
 
       const { sendApprovalEmail: sendApprovalEmailService } = await import('../_core/emailService');
-      await sendApprovalEmailService(
+      // Send email non-blocking
+      sendApprovalEmailService(
         reg.email,
         `${reg.firstName} ${reg.lastName}`,
         input.language,
         evaluationGameInfo
-      );
+      ).catch(err => {
+        console.error('Failed to send approval email:', err);
+      });
 
       return { success: true };
     }),
@@ -345,7 +350,10 @@ export const registrationRouter = router({
         .where(eq(playerRegistrations.id, input.registrationId));
 
       const { sendRejectionEmail: sendRejectionEmailService } = await import('../_core/emailService');
-      await sendRejectionEmailService(reg.email, `${reg.firstName} ${reg.lastName}`, input.reason, input.language);
+      // Send email non-blocking
+      sendRejectionEmailService(reg.email, `${reg.firstName} ${reg.lastName}`, input.reason, input.language).catch(err => {
+        console.error('Failed to send rejection email:', err);
+      });
 
       return { success: true };
     }),
