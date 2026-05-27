@@ -11,8 +11,19 @@ export default function Schedule() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [statusTab, setStatusTab] = useState<"upcoming" | "completed" | "all">("all");
   const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
 
-  const { data: games, isLoading: loadingGames } = trpc.league.getSchedule.useQuery({ status: statusTab });
+  // Fetch active season and all seasons
+  const { data: activeSeason } = trpc.league.getActiveSeason.useQuery();
+  const { data: allSeasons = [] } = trpc.admin.getSeasons.useQuery();
+
+  // Set selected season to active season when it loads
+  const effectiveSeasonId = selectedSeasonId || activeSeason?.id;
+
+  const { data: games, isLoading: loadingGames } = trpc.league.getSchedule.useQuery(
+    { status: statusTab, seasonId: effectiveSeasonId },
+    { enabled: !!effectiveSeasonId }
+  );
   // Assuming getTeams is available in your full router
   const { data: teams, isLoading: loadingTeams } = trpc.league.getTeams?.useQuery() || { data: [], isLoading: false };
 
@@ -61,6 +72,22 @@ export default function Schedule() {
         {/* Filters and Tabs */}
         <Card className="mb-8 border-border bg-card">
           <CardContent className="p-4 flex flex-col md:flex-row gap-6 justify-between items-center">
+            {/* Season Selection */}
+            <div className="w-full md:w-64 space-y-1">
+              <Select value={String(selectedSeasonId || activeSeason?.id || "")} onValueChange={(val) => setSelectedSeasonId(Number(val))}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder={language === "en" ? "Select Season" : "Sélectionner la saison"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {allSeasons?.map((season: any) => (
+                    <SelectItem key={season.id} value={String(season.id)}>
+                      {season.name} {season.isActive ? `(${language === "en" ? "Active" : "Actif"})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Filter Tabs */}
             <div className="flex bg-muted p-1 rounded-lg w-full md:w-auto">
               {(["upcoming", "completed", "all"] as const).map((tab) => (

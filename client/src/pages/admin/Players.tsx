@@ -754,7 +754,6 @@ export default function Players() {
                     <SelectValue placeholder="Select position" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
                     <SelectItem value="forward">Forward</SelectItem>
                     <SelectItem value="defense">Defense</SelectItem>
                     <SelectItem value="goalie">Goalie</SelectItem>
@@ -828,7 +827,6 @@ export default function Players() {
                       <SelectValue placeholder="Select evaluation game" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
                       {(registerEvalGames as any[]).map(g => (
                         <SelectItem key={g.gameDate} value={g.gameDate}>
                           {formatGameLabel(g)}
