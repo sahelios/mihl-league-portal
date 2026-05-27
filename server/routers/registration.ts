@@ -502,6 +502,7 @@ export const registrationRouter = router({
       notes: z.string().optional(),
       waiverSigned: z.boolean(),
       waiverSignature: z.string(),
+      desiredSalary: z.number().optional(),
       language: z.enum(['en', 'fr']),
     }))
     .mutation(async ({ input }) => {
@@ -529,6 +530,7 @@ export const registrationRouter = router({
           status: 'pending',
           certifications: [],
           selectedGames: input.availableDays,
+          desiredSalary: input.desiredSalary ? String(input.desiredSalary) : null,
         });
 
         // Send confirmation email to applicant
