@@ -13,14 +13,32 @@ import { useLocation } from "wouter";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 export default function AdminStaffApplications() {
+  // All hooks MUST be called before any conditional returns
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [rejectionReason, setRejectionReason] = useState<Record<number, string>>({});
   const [paymentAmounts, setPaymentAmounts] = useState<Record<number, number>>({});
   const utils = trpc.useUtils();
-
-  // Fetch all staff applications
   const { data: allApplications = [], isLoading: allLoading } = trpc.admin.getAllStaffApplications.useQuery();
+  const approveMutation = trpc.admin.approveStaffApplication.useMutation({
+    onSuccess: () => {
+      toast.success("Staff application approved!");
+      utils.admin.getAllStaffApplications.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to approve application");
+    },
+  });
+  const rejectMutation = trpc.admin.rejectStaffApplication.useMutation({
+    onSuccess: () => {
+      toast.success("Staff application rejected!");
+      utils.admin.getAllStaffApplications.invalidate();
+      setRejectionReason({});
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to reject application");
+    },
+  });
 
   // Check admin access - AFTER all hooks
   if (user?.role !== "admin") {
@@ -42,27 +60,7 @@ export default function AdminStaffApplications() {
     );
   }
 
-  // Mutations
-  const approveMutation = trpc.admin.approveStaffApplication.useMutation({
-    onSuccess: () => {
-      toast.success("Staff application approved!");
-      utils.admin.getAllStaffApplications.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to approve application");
-    },
-  });
 
-  const rejectMutation = trpc.admin.rejectStaffApplication.useMutation({
-    onSuccess: () => {
-      toast.success("Staff application rejected!");
-      utils.admin.getAllStaffApplications.invalidate();
-      setRejectionReason({});
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to reject application");
-    },
-  });
 
   const handleApprove = (id: number) => {
     const amount = paymentAmounts[id];
