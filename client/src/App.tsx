@@ -88,7 +88,8 @@ function Router() {
       <Route path="/admin/suspensions" component={AdminSuspensions} />
       <Route path="/admin/messages" component={Messages} />
       <Route path="/admin/settings" component={Settings} />
-      {/* Deprecated: /admin/referee-applications - use /admin/staff-applications instead */}
+      {/* Redirect old route to new route */}
+      <Route path="/admin/referee-applications" component={StaffApplications} />
       <Route path="/admin/staff-applications" component={StaffApplications} />
       <Route path="/admin/game-assignments" component={GameAssignments} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
