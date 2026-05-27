@@ -826,9 +826,9 @@
 
 
 ## Staff Management System (NEW - Phase 1-5)
-- [ ] Phase 1: Fix admin panel - add desired salary field to referee applications display
-- [ ] Phase 1: Fix rejection error in staff applications admin panel
-- [ ] Phase 1: Add status filter (Approved/Pending/Rejected) to admin staff applications page
+- [x] Phase 1: Fix admin panel - add desired salary field to referee applications display
+- [x] Phase 1: Fix rejection error in staff applications admin panel (fixed Card import)
+- [x] Phase 1: Add status filter (Approved/Pending/Rejected) to admin staff applications page (already implemented with tabs)
 - [ ] Phase 2: Create staffAvailability table to track referee/scorekeeper availability for games
 - [ ] Phase 2: Add database helper functions for availability management
 - [ ] Phase 2: Create tRPC procedures for availability operations (add, remove, list)

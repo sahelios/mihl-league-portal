@@ -1,11 +1,12 @@
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
   seasons, teams, games, playerRegistrations, 
   playerTeams, playerStats, teamStats, newsPosts, 
   blogPosts, starsOfWeek, suspensions, gameVenues,
-  InsertPlayerRegistration, InsertGame, InsertNewsPost, InsertBlogPost, InsertStarOfWeek, InsertSuspension
+  InsertPlayerRegistration, InsertGame, InsertNewsPost, InsertBlogPost, InsertStarOfWeek, InsertSuspension,
+  staffAvailability, gameAssignments, refereeApplications
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -361,5 +362,135 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
   } catch (error) {
     console.error("[Database] Error updating user password:", error);
     throw error;
+  }
+}
+
+
+// Staff Availability Functions
+export async function addStaffAvailability(staffApplicationId: number, gameId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.insert(staffAvailability).values({
+      staffApplicationId,
+      gameId,
+      isAvailable: true,
+    });
+  } catch (error) {
+    console.error("[Database] Error adding staff availability:", error);
+    throw error;
+  }
+}
+
+export async function removeStaffAvailability(staffApplicationId: number, gameId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.delete(staffAvailability)
+      .where(and(
+        eq(staffAvailability.staffApplicationId, staffApplicationId),
+        eq(staffAvailability.gameId, gameId)
+      ));
+  } catch (error) {
+    console.error("[Database] Error removing staff availability:", error);
+    throw error;
+  }
+}
+
+export async function getStaffAvailableGames(staffApplicationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db
+      .select()
+      .from(staffAvailability)
+      .where(and(
+        eq(staffAvailability.staffApplicationId, staffApplicationId),
+        eq(staffAvailability.isAvailable, true)
+      ));
+    return result;
+  } catch (error) {
+    console.error("[Database] Error getting staff available games:", error);
+    return [];
+  }
+}
+
+export async function getGameAvailableStaff(gameId: number, role: 'referee' | 'scorekeeper') {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db
+      .select()
+      .from(staffAvailability)
+      .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+      .where(and(
+        eq(staffAvailability.gameId, gameId),
+        eq(staffAvailability.isAvailable, true),
+        eq(refereeApplications.role, role),
+        eq(refereeApplications.status, 'approved')
+      ));
+    return result;
+  } catch (error) {
+    console.error("[Database] Error getting available staff for game:", error);
+    return [];
+  }
+}
+
+// Game Assignment Functions
+export async function assignStaffToGame(gameId: number, refereeId?: number, scorekeeperId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    const existing = await db.select().from(gameAssignments).where(eq(gameAssignments.gameId, gameId));
+    if (existing.length > 0) {
+      await db.update(gameAssignments)
+        .set({ refereeId, scorekeeperId })
+        .where(eq(gameAssignments.gameId, gameId));
+    } else {
+      await db.insert(gameAssignments).values({
+        gameId,
+        refereeId,
+        scorekeeperId,
+      });
+    }
+  } catch (error) {
+    console.error("[Database] Error assigning staff to game:", error);
+    throw error;
+  }
+}
+
+export async function getGameAssignment(gameId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db
+      .select()
+      .from(gameAssignments)
+      .where(eq(gameAssignments.gameId, gameId))
+      .limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Error getting game assignment:", error);
+    return null;
+  }
+}
+
+export async function getStaffAssignedGames(staffApplicationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db
+      .select()
+      .from(gameAssignments)
+      .where(
+        or(
+          eq(gameAssignments.refereeId, staffApplicationId),
+          eq(gameAssignments.scorekeeperId, staffApplicationId)
+        )
+      );
+    return result;
+  } catch (error) {
+    console.error("[Database] Error getting staff assigned games:", error);
+    return [];
   }
 }

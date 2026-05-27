@@ -33,6 +33,7 @@ import Settings from "./pages/admin/Settings";
 import EvaluationGames from "./pages/admin/EvaluationGames";
 import RefereeApplications from "./pages/admin/RefereeApplications";
 import StaffApplications from "./pages/admin/StaffApplications";
+import GameAssignments from "./pages/admin/GameAssignments";
 import GameScheduler from "./pages/admin/GameScheduler";
 import ScheduleManagement from "./pages/admin/ScheduleManagement";
 import SeasonManagement from "./pages/admin/SeasonManagement";
@@ -49,6 +50,9 @@ import RefereeGameSelection from "./pages/RefereeGameSelection";
 // Player Portal
 import PlayerPortal from "./pages/PlayerPortal";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
+
+// Staff Portal
+import { StaffPortal } from "./pages/StaffPortal";
 
 import NotFound from "./pages/NotFound";
 
@@ -71,6 +75,7 @@ function Router() {
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />
       <Route path="/referee-game-selection" component={RefereeGameSelection} />
       <Route path="/player-portal" component={PlayerPortal} />
+      <Route path="/staff-portal" component={StaffPortal} />
       <Route path="/magic-login" component={MagicLinkLogin} />
 
       {/* Admin Pages */}
@@ -85,6 +90,7 @@ function Router() {
       <Route path="/admin/settings" component={Settings} />
       <Route path="/admin/referee-applications" component={RefereeApplications} />
       <Route path="/admin/staff-applications" component={StaffApplications} />
+      <Route path="/admin/game-assignments" component={GameAssignments} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
       <Route path="/admin/schedule-management" component={ScheduleManagement} />
       <Route path="/admin/season-management" component={SeasonManagement} />

@@ -28,6 +28,8 @@ import {
   badges,
   teamMessages,
   adminMessages,
+  gameAssignments,
+  staffAvailability,
   loginTokens,
   adminRegisteredPlayers,
 } from "../../drizzle/schema";
@@ -1798,5 +1800,99 @@ export const adminRouter = router({
         registrationId,
         message: "Player registered successfully. Email sent with login link.",
       };
+    }),
+
+  // Game Assignment Procedures
+  assignStaffToGame: adminProcedure
+    .input(z.object({
+      gameId: z.number(),
+      refereeId: z.number().optional(),
+      scorekeeperId: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        if (input.refereeId) {
+          const referee = await db.select().from(refereeApplications)
+            .where(and(
+              eq(refereeApplications.id, input.refereeId),
+              eq(refereeApplications.role, 'referee'),
+              eq(refereeApplications.status, 'approved')
+            ));
+          if (referee.length === 0) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Referee not found or not approved" });
+          }
+        }
+        if (input.scorekeeperId) {
+          const scorekeeper = await db.select().from(refereeApplications)
+            .where(and(
+              eq(refereeApplications.id, input.scorekeeperId),
+              eq(refereeApplications.role, 'scorekeeper'),
+              eq(refereeApplications.status, 'approved')
+            ));
+          if (scorekeeper.length === 0) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Scorekeeper not found or not approved" });
+          }
+        }
+
+        const existing = await db.select().from(gameAssignments)
+          .where(eq(gameAssignments.gameId, input.gameId));
+        
+        if (existing.length > 0) {
+          await db.update(gameAssignments)
+            .set({
+              refereeId: input.refereeId,
+              scorekeeperId: input.scorekeeperId,
+            })
+            .where(eq(gameAssignments.gameId, input.gameId));
+        } else {
+          await db.insert(gameAssignments).values({
+            gameId: input.gameId,
+            refereeId: input.refereeId,
+            scorekeeperId: input.scorekeeperId,
+          });
+        }
+        return { success: true, message: "Staff assigned to game" };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getGameAssignment: adminProcedure
+    .input(z.object({ gameId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const assignment = await db.select()
+          .from(gameAssignments)
+          .where(eq(gameAssignments.gameId, input.gameId))
+          .limit(1);
+        return assignment[0] || null;
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getAvailableStaffForGame: adminProcedure
+    .input(z.object({ gameId: z.number(), role: z.enum(['referee', 'scorekeeper']) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const available = await db.select()
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, input.role),
+            eq(refereeApplications.status, 'approved')
+          ));
+        return available.map(row => row.refereeApplications);
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
     }),
 });

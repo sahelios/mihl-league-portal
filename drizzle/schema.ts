@@ -550,3 +550,30 @@ export const adminRegisteredPlayers = mysqlTable("adminRegisteredPlayers", {
 
 export type AdminRegisteredPlayer = typeof adminRegisteredPlayers.$inferSelect;
 export type InsertAdminRegisteredPlayer = typeof adminRegisteredPlayers.$inferInsert;
+
+
+// Staff Availability - track which games each referee/scorekeeper is available for
+export const staffAvailability = mysqlTable("staffAvailability", {
+  id: int("id").autoincrement().primaryKey(),
+  staffApplicationId: int("staffApplicationId").notNull(),
+  gameId: int("gameId").notNull(),
+  isAvailable: boolean("isAvailable").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffAvailability = typeof staffAvailability.$inferSelect;
+export type InsertStaffAvailability = typeof staffAvailability.$inferInsert;
+
+// Game Assignments - track which referee and scorekeeper are assigned to each game
+export const gameAssignments = mysqlTable("gameAssignments", {
+  id: int("id").autoincrement().primaryKey(),
+  gameId: int("gameId").notNull().unique(), // Only one assignment per game
+  refereeId: int("refereeId"), // staffApplicationId of assigned referee
+  scorekeeperId: int("scorekeeperId"), // staffApplicationId of assigned scorekeeper
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GameAssignment = typeof gameAssignments.$inferSelect;
+export type InsertGameAssignment = typeof gameAssignments.$inferInsert;

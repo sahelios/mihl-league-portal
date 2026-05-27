@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams, staffAvailability, refereeApplications } from "../../drizzle/schema";
 import { eq, desc, and, or, inArray } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -519,6 +519,79 @@ export const leagueRouter = router({
       } catch (error) {
         console.error('Error updating player availability:', error);
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update availability' });
+      }
+    }),
+
+  // Staff Availability Procedures
+  addStaffAvailability: protectedProcedure
+    .input(z.object({ gameId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const staffApp = await db.select().from(refereeApplications)
+          .where(eq(refereeApplications.id, ctx.user.id));
+        if (staffApp.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Staff application not found" });
+        }
+        
+        await db.insert(staffAvailability).values({
+          staffApplicationId: staffApp[0].id,
+          gameId: input.gameId,
+          isAvailable: true,
+        });
+        return { success: true };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  removeStaffAvailability: protectedProcedure
+    .input(z.object({ gameId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const staffApp = await db.select().from(refereeApplications)
+          .where(eq(refereeApplications.id, ctx.user.id));
+        if (staffApp.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Staff application not found" });
+        }
+        
+        await db.delete(staffAvailability)
+          .where(and(
+            eq(staffAvailability.staffApplicationId, staffApp[0].id),
+            eq(staffAvailability.gameId, input.gameId)
+          ));
+        return { success: true };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getMyAvailableGames: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const staffApp = await db.select().from(refereeApplications)
+          .where(eq(refereeApplications.id, ctx.user.id));
+        if (staffApp.length === 0) {
+          return [];
+        }
+        
+        const availableGames = await db.select()
+          .from(staffAvailability)
+          .innerJoin(games, eq(staffAvailability.gameId, games.id))
+          .where(and(
+            eq(staffAvailability.staffApplicationId, staffApp[0].id),
+            eq(staffAvailability.isAvailable, true)
+          ))
+          .orderBy(desc(games.gameDate));
+        
+        return availableGames.map(row => row.games);
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
 });
