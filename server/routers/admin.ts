@@ -1723,7 +1723,8 @@ export const adminRouter = router({
       registrationOpen: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb();
+      if (!db) throw new Error('Database connection failed');
       
       await db.update(seasons)
         .set({ registrationOpen: input.registrationOpen })
