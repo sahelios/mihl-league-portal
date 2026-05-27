@@ -133,6 +133,11 @@ export default function AdminStaffApplications() {
                 <strong>Payment Rate:</strong> ${application.paymentAmount}/game
               </p>
             )}
+            {application.desiredSalary && (
+              <p>
+                <strong>Desired Salary:</strong> ${application.desiredSalary}/game
+              </p>
+            )}
           </div>
 
           {showActions && (
@@ -191,6 +196,12 @@ export default function AdminStaffApplications() {
                         <div className="col-span-2">
                           <p className="text-muted-foreground">Payment Rate</p>
                           <p className="font-medium">${application.paymentAmount}/game</p>
+                        </div>
+                      )}
+                      {application.desiredSalary && (
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground">Desired Salary</p>
+                          <p className="font-medium">${application.desiredSalary}/game</p>
                         </div>
                       )}
                     </div>

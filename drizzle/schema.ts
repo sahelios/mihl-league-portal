@@ -426,6 +426,7 @@ export const refereeApplications = mysqlTable("refereeApplications", {
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   approvalDate: timestamp("approvalDate"),
   paymentAmount: decimal("paymentAmount", { precision: 10, scale: 2 }),
+  desiredSalary: decimal("desiredSalary", { precision: 10, scale: 2 }),
   selectedGames: json("selectedGames"), // Array of game IDs they're available for
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

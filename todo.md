@@ -823,3 +823,22 @@
 - [x] Implementation verification: All files and routes confirmed
 - [x] Build error fixed: wouter import corrected
 - [x] Feature ready for production deployment
+
+
+## Staff Management System (NEW - Phase 1-5)
+- [ ] Phase 1: Fix admin panel - add desired salary field to referee applications display
+- [ ] Phase 1: Fix rejection error in staff applications admin panel
+- [ ] Phase 1: Add status filter (Approved/Pending/Rejected) to admin staff applications page
+- [ ] Phase 2: Create staffAvailability table to track referee/scorekeeper availability for games
+- [ ] Phase 2: Add database helper functions for availability management
+- [ ] Phase 2: Create tRPC procedures for availability operations (add, remove, list)
+- [ ] Phase 3: Create Referee Portal page (/referee-portal) for approved referees
+- [ ] Phase 3: Create Scorekeeper Portal page (/scorekeeper-portal) for approved scorekeepers
+- [ ] Phase 3: Add availability toggle UI in staff portals (select games to be available for)
+- [ ] Phase 4: Create admin game assignment page to assign refs/scorekeepers to games
+- [ ] Phase 4: Add constraint validation (only 1 ref and 1 scorekeeper per game)
+- [ ] Phase 4: Add tRPC procedures for admin to assign staff to games
+- [ ] Phase 4: Display assigned staff on schedule for public viewing
+- [ ] Phase 5: Test staff application workflow end-to-end
+- [ ] Phase 5: Test availability management in staff portals
+- [ ] Phase 5: Test admin assignment capabilities
