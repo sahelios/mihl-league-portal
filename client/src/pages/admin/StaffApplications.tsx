@@ -128,14 +128,12 @@ export default function AdminStaffApplications() {
                 <strong>Certified:</strong> Yes
               </p>
             )}
+            <p className="font-semibold text-accent">
+              <strong>Desired Payment:</strong> ${application.desiredSalary || 'Not specified'}/game
+            </p>
             {application.paymentAmount && (
               <p>
-                <strong>Payment Rate:</strong> ${application.paymentAmount}/game
-              </p>
-            )}
-            {application.desiredSalary && (
-              <p>
-                <strong>Desired Salary:</strong> ${application.desiredSalary}/game
+                <strong>Approved Rate:</strong> ${application.paymentAmount}/game
               </p>
             )}
           </div>
