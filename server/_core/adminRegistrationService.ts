@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { getDb } from '../db';
 import { loginTokens, adminRegisteredPlayers, playerRegistrations } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -9,6 +9,8 @@ import crypto from 'crypto';
  */
 export async function generateLoginToken(registrationId: number, seasonStartDate: Date) {
   const token = crypto.randomBytes(32).toString('hex');
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
   
   const result = await db.insert(loginTokens).values({
     registrationId,
@@ -24,6 +26,9 @@ export async function generateLoginToken(registrationId: number, seasonStartDate
  * Returns registration ID if valid, null if expired or invalid
  */
 export async function validateLoginToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   const [tokenRecord] = await db
     .select()
     .from(loginTokens)
@@ -50,6 +55,9 @@ export async function validateLoginToken(token: string) {
  * Mark a login token as used
  */
 export async function markTokenAsUsed(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   await db
     .update(loginTokens)
     .set({ usedAt: new Date() })
@@ -60,6 +68,9 @@ export async function markTokenAsUsed(token: string) {
  * Create admin-registered player record
  */
 export async function createAdminRegisteredPlayer(registrationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   await db.insert(adminRegisteredPlayers).values({
     registrationId,
     passwordSet: false,
@@ -71,6 +82,9 @@ export async function createAdminRegisteredPlayer(registrationId: number) {
  * Mark password as set for admin-registered player
  */
 export async function markPasswordAsSet(registrationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   await db
     .update(adminRegisteredPlayers)
     .set({ passwordSet: true })
@@ -81,6 +95,9 @@ export async function markPasswordAsSet(registrationId: number) {
  * Mark profile as completed for admin-registered player
  */
 export async function markProfileAsCompleted(registrationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   await db
     .update(adminRegisteredPlayers)
     .set({ profileCompleted: true })
@@ -91,6 +108,9 @@ export async function markProfileAsCompleted(registrationId: number) {
  * Get admin-registered player status
  */
 export async function getAdminRegisteredPlayerStatus(registrationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   const [record] = await db
     .select()
     .from(adminRegisteredPlayers)
@@ -103,6 +123,9 @@ export async function getAdminRegisteredPlayerStatus(registrationId: number) {
  * Check if a player was admin-registered
  */
 export async function isAdminRegisteredPlayer(registrationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
   const [record] = await db
     .select()
     .from(adminRegisteredPlayers)
