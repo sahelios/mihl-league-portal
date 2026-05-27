@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'wouter';
+import { useSearchParams, useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function MagicLinkLogin() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const token = searchParams.get('token');
 
   const [password, setPassword] = useState('');
@@ -78,7 +78,7 @@ export default function MagicLinkLogin() {
 
       if (result.success) {
         // Redirect to player portal or complete profile page
-        navigate('/player-portal');
+        setLocation('/player-portal');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
