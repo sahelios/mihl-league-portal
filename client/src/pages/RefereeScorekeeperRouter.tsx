@@ -1,9 +1,9 @@
-import RefereeScorekeeper from './RefereeScorekeeper';
+import RefereeScorekeeperLanding from './RefereeScorekeeperLanding';
 
 /**
- * Public referee/scorekeeper registration page
- * Shows the registration form to all users
+ * Public referee/scorekeeper landing page
+ * Shows the original landing page for all users
  */
 export default function RefereeScorekeeperRouter() {
-  return <RefereeScorekeeper />;
+  return <RefereeScorekeeperLanding />;
 }
