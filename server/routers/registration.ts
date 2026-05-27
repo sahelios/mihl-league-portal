@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { getDb } from '../db';
 import { TRPCError } from '@trpc/server';
-import { playerRegistrations, seasons, playerTeams, evaluationGameAssignments } from '../../drizzle/schema';
+import { playerRegistrations, seasons, playerTeams, evaluationGameAssignments, refereeApplications } from '../../drizzle/schema';
 import { eq, and, sql, or } from 'drizzle-orm';
 import { sendRegistrationConfirmationEmail, sendRegistrationAdminNotification } from '../_core/emailService';
 
@@ -487,6 +487,73 @@ export const registrationRouter = router({
       } catch (error: any) {
         console.error('Error updating rating:', error);
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message || 'Failed to update rating' });
+      }
+    }),
+
+  submitStaffApplication: publicProcedure
+    .input(z.object({
+      registrationType: z.enum(['referee', 'scorekeeper']),
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().regex(/^\d{10,}/),
+      experience: z.enum(['beginner', 'intermediate', 'advanced']),
+      availableDays: z.array(z.string()).min(1),
+      notes: z.string().optional(),
+      waiverSigned: z.boolean(),
+      waiverSignature: z.string(),
+      language: z.enum(['en', 'fr']),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+
+      try {
+        // Map experience level to years
+        const yearsMap: Record<string, number> = {
+          'beginner': 0,
+          'intermediate': 3,
+          'advanced': 7,
+        };
+
+        // Insert staff application
+        const result = await db.insert(refereeApplications).values({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          phone: input.phone,
+          interacEmail: input.email,
+          role: input.registrationType,
+          yearsOfExperience: yearsMap[input.experience],
+          hockeyLevels: ['Beer League'],
+          status: 'pending',
+          certifications: [],
+          selectedGames: input.availableDays,
+        });
+
+        // Send confirmation email to applicant
+        const { sendStaffApplicationConfirmationEmail, sendStaffApplicationNotification } = await import('../_core/emailService');
+        Promise.all([
+          sendStaffApplicationConfirmationEmail(input.email, input.firstName, input.language),
+          sendStaffApplicationNotification(input, input.language),
+        ]).catch(err => {
+          console.error('Failed to send staff application emails:', err);
+        });
+
+        return {
+          success: true,
+          applicationId: (result as any).insertId || 0,
+          message: input.language === 'en'
+            ? 'Application submitted successfully. You will receive a confirmation email shortly.'
+            : 'Demande soumise avec succès. Vous recevrez un e-mail de confirmation bientôt.',
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        console.error('Staff application submission error:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to submit staff application',
+        });
       }
     }),
 });

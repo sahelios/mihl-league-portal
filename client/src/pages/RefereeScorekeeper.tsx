@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Users, BarChart3, DollarSign, Calendar } from "lucide-react";
+import { useState } from "react";
 
 export default function RefereeScorekeeper() {
   const [registrationType, setRegistrationType] = useState<"referee" | "scorekeeper">("referee");
@@ -27,7 +28,7 @@ export default function RefereeScorekeeper() {
     waiverSignature: "",
   });
 
-  const submitRegistration = trpc.registration.submit.useMutation({
+  const submitStaffApplication = trpc.registration.submitStaffApplication.useMutation({
     onSuccess: (data) => {
       toast.success(data.message);
       resetForm();
@@ -67,7 +68,7 @@ export default function RefereeScorekeeper() {
 
     setIsSubmitting(true);
     try {
-      await submitRegistration.mutateAsync({
+      await submitStaffApplication.mutateAsync({
         registrationType,
         firstName: form.firstName,
         lastName: form.lastName,

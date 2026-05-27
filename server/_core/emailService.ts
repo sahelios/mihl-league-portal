@@ -162,3 +162,47 @@ export async function sendAdminRegistrationEmail(
 
   return sendEmail(playerEmail, subject, text, html);
 }
+
+
+export async function sendStaffApplicationConfirmationEmail(
+  email: string,
+  firstName: string,
+  language: 'en' | 'fr' = 'en'
+) {
+  const subject = language === 'en'
+    ? 'Staff Application Received - MIHL'
+    : 'Demande de Personnel Reçue - MIHL';
+
+  const text = language === 'en'
+    ? `Hi ${firstName},\n\nThank you for submitting your staff application to the Mensches Ice Hockey League!\n\nWe have received your application and will review it shortly. You will be notified of the status via email.\n\nIf you have any questions, please contact registration@mihl.ca or call 514-965-2842.\n\nBest regards,\nMIHL Team`
+    : `Bonjour ${firstName},\n\nMerci d'avoir soumis votre demande de personnel à la Ligue de Hockey Mensches!\n\nNous avons reçu votre demande et l'examinerons bientôt. Vous serez notifié du statut par courriel.\n\nSi vous avez des questions, veuillez contacter registration@mihl.ca ou appeler 514-965-2842.\n\nCordialement,\nÉquipe MIHL`;
+
+  const html = language === 'en'
+    ? `<p>Hi ${firstName},</p><p>Thank you for submitting your staff application to the Mensches Ice Hockey League!</p><p>We have received your application and will review it shortly. You will be notified of the status via email.</p><p>If you have any questions, please contact <a href="mailto:registration@mihl.ca">registration@mihl.ca</a> or call 514-965-2842.</p><p>Best regards,<br/>MIHL Team</p>`
+    : `<p>Bonjour ${firstName},</p><p>Merci d'avoir soumis votre demande de personnel à la Ligue de Hockey Mensches!</p><p>Nous avons reçu votre demande et l'examinerons bientôt. Vous serez notifié du statut par courriel.</p><p>Si vous avez des questions, veuillez contacter <a href="mailto:registration@mihl.ca">registration@mihl.ca</a> ou appeler 514-965-2842.</p><p>Cordialement,<br/>Équipe MIHL</p>`;
+
+  return sendEmail(email, subject, text, html);
+}
+
+export async function sendStaffApplicationNotification(
+  application: any,
+  language: 'en' | 'fr' = 'en'
+) {
+  const subject = language === 'en'
+    ? `New Staff Application Received - ${application.firstName} ${application.lastName}`
+    : `Nouvelle Demande de Personnel Reçue - ${application.firstName} ${application.lastName}`;
+
+  const roleText = application.registrationType === 'referee' 
+    ? (language === 'en' ? 'Referee' : 'Arbitre')
+    : (language === 'en' ? 'Scorekeeper' : 'Marqueur');
+
+  const text = language === 'en'
+    ? `A new staff application has been received:\n\nName: ${application.firstName} ${application.lastName}\nEmail: ${application.email}\nPhone: ${application.phone}\nRole: ${roleText}\nExperience: ${application.experience}\nAvailable Days: ${application.availableDays.join(', ')}\nNotes: ${application.notes || 'None'}\n\nPlease review this application in the admin panel.`
+    : `Une nouvelle demande de personnel a été reçue:\n\nNom: ${application.firstName} ${application.lastName}\nCourriel: ${application.email}\nTéléphone: ${application.phone}\nRôle: ${roleText}\nExpérience: ${application.experience}\nJours Disponibles: ${application.availableDays.join(', ')}\nNotes: ${application.notes || 'Aucune'}\n\nVeuillez examiner cette demande dans le panneau d'administration.`;
+
+  const html = language === 'en'
+    ? `<p>A new staff application has been received:</p><ul><li><strong>Name:</strong> ${application.firstName} ${application.lastName}</li><li><strong>Email:</strong> ${application.email}</li><li><strong>Phone:</strong> ${application.phone}</li><li><strong>Role:</strong> ${roleText}</li><li><strong>Experience:</strong> ${application.experience}</li><li><strong>Available Days:</strong> ${application.availableDays.join(', ')}</li><li><strong>Notes:</strong> ${application.notes || 'None'}</li></ul><p>Please review this application in the admin panel.</p>`
+    : `<p>Une nouvelle demande de personnel a été reçue:</p><ul><li><strong>Nom:</strong> ${application.firstName} ${application.lastName}</li><li><strong>Courriel:</strong> ${application.email}</li><li><strong>Téléphone:</strong> ${application.phone}</li><li><strong>Rôle:</strong> ${roleText}</li><li><strong>Expérience:</strong> ${application.experience}</li><li><strong>Jours Disponibles:</strong> ${application.availableDays.join(', ')}</li><li><strong>Notes:</strong> ${application.notes || 'Aucune'}</li></ul><p>Veuillez examiner cette demande dans le panneau d'administration.</p>`;
+
+  return sendEmail('registration@mihl.ca', subject, text, html);
+}
