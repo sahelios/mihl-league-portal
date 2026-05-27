@@ -31,7 +31,7 @@ import AdminSuspensions from "./pages/admin/AdminSuspensions";
 import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
 import EvaluationGames from "./pages/admin/EvaluationGames";
-import RefereeApplications from "./pages/admin/RefereeApplications";
+// Deprecated: RefereeApplications - use StaffApplications instead
 import StaffApplications from "./pages/admin/StaffApplications";
 import GameAssignments from "./pages/admin/GameAssignments";
 import GameScheduler from "./pages/admin/GameScheduler";
@@ -88,7 +88,7 @@ function Router() {
       <Route path="/admin/suspensions" component={AdminSuspensions} />
       <Route path="/admin/messages" component={Messages} />
       <Route path="/admin/settings" component={Settings} />
-      <Route path="/admin/referee-applications" component={RefereeApplications} />
+      {/* Deprecated: /admin/referee-applications - use /admin/staff-applications instead */}
       <Route path="/admin/staff-applications" component={StaffApplications} />
       <Route path="/admin/game-assignments" component={GameAssignments} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />

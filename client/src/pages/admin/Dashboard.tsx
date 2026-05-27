@@ -103,7 +103,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => navigate("/admin/referee-applications")}
+                onClick={() => navigate("/admin/staff-applications")}
               >
                 {labels.staffApplications}
               </Button>

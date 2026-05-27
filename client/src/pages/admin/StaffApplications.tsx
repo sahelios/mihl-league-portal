@@ -304,7 +304,12 @@ export default function AdminStaffApplications() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Staff Applications</h1>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
+            ← Back
+          </Button>
+          <h1 className="text-3xl font-bold">Staff Applications</h1>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
