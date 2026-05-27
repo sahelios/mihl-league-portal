@@ -298,7 +298,13 @@ export default function Registration() {
               
               <div>
                 <Label htmlFor="registrationType">{language === "en" ? "Registration Type" : "Type d'Inscription"} *</Label>
-                <Select value={registrationType} onValueChange={setRegistrationType}>
+                <Select value={registrationType} onValueChange={(value) => {
+                  if (value === "referee" || value === "scorekeeper") {
+                    navigate("/referee-scorekeeper");
+                  } else {
+                    setRegistrationType(value);
+                  }
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
