@@ -41,6 +41,7 @@ import TeamManagement from "./pages/admin/TeamManagement";
 import WaitingListAdmin from "./pages/admin/WaitingListAdmin";
 
 // Referee Pages
+import RefereeScorekeeperRouter from "./pages/RefereeScorekeeperRouter";
 import RefereeScorekeeperLanding from "./pages/RefereeScorekeeperLanding";
 import RefereeScorekeeperApplication from "./pages/RefereeScorekeeperApplication";
 import RefereeGameSelection from "./pages/RefereeGameSelection";
@@ -66,7 +67,7 @@ function Router() {
       <Route path="/stars" component={StarsOfWeek} />
       <Route path="/staff" component={Staff} />
       <Route path="/register" component={Registration} />
-      <Route path="/referee-scorekeeper" component={RefereeScorekeeperLanding} />
+      <Route path="/referee-scorekeeper" component={RefereeScorekeeperRouter} />
       <Route path="/referee-scorekeeper-apply" component={RefereeScorekeeperApplication} />
       <Route path="/referee-game-selection" component={RefereeGameSelection} />
       <Route path="/player-portal" component={PlayerPortal} />
