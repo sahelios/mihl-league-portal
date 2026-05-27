@@ -310,6 +310,7 @@ export default function Registration() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="individual">{language === "en" ? "Player ($315)" : "Joueur ($315)"}</SelectItem>
+                    <SelectItem value="team">{language === "en" ? "Full Team ($3,000)" : "Équipe Complète ($3 000)"}</SelectItem>
                     <SelectItem value="referee">{language === "en" ? "Referee" : "Arbitre"}</SelectItem>
                     <SelectItem value="scorekeeper">{language === "en" ? "Scorekeeper" : "Gardien de Pointage"}</SelectItem>
                   </SelectContent>
