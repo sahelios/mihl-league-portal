@@ -326,6 +326,24 @@ export default function Registration() {
                 </p>
               </div>
               
+              {registrationType === "team" && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-sm mb-2 text-blue-900">{language === "en" ? "Full Team Registration" : "Inscription d'Équipe Complète"}</h3>
+                  <p className="text-sm text-blue-800 mb-3">
+                    {language === "en" 
+                      ? "To register a full team, please contact the league at registration@mihl.ca with the following information: team name, player names, player ratings (1-10), and player positions (Forward, Defense, Goalie)."
+                      : "Pour inscrire une équipe complète, veuillez contacter la ligue à registration@mihl.ca avec les informations suivantes: nom de l'équipe, noms des joueurs, classements des joueurs (1-10) et positions des joueurs (Attaquant, Défense, Gardien)."
+                    }
+                  </p>
+                  <p className="text-sm text-blue-800 font-semibold">
+                    {language === "en"
+                      ? "Disclaimer: Some players may be reassigned for team balancing purposes."
+                      : "Avis: Certains joueurs peuvent être réaffectés à des fins d'équilibre d'équipe."
+                    }
+                  </p>
+                </div>
+              )}
+              
               {registrationType === "individual" && (
                 <>
                   <div>
