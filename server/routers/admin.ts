@@ -786,37 +786,6 @@ export const adminRouter = router({
     }),
 
   // ============ STAFF GAME ASSIGNMENTS ============
-  assignStaffToGame: adminProcedure
-    .input(z.object({
-      refereeApplicationId: z.number(),
-      gameId: z.number(),
-      role: z.enum(["referee", "scorekeeper"]),
-      paymentAmount: z.number().positive(),
-    }))
-    .mutation(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      try {
-        await db.insert(staffGameAssignments).values({
-          refereeApplicationId: input.refereeApplicationId,
-          gameId: input.gameId,
-          role: input.role,
-          paymentAmount: input.paymentAmount.toString(),
-          status: "assigned",
-        });
-        // Create payment record
-        await db.insert(staffPayments).values({
-          refereeApplicationId: input.refereeApplicationId,
-          gameId: input.gameId,
-          amount: input.paymentAmount.toString(),
-          status: "pending",
-        });
-        return { success: true, message: "Staff assigned to game" };
-      } catch (error: any) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
-      }
-    }),
-
   deleteTeam: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
