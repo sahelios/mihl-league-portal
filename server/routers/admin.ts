@@ -258,23 +258,11 @@ export const adminRouter = router({
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-    const results = await db.select().from(playerRegistrations)
-      .where(eq(playerRegistrations.status, 'pending'));
-    
-    // Filter for referee/scorekeeper applications from refereeApplications table instead
-    // This procedure currently returns empty as referee/scorekeeper registrations are handled separately
+    // Query the refereeApplications table for pending staff applications
+    const results = await db.select().from(refereeApplications)
+      .where(eq(refereeApplications.status, 'pending'));
 
-    return results.map(app => ({
-      id: app.id,
-      firstName: app.firstName,
-      lastName: app.lastName,
-      email: app.email,
-      phone: app.phone,
-      role: app.registrationType,
-      interacEmail: app.email,
-      yearsOfExperience: 0,
-      hockeyLevels: ["Adult League"],
-    }));
+    return results;
   }),
 
   approveRefereeApplication: adminProcedure
@@ -283,11 +271,21 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(playerRegistrations).set({ status: 'approved' }).where(eq(playerRegistrations.id, input.id));
+      await db.update(refereeApplications).set({ status: 'approved', paymentAmount: input.paymentAmount.toString() }).where(eq(refereeApplications.id, input.id));
       return { success: true };
     }),
 
   rejectRefereeApplication: adminProcedure
+    .input(z.object({ id: z.number(), reason: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(refereeApplications).set({ status: 'rejected' }).where(eq(refereeApplications.id, input.id));
+      return { success: true };
+    }),
+
+  rejectRefereeApplicationOld: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
