@@ -24,6 +24,7 @@ export default function RefereeScorekeeper() {
     experience: "beginner" as "beginner" | "intermediate" | "advanced",
     availableDays: [] as string[],
     notes: "",
+    desiredSalary: "",
     waiverSigned: false,
     waiverSignature: "",
   });
@@ -49,6 +50,7 @@ export default function RefereeScorekeeper() {
       experience: "beginner",
       availableDays: [],
       notes: "",
+      desiredSalary: "",
       waiverSigned: false,
       waiverSignature: "",
     });
@@ -77,6 +79,7 @@ export default function RefereeScorekeeper() {
         experience: form.experience,
         availableDays: form.availableDays,
         notes: form.notes,
+        desiredSalary: form.desiredSalary ? parseInt(form.desiredSalary) : undefined,
         waiverSigned: form.waiverSigned,
         waiverSignature: form.waiverSignature,
         language,
@@ -283,6 +286,26 @@ export default function RefereeScorekeeper() {
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Desired Salary */}
+                  <div>
+                    <Label htmlFor="desiredSalary">{language === "en" ? "Desired Payment Per Game (Optional)" : "Paiement Désiré par Match (Optionnel)"}</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-foreground font-semibold">$</span>
+                      <Input
+                        id="desiredSalary"
+                        type="number"
+                        min="0"
+                        step="5"
+                        value={form.desiredSalary}
+                        onChange={(e) => setForm({ ...form, desiredSalary: e.target.value })}
+                        placeholder={language === "en" ? "e.g., 45" : "ex. 45"}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {language === "en" ? "Referees: $40-50, Scorekeepers: $25" : "Arbitres: 40-50 $, Gardiens de pointage: 25 $"}
+                    </p>
                   </div>
 
                   {/* Additional Notes */}
