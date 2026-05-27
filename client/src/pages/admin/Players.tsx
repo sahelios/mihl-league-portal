@@ -827,11 +827,14 @@ export default function Players() {
                       <SelectValue placeholder="Select evaluation game" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(registerEvalGames as any[]).map(g => (
-                        <SelectItem key={g.gameDate} value={g.gameDate}>
-                          {formatGameLabel(g)}
-                        </SelectItem>
-                      ))}
+                      {(registerEvalGames as any[]).map(g => {
+                        const dateStr = toDateStr(g.gameDate);
+                        return (
+                          <SelectItem key={dateStr} value={dateStr}>
+                            {formatGameLabel(g)}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
