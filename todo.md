@@ -816,6 +816,10 @@
 - [x] Admin UI: Register Player form in /admin/players
 - [x] Database helpers: getPlayerRegistration and updateUserPassword
 - [x] Route: /magic-login endpoint added
-- [x] Vitest tests: admin.register-player.test.ts
+- [x] Vitest tests: admin.register-player.test.ts (7/7 passing)
+- [x] Integration tests: admin.register-player.integration.test.ts (8/8 passing)
 - [x] End-to-end testing guide: ADMIN_REGISTRATION_GUIDE.md
+- [x] Test report: ADMIN_REGISTRATION_TEST_REPORT.md
 - [x] Implementation verification: All files and routes confirmed
+- [x] Build error fixed: wouter import corrected
+- [x] Feature ready for production deployment
