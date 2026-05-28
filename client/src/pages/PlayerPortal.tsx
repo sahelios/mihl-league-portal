@@ -23,28 +23,34 @@ export default function PlayerPortal() {
     { enabled: !!user?.email }
   );
 
-  // Fetch team info
+  // Fetch team info (only if player has a team)
   const { data: team, isLoading: teamLoading } = trpc.league.getTeamDetails.useQuery(
     { teamId: playerReg?.teamId || 0 },
     { enabled: !!playerReg?.teamId }
   );
 
-  // Fetch upcoming games for team
+  // Fetch upcoming games for team (only if player has a team)
   const { data: upcomingGames = [], isLoading: gamesLoading } = trpc.league.getTeamSchedule.useQuery(
     { teamId: playerReg?.teamId || 0, playerRegistrationId: playerReg?.id },
     { enabled: !!playerReg?.teamId }
   );
 
-  // Fetch player stats
-  const { data: playerStats, isLoading: statsLoading } = trpc.league.getPlayerStats.useQuery(
-    { playerTeamId: playerReg?.id || 0 },
+  // Fetch evaluation games (for unassigned players or during evaluation period)
+  const { data: evaluationGames = [], isLoading: evalGamesLoading } = trpc.league.getPlayerEvaluationGames.useQuery(
+    { playerRegistrationId: playerReg?.id || 0 },
     { enabled: !!playerReg?.id }
   );
 
-  // Fetch player availability
+  // Fetch player stats (only if player has a team)
+  const { data: playerStats, isLoading: statsLoading } = trpc.league.getPlayerStats.useQuery(
+    { playerTeamId: playerReg?.id || 0 },
+    { enabled: !!playerReg?.id && !!playerReg?.teamId }
+  );
+
+  // Fetch player availability (only if player has a team)
   const { data: availability = {}, isLoading: availLoading } = trpc.league.getPlayerAvailability.useQuery(
     { playerTeamId: playerReg?.id || 0 },
-    { enabled: !!playerReg?.id }
+    { enabled: !!playerReg?.id && !!playerReg?.teamId }
   );
 
   const utils = trpc.useUtils();
@@ -91,8 +97,8 @@ export default function PlayerPortal() {
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6 text-center space-y-4">
             <AlertCircle className="mx-auto text-yellow-600" size={48} />
-            <p className="text-foreground font-semibold">No Team Assignment</p>
-            <p className="text-muted-foreground text-sm">You haven't been assigned to a team yet.</p>
+            <p className="text-foreground font-semibold">No Registration Found</p>
+            <p className="text-muted-foreground text-sm">Your registration could not be found.</p>
             <Button onClick={() => navigate("/")}>Return to Home</Button>
           </CardContent>
         </Card>
@@ -111,6 +117,102 @@ export default function PlayerPortal() {
             <Button onClick={() => navigate("/")}>Return to Home</Button>
           </CardContent>
         </Card>
+      </DashboardLayout>
+    );
+  }
+
+  // If player is not assigned to a team yet, show only evaluation games
+  if (!playerReg?.teamId) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          {/* Header */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">{playerReg.firstName} {playerReg.lastName}</h1>
+                  <p className="text-muted-foreground">Player Registration</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Team</p>
+                    <p className="text-lg font-semibold text-yellow-600">Pending Assignment</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Position</p>
+                    <p className="text-lg font-semibold text-foreground capitalize">{playerReg.position || "Not Set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge variant="outline">Evaluation Phase</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Evaluation Games */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar size={20} />
+                Evaluation Games
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {evalGamesLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : evaluationGames.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No evaluation games scheduled yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {evaluationGames.map((game: any) => (
+                    <div key={game.id} className="border border-border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold">
+                            {game.teamHome?.name} vs {game.teamAway?.name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {game.date && game.time ? (
+                              <>
+                                {formatDate(game.date)} at {formatTime(game.time)}
+                              </>
+                            ) : (
+                              'Time TBA'
+                            )}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{game.venue?.name}</p>
+                        </div>
+                        <Badge variant="default">Evaluation</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Please attend this evaluation game. Your performance will help determine your team assignment.
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex gap-2">
+                <AlertCircle className="text-blue-600 flex-shrink-0" size={20} />
+                <div>
+                  <p className="font-semibold text-foreground">Team Assignment Pending</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You haven't been assigned to a team yet. Attend the evaluation games above to showcase your skills. After evaluation, you'll be assigned to a team and can view the full season schedule.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </DashboardLayout>
     );
   }

@@ -478,6 +478,63 @@ export const leagueRouter = router({
       }
     }),
 
+  getPlayerEvaluationGames: protectedProcedure
+    .input(z.object({ playerRegistrationId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        // Get active season
+        const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+        const seasonId = activeSeason.length > 0 ? activeSeason[0].id : 30001;
+        
+        // Get evaluation games assigned to this player
+        const evalAssignments = await db.select().from(evaluationGameAssignments).where(
+          eq(evaluationGameAssignments.registrationId, input.playerRegistrationId)
+        );
+        
+        if (evalAssignments.length === 0) {
+          return [];
+        }
+        
+        // Get all evaluation games for this season
+        const evalGames = await db.select().from(games).where(
+          and(
+            eq(games.seasonId, seasonId),
+            eq(games.isEvaluationGame, true)
+          )
+        ).orderBy(games.gameDate);
+        
+        // Filter to only games that match the player's assigned evaluation dates
+        const evalDates = evalAssignments.map(a => a.evaluationDate);
+        const filteredGames = evalGames.filter(g => {
+          const gameDate = g.gameDate instanceof Date ? g.gameDate.toISOString().split('T')[0] : g.gameDate;
+          return evalDates.some(d => gameDate.includes(d.replace('JUN ', '06-')));
+        });
+        
+        // Get venue names
+        const venueIds = [...new Set(filteredGames.map(g => g.venueId).filter(Boolean))];
+        const venues = venueIds.length > 0 ? await db.select().from(gameVenues).where(inArray(gameVenues.id, venueIds)) : [];
+        const venueMap = new Map(venues.map(v => [v.id, v.name]));
+        
+        // Format games
+        return filteredGames.map(game => {
+          const dateStr = game.gameDate instanceof Date ? game.gameDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : game.gameDate;
+          return {
+            ...game,
+            teamHome: { name: 'Team White' },
+            teamAway: { name: 'Team Black' },
+            venue: { name: venueMap.get(game.venueId) || 'TBA' },
+            date: dateStr,
+            time: game.gameTime,
+          };
+        });
+      } catch (error) {
+        console.error('Error fetching player evaluation games:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch evaluation games' });
+      }
+    }),
+
   updatePlayerAvailability: protectedProcedure
     .input(z.object({ playerTeamId: z.number(), gameId: z.number(), available: z.boolean() }))
     .mutation(async ({ input }) => {
