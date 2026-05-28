@@ -118,7 +118,7 @@ export function StaffPortal() {
                   />
                   <div className="flex-1">
                     <p className="font-semibold">
-                      {game.homeTeamId} vs {game.awayTeamId}
+                      {game.teamAName} vs {game.teamBName}
                     </p>
                     <p className="text-sm text-gray-600">
                       {new Date(game.gameDate).toLocaleDateString()} at {game.gameTime}
