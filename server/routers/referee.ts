@@ -19,6 +19,7 @@ const applicationSchema = z.object({
   ])),
   yearsOfExperience: z.number().min(0),
   hockeyLevels: z.array(z.string()),
+  desiredPayPerGame: z.string().optional(),
 });
 
 export const refereeRouter = router({
@@ -47,6 +48,7 @@ export const refereeRouter = router({
         hockeyLevels: input.hockeyLevels,
         status: 'pending',
         selectedGames: [],
+        desiredSalary: input.desiredPayPerGame ? input.desiredPayPerGame : null,
       });
       
       return { success: true };

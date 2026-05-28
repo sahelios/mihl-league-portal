@@ -510,6 +510,8 @@ export const registrationRouter = router({
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
       try {
+        console.log('[STAFF_APP] Received input desiredSalary:', input.desiredSalary, 'type:', typeof input.desiredSalary);
+        
         // Map experience level to years
         const yearsMap: Record<string, number> = {
           'beginner': 0,
@@ -518,6 +520,9 @@ export const registrationRouter = router({
         };
 
         // Insert staff application
+        const desiredSalaryValue = input.desiredSalary ? input.desiredSalary.toString() : null;
+        console.log('[STAFF_APP] About to insert with desiredSalary:', desiredSalaryValue);
+        
         const result = await db.insert(refereeApplications).values({
           firstName: input.firstName,
           lastName: input.lastName,
@@ -530,8 +535,9 @@ export const registrationRouter = router({
           status: 'pending',
           certifications: [],
           selectedGames: input.availableDays,
-          desiredSalary: input.desiredSalary ? input.desiredSalary.toString() : null,
+          desiredSalary: desiredSalaryValue,
         });
+        console.log('[STAFF_APP] Insert completed, insertId:', (result as any).insertId);
 
         // Send confirmation email to applicant
         const { sendStaffApplicationConfirmationEmail, sendStaffApplicationNotification } = await import('../_core/emailService');

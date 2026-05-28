@@ -70,6 +70,10 @@ export default function RefereeScorekeeper() {
 
     setIsSubmitting(true);
     try {
+      const desiredSalaryValue = form.desiredSalary ? parseInt(form.desiredSalary) : undefined;
+      console.log('[FORM] desiredSalary from form:', form.desiredSalary);
+      console.log('[FORM] desiredSalary parsed:', desiredSalaryValue);
+      
       await submitStaffApplication.mutateAsync({
         registrationType,
         firstName: form.firstName,
@@ -79,7 +83,7 @@ export default function RefereeScorekeeper() {
         experience: form.experience,
         availableDays: form.availableDays,
         notes: form.notes,
-        desiredSalary: form.desiredSalary ? parseInt(form.desiredSalary) : undefined,
+        desiredSalary: desiredSalaryValue,
         waiverSigned: form.waiverSigned,
         waiverSignature: form.waiverSignature,
         language,
