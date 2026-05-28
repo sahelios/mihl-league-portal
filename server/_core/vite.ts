@@ -61,6 +61,11 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist (for client-side routing)
   app.use("*", (_req, res) => {
+    // Log potential 404s for monitoring
+    const isAssetRequest = _req.path.includes('.');
+    if (isAssetRequest) {
+      console.warn(`[FALLBACK_TO_INDEX] ${_req.method} ${_req.path} - serving index.html`);
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

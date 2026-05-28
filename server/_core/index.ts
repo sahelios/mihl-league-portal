@@ -34,6 +34,20 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
+  // Request logging middleware for debugging
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      const status = res.statusCode;
+      // Log non-200 responses and specific paths
+      if (status >= 400 || req.path.includes('/api/')) {
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${status} ${duration}ms`);
+      }
+    });
+    next();
+  });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   // tRPC API
