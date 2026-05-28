@@ -1,4 +1,13 @@
 import { useState } from "react";
+/**
+ * DEPRECATED: This component is no longer used.
+ * Use RefereeScorekeeperApplication.tsx instead.
+ * 
+ * This file is kept for reference only and should be deleted.
+ * All staff applications now go through /referee-scorekeeper-apply route
+ * which uses RefereeScorekeeperApplication.tsx and trpc.referee.submitApplication
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -490,6 +490,16 @@ export const registrationRouter = router({
       }
     }),
 
+  /**
+   * DEPRECATED: Use trpc.referee.submitApplication instead
+   * This procedure is no longer used by the frontend.
+   * It's kept for backwards compatibility only.
+   * 
+   * All staff applications now go through:
+   * - Route: /referee-scorekeeper-apply
+   * - Component: RefereeScorekeeperApplication.tsx
+   * - Procedure: trpc.referee.submitApplication
+   */
   submitStaffApplication: publicProcedure
     .input(z.object({
       registrationType: z.enum(['referee', 'scorekeeper']),

@@ -16,7 +16,7 @@ import Stats from "./pages/Stats";
 import Suspensions from "./pages/Suspensions";
 import Standings from "./pages/Standings";
 import Registration from "./pages/Registration";
-import RefereeScorekeeper from "./pages/RefereeScorekeeper";
+// DEPRECATED: RefereeScorekeeper - use RefereeScorekeeperApplication instead
 import NewsPage from "./pages/News";
 import StarsOfWeek from "./pages/StarsOfWeek";
 import Staff from "./pages/Staff";
