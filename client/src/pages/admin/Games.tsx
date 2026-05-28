@@ -64,8 +64,8 @@ export default function Games() {
   }
 
   const selectedGame = gamesBySeasonId.find(g => g.id === selectedGameId);
-  const homeTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.homeTeamId) : [];
-  const awayTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.awayTeamId) : [];
+  const homeTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.homeTeamId && p.seasonId === selectedSeasonId && p.status === 'approved') : [];
+  const awayTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.awayTeamId && p.seasonId === selectedSeasonId && p.status === 'approved') : [];
 
   const handlePlayerGoal = (playerId: number) => {
     setPlayerScores(prev => ({
