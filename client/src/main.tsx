@@ -8,7 +8,15 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce aggressive retries that can cause Safari issues
+      retry: 1,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -18,14 +26,24 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  // Only redirect to login if on a protected page
+  const protectedRoutes = ['/admin', '/player-portal', '/staff-portal'];
+  const isOnProtectedRoute = protectedRoutes.some(route => window.location.pathname.startsWith(route));
+  
+  if (isOnProtectedRoute) {
+    window.location.href = getLoginUrl();
+  }
+  // For public pages, let them handle the error gracefully
 };
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    // Only log auth errors, not all errors
+    if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) {
+      console.warn("[Auth Error]", error.message);
+    }
   }
 });
 
@@ -33,7 +51,10 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
+    // Only log auth errors, not all errors
+    if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) {
+      console.warn("[Auth Error]", error.message);
+    }
   }
 });
 
@@ -46,6 +67,10 @@ const trpcClient = trpc.createClient({
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
+          // Safari requires explicit SameSite handling
+          headers: {
+            ...(init?.headers || {}),
+          },
         });
       },
     }),

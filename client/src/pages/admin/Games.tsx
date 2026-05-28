@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { formatDate, formatTime } from "@/lib/dateUtils";
+import { useEffect } from "react";
 
 export default function Games() {
   const { user } = useAuth();
@@ -66,6 +67,14 @@ export default function Games() {
   const selectedGame = gamesBySeasonId.find(g => g.id === selectedGameId);
   const homeTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.homeTeamId && p.seasonId === selectedSeasonId && p.status === 'approved') : [];
   const awayTeamPlayers = selectedGame ? allPlayers.filter(p => p.teamId === selectedGame.awayTeamId && p.seasonId === selectedSeasonId && p.status === 'approved') : [];
+  
+  // Debug logging
+  useEffect(() => {
+    if (selectedGame && homeTeamPlayers.length > 0) {
+      console.log('Home Team Players:', homeTeamPlayers);
+      console.log('First player:', homeTeamPlayers[0]);
+    }
+  }, [selectedGame, homeTeamPlayers]);
 
   const handlePlayerGoal = (playerId: number) => {
     setPlayerScores(prev => ({
