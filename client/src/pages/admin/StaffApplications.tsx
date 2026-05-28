@@ -129,7 +129,7 @@ export default function AdminStaffApplications() {
               </p>
             )}
             <p className="font-semibold text-accent">
-              <strong>Desired Payment:</strong> ${application.desiredSalary || 'Not specified'}/game
+              <strong>Desired Payment:</strong> ${application.desiredSalary ?? 'Not specified'}/game
             </p>
             {application.paymentAmount && (
               <p>
@@ -196,7 +196,7 @@ export default function AdminStaffApplications() {
                           <p className="font-medium">${application.paymentAmount}/game</p>
                         </div>
                       )}
-                      {application.desiredSalary && (
+                      {application.desiredSalary != null && (
                         <div className="col-span-2">
                           <p className="text-muted-foreground">Desired Salary</p>
                           <p className="font-medium">${application.desiredSalary}/game</p>
