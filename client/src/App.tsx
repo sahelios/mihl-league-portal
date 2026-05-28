@@ -31,6 +31,7 @@ import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
 import EvaluationGames from "./pages/admin/EvaluationGames";
 import StaffApplications from "./pages/admin/StaffApplications";
+import StaffAvailability from "./pages/admin/StaffAvailability";
 import GameAssignments from "./pages/admin/GameAssignments";
 import GameScheduler from "./pages/admin/GameScheduler";
 import ScheduleManagement from "./pages/admin/ScheduleManagement";
@@ -89,6 +90,7 @@ function Router() {
       {/* Redirect old route to new route */}
       <Route path="/admin/referee-applications" component={StaffApplications} />
       <Route path="/admin/staff-applications" component={StaffApplications} />
+      <Route path="/admin/staff-availability" component={StaffAvailability} />
       <Route path="/admin/game-assignments" component={GameAssignments} />
       <Route path="/admin/game-scheduler" component={GameScheduler} />
       <Route path="/admin/schedule-management" component={ScheduleManagement} />

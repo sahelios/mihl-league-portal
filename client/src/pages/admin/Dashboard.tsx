@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileText, Trophy, AlertCircle, Settings, MessageSquare } from "lucide-react";
+import { Users, FileText, Trophy, AlertCircle, Settings, MessageSquare, CheckSquare } from "lucide-react";
 
 export default function AdminDashboard() {
   const [language, setLanguage] = useState<"en" | "fr">("en");
@@ -40,6 +40,7 @@ export default function AdminDashboard() {
       teams: "Teams",
       seasons: "Seasons",
       staffApplications: "Staff Applications",
+      staffAvailability: "Staff Availability",
     },
     fr: {
       dashboard: "Tableau de Bord Admin",
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
       teams: "Équipes",
       seasons: "Saisons",
       staffApplications: "Candidatures du Personnel",
+      staffAvailability: "Disponibilité du Personnel",
     },
   };
 
@@ -106,6 +108,13 @@ export default function AdminDashboard() {
                 onClick={() => navigate("/admin/staff-applications")}
               >
                 {labels.staffApplications}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate("/admin/staff-availability")}
+              >
+                {labels.staffAvailability}
               </Button>
             </CardContent>
           </Card>
