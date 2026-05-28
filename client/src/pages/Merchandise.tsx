@@ -1,3 +1,10 @@
+/**
+ * PLANNED FEATURE: Merchandise/Jersey Voting
+ * Status: In Development
+ * This page is not yet integrated into the main navigation.
+ * Features: Jersey design voting, merchandise notifications
+ */
+
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

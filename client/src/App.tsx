@@ -16,7 +16,6 @@ import Stats from "./pages/Stats";
 import Suspensions from "./pages/Suspensions";
 import Standings from "./pages/Standings";
 import Registration from "./pages/Registration";
-// DEPRECATED: RefereeScorekeeper - use RefereeScorekeeperApplication instead
 import NewsPage from "./pages/News";
 import StarsOfWeek from "./pages/StarsOfWeek";
 import Staff from "./pages/Staff";
@@ -31,7 +30,6 @@ import AdminSuspensions from "./pages/admin/AdminSuspensions";
 import Messages from "./pages/admin/Messages";
 import Settings from "./pages/admin/Settings";
 import EvaluationGames from "./pages/admin/EvaluationGames";
-// Deprecated: RefereeApplications - use StaffApplications instead
 import StaffApplications from "./pages/admin/StaffApplications";
 import GameAssignments from "./pages/admin/GameAssignments";
 import GameScheduler from "./pages/admin/GameScheduler";

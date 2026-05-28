@@ -1,3 +1,10 @@
+/**
+ * PLANNED FEATURE: Player Profile Page
+ * Status: In Development
+ * This page is not yet integrated into the main navigation.
+ * Features: Individual player stats, game history, teammates
+ */
+
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
