@@ -530,7 +530,7 @@ export const registrationRouter = router({
           status: 'pending',
           certifications: [],
           selectedGames: input.availableDays,
-          desiredSalary: input.desiredSalary ? String(input.desiredSalary) : null,
+          desiredSalary: input.desiredSalary ? input.desiredSalary.toString() : null,
         });
 
         // Send confirmation email to applicant
