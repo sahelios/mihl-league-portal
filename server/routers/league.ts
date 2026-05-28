@@ -535,11 +535,51 @@ export const leagueRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "Staff application not found" });
         }
         
+        // Check if someone of the same role is already assigned to this game
+        const existingAssignment = await db.select()
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, staffApp[0].role)
+          ));
+        
+        if (existingAssignment.length > 0) {
+          throw new TRPCError({ 
+            code: "CONFLICT", 
+            message: `A ${staffApp[0].role} is already assigned to this game` 
+          });
+        }
+        
+        // Check if this staff member is already available for this game
+        const alreadyAvailable = await db.select()
+          .from(staffAvailability)
+          .where(and(
+            eq(staffAvailability.staffApplicationId, staffApp[0].id),
+            eq(staffAvailability.gameId, input.gameId)
+          ));
+        
+        if (alreadyAvailable.length > 0) {
+          throw new TRPCError({ 
+            code: "CONFLICT", 
+            message: "You are already marked available for this game" 
+          });
+        }
+        
         await db.insert(staffAvailability).values({
           staffApplicationId: staffApp[0].id,
           gameId: input.gameId,
           isAvailable: true,
         });
+        
+        // Send notification to admin
+        const { notifyOwner } = await import("../_core/notification");
+        await notifyOwner({
+          title: `${staffApp[0].role} Marked Available`,
+          content: `${staffApp[0].firstName} ${staffApp[0].lastName} (${staffApp[0].email}) marked themselves available for a game.`
+        });
+        
         return { success: true };
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
@@ -563,6 +603,14 @@ export const leagueRouter = router({
             eq(staffAvailability.staffApplicationId, staffApp[0].id),
             eq(staffAvailability.gameId, input.gameId)
           ));
+        
+        // Send notification to admin
+        const { notifyOwner } = await import("../_core/notification");
+        await notifyOwner({
+          title: `${staffApp[0].role} Removed Availability`,
+          content: `${staffApp[0].firstName} ${staffApp[0].lastName} (${staffApp[0].email}) removed their availability for a game. Other ${staffApp[0].role}s can now mark themselves available.`
+        });
+        
         return { success: true };
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
@@ -594,4 +642,47 @@ export const leagueRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
+
+  getGameStaffStatus: publicProcedure
+    .input(z.object({ gameId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        // Get assigned referee
+        const assignedReferee = await db.select()
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, 'referee')
+          ));
+        
+        // Get assigned scorekeeper
+        const assignedScorekeeper = await db.select()
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, 'scorekeeper')
+          ));
+        
+        return {
+          referee: assignedReferee.length > 0 ? {
+            id: assignedReferee[0].refereeApplications.id,
+            name: `${assignedReferee[0].refereeApplications.firstName} ${assignedReferee[0].refereeApplications.lastName}`,
+            email: assignedReferee[0].refereeApplications.email,
+          } : null,
+          scorekeeper: assignedScorekeeper.length > 0 ? {
+            id: assignedScorekeeper[0].refereeApplications.id,
+            name: `${assignedScorekeeper[0].refereeApplications.firstName} ${assignedScorekeeper[0].refereeApplications.lastName}`,
+            email: assignedScorekeeper[0].refereeApplications.email,
+          } : null,
+        };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    })
 });
