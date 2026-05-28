@@ -68,12 +68,12 @@ export default function AdminSuspensions() {
 
   // Admin Access Check[cite: 1, 2]
   useEffect(() => {
-    if (user && user.role !== "admin") {
+    if (user && user.email !== 'sarzouan@gmail.com') {
       navigate("/");
     }
   }, [user, navigate]);
 
-  if (!user || user.role !== "admin") return null;
+  if (!user || user.email !== 'sarzouan@gmail.com') return null;
 
   const handleAddSuspension = async (e: React.FormEvent) => {
     e.preventDefault();

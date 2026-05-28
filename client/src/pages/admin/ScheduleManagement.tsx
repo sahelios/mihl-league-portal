@@ -129,7 +129,7 @@ export default function ScheduleManagement() {
       </div>
     );
   }
-  if (user?.role !== 'admin') {
+  if (user?.email !== 'sarzouan@gmail.com') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />

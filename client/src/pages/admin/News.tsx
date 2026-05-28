@@ -74,7 +74,7 @@ export default function NewsManagement() {
   });
 
   // Admin Access Check[cite: 1, 2]
-  if (user?.role !== "admin") {
+  if (user?.email !== 'sarzouan@gmail.com') {
     navigate("/");
     return null;
   }

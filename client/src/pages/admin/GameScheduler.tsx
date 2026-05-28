@@ -320,7 +320,7 @@ export default function GameScheduler() {
   const teamsToDisplay = seasonId ? teams : masterTeams;
 
   if (authLoading) return <div className="p-8">Loading...</div>;
-  if (!user || user.role !== 'admin') { navigate('/'); return null; }
+  if (!user || user.email !== 'sarzouan@gmail.com') { navigate('/'); return null; }
 
   // ── Handlers ──
 

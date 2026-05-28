@@ -41,7 +41,7 @@ export default function AdminStaffApplications() {
   });
 
   // Check admin access - AFTER all hooks
-  if (user?.role !== "admin") {
+  if (user?.email !== 'sarzouan@gmail.com') {
     return (
       <DashboardLayout>
         <div className="space-y-6">

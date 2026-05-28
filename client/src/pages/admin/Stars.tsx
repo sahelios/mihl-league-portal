@@ -51,12 +51,12 @@ export default function StarsSelection() {
 
   // Admin Access Check[cite: 1, 2]
   useEffect(() => {
-    if (user && user.role !== "admin") {
+    if (user && user.email !== 'sarzouan@gmail.com') {
       navigate("/");
     }
   }, [user, navigate]);
 
-  if (!user || user.role !== "admin") return null;
+  if (!user || user.email !== 'sarzouan@gmail.com') return null;
 
   const handleSave = async () => {
     if (!selection.star1 || !selection.star2 || !selection.star3) {

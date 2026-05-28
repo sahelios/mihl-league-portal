@@ -38,7 +38,7 @@ export default function SeasonManagement() {
   const setActiveSeasonMutation = trpc.admin.setActiveSeason.useMutation();
 
   if (authLoading) return <div className="p-4">Loading...</div>;
-  if (!user || user.role !== 'admin') {
+  if (!user || user.email !== 'sarzouan@gmail.com') {
     navigate('/');
     return null;
   }

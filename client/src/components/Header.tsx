@@ -13,8 +13,8 @@ export default function Header({ isAdmin = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   
-  // Auto-detect if user is admin based on role
-  const isUserAdmin = user?.role === 'admin' || isAdmin;
+  // Only allow sarzouan@gmail.com to access admin portal
+  const isUserAdmin = (user?.email === 'sarzouan@gmail.com') || isAdmin;
 
   const publicLinks = [
     { href: "/", label: "Home" },
@@ -27,9 +27,10 @@ export default function Header({ isAdmin = false }: HeaderProps) {
     { href: "/register", label: "Registration" },
     { href: "/referee-scorekeeper", label: "Referee/Scorekeeper" },
     { href: "/player-portal", label: "Player Portal", highlight: true },
+    { href: "/staff-portal", label: "Staff Portal", highlight: true },
   ];
 
-  // For admins, show public links but add Admin Portal at the beginning
+  // For admins (sarzouan@gmail.com only), show public links but add Admin Portal at the beginning
   const links = isUserAdmin 
     ? [{ href: "/admin", label: "Admin Portal", highlight: true }, ...publicLinks]
     : publicLinks;
