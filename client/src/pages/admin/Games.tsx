@@ -261,31 +261,79 @@ export default function Games() {
                         {homeTeamPlayers.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No players found for this team</p>
                         ) : (
-                          homeTeamPlayers.map(player => (
-                            <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                              <span className="text-sm">{player.firstName} {player.lastName}</span>
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handlePlayerGoal(player.id)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  G: {playerScores[player.id]?.goals || 0}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handlePlayerAssist(player.id)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  A: {playerScores[player.id]?.assists || 0}
-                                </Button>
+                          homeTeamPlayers.map(player => {
+                            const isGoalie = player.position?.toLowerCase() === 'goalie';
+                            return (
+                              <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                <span className="text-sm">{player.firstName} {player.lastName}</span>
+                                <div className="flex gap-1">
+                                  {isGoalie ? (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerGoal(player.id)}
+                                        title="Add shot"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        SA: {playerScores[player.id]?.goals || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveGoal(player.id)}
+                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                        title="Remove shot"
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerGoal(player.id)}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        G: {playerScores[player.id]?.goals || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveGoal(player.id)}
+                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerAssist(player.id)}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        A: {playerScores[player.id]?.assists || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveAssist(player.id)}
+                                        disabled={(playerScores[player.id]?.assists || 0) === 0}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
@@ -299,31 +347,79 @@ export default function Games() {
                         {awayTeamPlayers.length === 0 ? (
                           <p className="text-sm text-muted-foreground">No players found for this team</p>
                         ) : (
-                          awayTeamPlayers.map(player => (
-                            <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                              <span className="text-sm">{player.firstName} {player.lastName}</span>
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handlePlayerGoal(player.id)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  G: {playerScores[player.id]?.goals || 0}
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handlePlayerAssist(player.id)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  A: {playerScores[player.id]?.assists || 0}
-                                </Button>
+                          awayTeamPlayers.map(player => {
+                            const isGoalie = player.position?.toLowerCase() === 'goalie';
+                            return (
+                              <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                <span className="text-sm">{player.firstName} {player.lastName}</span>
+                                <div className="flex gap-1">
+                                  {isGoalie ? (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerGoal(player.id)}
+                                        title="Add shot"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        SA: {playerScores[player.id]?.goals || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveGoal(player.id)}
+                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                        title="Remove shot"
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerGoal(player.id)}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        G: {playerScores[player.id]?.goals || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveGoal(player.id)}
+                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handlePlayerAssist(player.id)}
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        A: {playerScores[player.id]?.assists || 0}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleRemoveAssist(player.id)}
+                                        disabled={(playerScores[player.id]?.assists || 0) === 0}
+                                      >
+                                        <Minus className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </div>
