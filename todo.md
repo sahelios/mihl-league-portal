@@ -172,7 +172,12 @@
 - [x] Fix TeamManagement component error (removed teamColors references)
 
 ## Post-Launch Improvements
-- [ ] Make playerRegistrations.teamId nullable for full deassignment support
+- [x] Make playerRegistrations.teamId nullable for full deassignment support
+- [x] Fix assignPlayerToTeam procedure to set teamId to null when deassigning (was setting to 1)
+- [ ] Regression testing: Verify deassignment works in /admin/teams drag/drop
+- [ ] Regression testing: Verify deassignment works in /admin/players edit flow
+- [ ] Regression testing: Verify Player Portal shows unassigned players in evaluation games
+- [ ] Regression testing: Verify Evaluation Games page still shows players assigned to eval teams
 - [ ] Rebuild TeamManagement UI with season selection and team copying
 - [ ] Implement full end-to-end team assignment testing
 

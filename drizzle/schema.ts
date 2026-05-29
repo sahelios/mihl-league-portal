@@ -101,7 +101,7 @@ export const playerRegistrations = mysqlTable("playerRegistrations", {
   lastName: varchar("lastName", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 20 }),
-  teamId: int("teamId").notNull(),
+  teamId: int("teamId"),
   seasonId: int("seasonId").notNull(),
   isFirstTime: boolean("isFirstTime").default(false).notNull(),
   registrationType: mysqlEnum("registrationType", ["individual", "team"]).notNull(),

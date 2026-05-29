@@ -45,6 +45,9 @@ export default function AdminTeams() {
   const activeSeason = (seasons as any[]).find((s: any) => s.isActive);
   const activeSeasonId = activeSeason?.id;
 
+  // Fetch all teams to find evaluation teams
+  const { data: allTeams = [] } = trpc.admin.getTeams.useQuery();
+  // Filter to active season for display
   const { data: teams = [], isLoading: loadingTeams } = trpc.admin.getTeams.useQuery(
     { seasonId: activeSeasonId },
     { enabled: !!activeSeasonId }
@@ -109,10 +112,15 @@ export default function AdminTeams() {
   const isEvaluationTeam = (teamName: string) => 
     teamName?.toLowerCase().includes('white') || teamName?.toLowerCase().includes('black');
   
-  // Get IDs of evaluation teams
-  const evaluationTeamIds = teamsList
+  // Get IDs of evaluation teams from ALL teams (not just active season)
+  const evaluationTeamIds = allTeams
     .filter(t => isEvaluationTeam(t.name))
     .map(t => t.id);
+  
+  console.log('All teams (all seasons):', allTeams);
+  console.log('Active season teams:', teamsList);
+  console.log('Team names for evaluation check:', allTeams.map(t => ({ id: t.id, name: t.name, isEval: isEvaluationTeam(t.name) })));
+  console.log('Evaluation team IDs:', evaluationTeamIds);
 
   // Filter players by active season and team, excluding evaluation teams
   const getTeamRoster = (teamId: number) =>

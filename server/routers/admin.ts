@@ -1772,7 +1772,7 @@ export const adminRouter = router({
             eq(playerTeams.seasonId, input.seasonId),
           ));
         await db.update(playerRegistrations)
-          .set({ teamId: 1 })
+          .set({ teamId: null })
           .where(eq(playerRegistrations.id, input.registrationId));
         return { success: true };
       }
