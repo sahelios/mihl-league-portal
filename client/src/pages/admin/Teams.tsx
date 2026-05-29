@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -50,11 +50,9 @@ export default function AdminTeams() {
     { enabled: !!activeSeasonId }
   );
 
+  // Use the same procedure as admin/Players - registration.getAll
   const { data: allPlayers = [], isLoading: loadingPlayers, refetch } =
-    trpc.admin.getAllPlayersForTeamManagement.useQuery(
-      { seasonId: activeSeasonId },
-      { enabled: !!activeSeasonId }
-    );
+    trpc.registration.getAll.useQuery();
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const assignTeamMutation = trpc.admin.assignPlayerToTeam.useMutation({
@@ -101,10 +99,21 @@ export default function AdminTeams() {
   const players = allPlayers as any[];
   const teamsList = teams as any[];
 
+  // Filter players by active season and team
   const getTeamRoster = (teamId: number) =>
-    players.filter(p => p.teamId === teamId);
+    players.filter(p => p.seasonId === activeSeasonId && p.teamId === teamId);
 
-  const unassigned = players.filter(p => !p.teamId);
+  // Unassigned players from active season only
+  const unassigned = players.filter(p => p.seasonId === activeSeasonId && !p.teamId);
+
+  // Helper to count players by position
+  const countByPosition = (playerList: any[]) => {
+    const total = playerList.length;
+    const forwards = playerList.filter(p => p.position?.toLowerCase() === 'forward').length;
+    const defence = playerList.filter(p => p.position?.toLowerCase() === 'defense' || p.position?.toLowerCase() === 'defenseman').length;
+    const goalies = playerList.filter(p => p.position?.toLowerCase() === 'goalie').length;
+    return { total, forwards, defence, goalies };
+  };
 
   if (loading || loadingTeams || loadingPlayers) {
     return (
@@ -149,14 +158,25 @@ export default function AdminTeams() {
                   <div className="text-xs text-gray-500 mt-1">Unassigned</div>
                 </CardContent>
               </Card>
-              {teamsList.map((t: any, i: number) => (
-                <Card key={t.id}>
-                  <CardContent className="pt-4 pb-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600">{getTeamRoster(t.id).length}</div>
-                    <div className="text-xs text-gray-500 mt-1 truncate">{t.name}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              {teamsList.map((t: any, i: number) => {
+                const roster = getTeamRoster(t.id);
+                const counts = countByPosition(roster);
+                return (
+                  <Card key={t.id}>
+                    <CardContent className="pt-4 pb-4">
+                      <div className="text-center mb-2">
+                        <div className="text-2xl font-bold text-blue-600">{counts.total}</div>
+                        <div className="text-xs text-gray-500 truncate">{t.name}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 text-xs text-center">
+                        <div><span className="font-semibold text-blue-600">{counts.forwards}</span><br/>F</div>
+                        <div><span className="font-semibold text-green-600">{counts.defence}</span><br/>D</div>
+                        <div><span className="font-semibold text-red-600">{counts.goalies}</span><br/>G</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Drag-and-drop arena */}
@@ -252,102 +272,33 @@ function PlayerPool({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      {/* Pool header */}
-      <div className="p-4 border-b border-black/10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="font-semibold text-gray-800">{title}</span>
-          </div>
-          <span className="text-sm text-gray-500">{subtitle}</span>
+      <div className="p-4 border-b border-current border-opacity-20 flex items-center gap-2">
+        {icon}
+        <div>
+          <h3 className="font-bold text-sm">{title}</h3>
+          <p className="text-xs opacity-75">{subtitle}</p>
         </div>
       </div>
 
-      {/* Players */}
-      <div className="p-3 space-y-2">
+      <div className="p-3 space-y-2 max-h-96 overflow-y-auto">
         {players.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-300 rounded-lg">
-            {isDragOver ? 'Drop here' : 'No players'}
-          </div>
+          <p className="text-xs text-center opacity-50 py-4">No players</p>
         ) : (
-          players.map(player => (
-            <PlayerCard
+          players.map((player: any) => (
+            <div
               key={player.id}
-              player={player}
-              currentTeamId={teamId}
-              teams={teams}
-              onDragStart={onDragStart}
-              onManualAssign={onManualAssign}
-            />
+              draggable
+              onDragStart={e => onDragStart(e, player)}
+              className="p-2 bg-white rounded border border-current border-opacity-20 cursor-move hover:shadow-md transition-shadow text-sm flex items-center justify-between gap-2"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{player.firstName} {player.lastName}</div>
+                <div className="text-xs opacity-75">{POSITION_LABELS[player.position?.toLowerCase()] || '—'}</div>
+              </div>
+              <Badge variant="outline" className={STATUS_COLORS[player.status] || ''}>{player.status}</Badge>
+            </div>
           ))
         )}
-        {isDragOver && players.length > 0 && (
-          <div className="h-12 border-2 border-dashed border-blue-400 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 text-sm">
-            Drop here
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── PlayerCard component ───────────────────────────────────────────────────
-function PlayerCard({
-  player, currentTeamId, teams, onDragStart, onManualAssign,
-}: {
-  player: any;
-  currentTeamId: number | null;
-  teams: any[];
-  onDragStart: (e: React.DragEvent, player: any) => void;
-  onManualAssign: (playerId: number, teamId: number | null) => void;
-}) {
-  return (
-    <div
-      draggable
-      onDragStart={e => onDragStart(e, player)}
-      className="bg-white rounded-lg border border-gray-200 p-2.5 cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow select-none"
-    >
-      <div className="flex items-start gap-2">
-        <GripVertical className="h-4 w-4 text-gray-300 flex-shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <span className="text-sm font-medium text-gray-800 truncate">
-              {player.firstName} {player.lastName}
-            </span>
-            <div className="flex gap-1 flex-shrink-0">
-              {player.position && (
-                <span className="text-xs font-bold text-gray-500 bg-gray-100 rounded px-1">
-                  {POSITION_LABELS[player.position?.toLowerCase()] || player.position}
-                </span>
-              )}
-              {player.playerRating && (
-                <span className="text-xs text-amber-600 bg-amber-50 rounded px-1">
-                  ★{player.playerRating}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-1 gap-2">
-            <Badge className={`text-xs h-4 px-1 ${STATUS_COLORS[player.status] || ''}`}>
-              {player.status}
-            </Badge>
-            {/* Manual reassign dropdown */}
-            <Select
-              value={currentTeamId?.toString() || 'none'}
-              onValueChange={v => onManualAssign(player.id, v === 'none' ? null : parseInt(v))}
-            >
-              <SelectTrigger className="h-5 text-xs px-1.5 w-auto min-w-20 border-gray-200">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Unassigned</SelectItem>
-                {teams.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
       </div>
     </div>
   );
