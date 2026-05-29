@@ -1737,7 +1737,7 @@ export const adminRouter = router({
       const ptMap: Record<number, any> = {};
       ptRows.forEach(pt => { ptMap[pt.registrationId] = pt; });
 
-      const evalAssignments = await db.select({ registrationId: evaluationGameAssignments.registrationId }).from(evaluationGameAssignments).distinct();
+      const evalAssignments = await db.select({ registrationId: evaluationGameAssignments.registrationId }).from(evaluationGameAssignments);
       const evalPlayerIds = new Set(evalAssignments.map(e => e.registrationId));
 
       const regs = await db.select().from(playerRegistrations).where(eq(playerRegistrations.seasonId, input.seasonId));
