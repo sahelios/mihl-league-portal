@@ -98,22 +98,35 @@ export default function AdminTeams() {
   // ── Partition players ─────────────────────────────────────────────────────
   const players = allPlayers as any[];
   const teamsList = teams as any[];
+  
+  // Debug logging
+  console.log('Teams page - Total players:', players.length);
+  console.log('Teams page - Active season:', activeSeasonId);
+  const ronReiter = players.find(p => p.email === 'ron@snjbuild.ca');
+  console.log('Ron Reiter data:', ronReiter);
 
   // Filter out evaluation teams (Team White/Team Black)
   const isEvaluationTeam = (teamName: string) => 
     teamName?.toLowerCase().includes('white') || teamName?.toLowerCase().includes('black');
+  
+  // Get IDs of evaluation teams
+  const evaluationTeamIds = teamsList
+    .filter(t => isEvaluationTeam(t.name))
+    .map(t => t.id);
 
   // Filter players by active season and team, excluding evaluation teams
   const getTeamRoster = (teamId: number) =>
     players.filter(p => p.seasonId === activeSeasonId && p.teamId === teamId);
 
-  // Unassigned players from active season only (excluding those in evaluation teams)
+  // Unassigned players from active season only (excluding those assigned to evaluation teams)
   const unassigned = players.filter(p => {
     if (p.seasonId !== activeSeasonId) return false;
-    if (p.teamId) return false; // Has a team assignment
-    // Check if player is assigned to an evaluation team via evaluationGameAssignments
-    // For now, we'll just show players without any team
-    return true;
+    // If player has no team, they're unassigned
+    if (!p.teamId) return true;
+    // If player's team is an evaluation team, they're unassigned (for regular season purposes)
+    if (evaluationTeamIds.includes(p.teamId)) return true;
+    // Otherwise they're assigned to a regular season team
+    return false;
   });
 
   // Helper to count players by position
