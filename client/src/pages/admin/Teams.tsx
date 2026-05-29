@@ -104,7 +104,16 @@ export default function AdminTeams() {
   const getTeamRoster = (teamId: number) =>
     players.filter(p => p.teamId === teamId);
 
-  const unassigned = players.filter(p => !p.teamId);
+  const unassigned = players.filter(p => !p.teamId && !p.isInEvaluation);
+
+  // Helper to count players by position
+  const countByPosition = (playerList: any[]) => {
+    const total = playerList.length;
+    const forwards = playerList.filter(p => p.position?.toLowerCase() === 'forward').length;
+    const defence = playerList.filter(p => p.position?.toLowerCase() === 'defense' || p.position?.toLowerCase() === 'defenseman').length;
+    const goalies = playerList.filter(p => p.position?.toLowerCase() === 'goalie').length;
+    return { total, forwards, defence, goalies };
+  };
 
   if (loading || loadingTeams || loadingPlayers) {
     return (
@@ -149,14 +158,25 @@ export default function AdminTeams() {
                   <div className="text-xs text-gray-500 mt-1">Unassigned</div>
                 </CardContent>
               </Card>
-              {teamsList.map((t: any, i: number) => (
-                <Card key={t.id}>
-                  <CardContent className="pt-4 pb-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600">{getTeamRoster(t.id).length}</div>
-                    <div className="text-xs text-gray-500 mt-1 truncate">{t.name}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              {teamsList.map((t: any, i: number) => {
+                const roster = getTeamRoster(t.id);
+                const counts = countByPosition(roster);
+                return (
+                  <Card key={t.id}>
+                    <CardContent className="pt-4 pb-4">
+                      <div className="text-center mb-2">
+                        <div className="text-2xl font-bold text-blue-600">{counts.total}</div>
+                        <div className="text-xs text-gray-500 truncate">{t.name}</div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 text-xs text-center">
+                        <div><span className="font-semibold text-blue-600">{counts.forwards}</span><br/>F</div>
+                        <div><span className="font-semibold text-green-600">{counts.defence}</span><br/>D</div>
+                        <div><span className="font-semibold text-red-600">{counts.goalies}</span><br/>G</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Drag-and-drop arena */}
