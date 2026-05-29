@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,10 @@ export default function Games() {
     selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
     { enabled: !!selectedSeasonId }
   );
-  const { data: allPlayers = [] } = trpc.registration.getAll.useQuery();
+  const { data: gamePlayersData, isLoading: loadingGamePlayers } = trpc.admin.getGamePlayers.useQuery(
+    selectedGameId ? { gameId: selectedGameId } : undefined,
+    { enabled: !!selectedGameId }
+  );
   const { data: evalGamePlayers = [] } = trpc.admin.getEvaluationGamePlayers.useQuery(
     selectedGameId ? { gameId: selectedGameId } : undefined,
     { enabled: !!selectedGameId }
@@ -73,7 +76,7 @@ export default function Games() {
   const selectedGame = gamesBySeasonId.find(g => g.id === selectedGameId);
   const isEvalGame = selectedGame?.isEvaluationGame;
 
-  // For evaluation games, use evalGamePlayers; for regular games, filter by team
+  // For evaluation games, use evalGamePlayers; for regular games, use gamePlayersData
   let homeTeamPlayers: any[] = [];
   let awayTeamPlayers: any[] = [];
 
@@ -81,37 +84,19 @@ export default function Games() {
     // Split evaluation game players by team
     homeTeamPlayers = evalGamePlayers.filter(p => p.evalTeam === 'white');
     awayTeamPlayers = evalGamePlayers.filter(p => p.evalTeam === 'black');
-  } else if (selectedGame && !isEvalGame) {
-    // Regular season games: filter by team
-    homeTeamPlayers = allPlayers.filter(p => 
-      p.teamId === selectedGame.homeTeamId && 
-      p.seasonId === selectedSeasonId && 
-      p.status === 'approved'
-    );
-    awayTeamPlayers = allPlayers.filter(p => 
-      p.teamId === selectedGame.awayTeamId && 
-      p.seasonId === selectedSeasonId && 
-      p.status === 'approved'
-    );
+  } else if (selectedGame && !isEvalGame && gamePlayersData) {
+    // Regular season games: use the procedure data
+    homeTeamPlayers = gamePlayersData.homePlayers || [];
+    awayTeamPlayers = gamePlayersData.awayPlayers || [];
   }
 
   const handlePlayerGoal = (playerId: number) => {
     setPlayerScores(prev => ({
       ...prev,
       [playerId]: {
-        ...prev[playerId],
-        goals: (prev[playerId]?.goals || 0) + 1
-      }
-    }));
-  };
-
-  const handlePlayerAssist = (playerId: number) => {
-    setPlayerScores(prev => ({
-      ...prev,
-      [playerId]: {
-        ...prev[playerId],
-        assists: (prev[playerId]?.assists || 0) + 1
-      }
+        goals: (prev[playerId]?.goals || 0) + 1,
+        assists: prev[playerId]?.assists || 0,
+      },
     }));
   };
 
@@ -119,9 +104,19 @@ export default function Games() {
     setPlayerScores(prev => ({
       ...prev,
       [playerId]: {
-        ...prev[playerId],
-        goals: Math.max(0, (prev[playerId]?.goals || 0) - 1)
-      }
+        goals: Math.max(0, (prev[playerId]?.goals || 0) - 1),
+        assists: prev[playerId]?.assists || 0,
+      },
+    }));
+  };
+
+  const handlePlayerAssist = (playerId: number) => {
+    setPlayerScores(prev => ({
+      ...prev,
+      [playerId]: {
+        goals: prev[playerId]?.goals || 0,
+        assists: (prev[playerId]?.assists || 0) + 1,
+      },
     }));
   };
 
@@ -129,14 +124,15 @@ export default function Games() {
     setPlayerScores(prev => ({
       ...prev,
       [playerId]: {
-        ...prev[playerId],
-        assists: Math.max(0, (prev[playerId]?.assists || 0) - 1)
-      }
+        goals: prev[playerId]?.goals || 0,
+        assists: Math.max(0, (prev[playerId]?.assists || 0) - 1),
+      },
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedGameId) {
       toast.error("Please select a game");
       return;
@@ -251,187 +247,210 @@ export default function Games() {
               {/* Player Score Entry */}
               {selectedGame && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Home Team / White Team */}
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-lg">
-                        {isEvalGame ? "Team White" : selectedGame.homeTeam?.name || `Team ${selectedGame.homeTeamId}`}
-                      </h3>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {homeTeamPlayers.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No players found for this team</p>
-                        ) : (
-                          homeTeamPlayers.map(player => {
-                            const isGoalie = player.position?.toLowerCase() === 'goalie';
-                            return (
-                              <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                                <span className="text-sm">{player.firstName} {player.lastName}</span>
-                                <div className="flex gap-1">
-                                  {isGoalie ? (
-                                    <>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerGoal(player.id)}
-                                        title="Add shot"
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        SA: {playerScores[player.id]?.goals || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveGoal(player.id)}
-                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
-                                        title="Remove shot"
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerGoal(player.id)}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        G: {playerScores[player.id]?.goals || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveGoal(player.id)}
-                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerAssist(player.id)}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        A: {playerScores[player.id]?.assists || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveAssist(player.id)}
-                                        disabled={(playerScores[player.id]?.assists || 0) === 0}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+                  {loadingGamePlayers && !isEvalGame ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="animate-spin" />
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Home Team / White Team */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-lg">
+                          {isEvalGame ? "Team White" : selectedGame.homeTeam?.name || `Team ${selectedGame.homeTeamId}`}
+                        </h3>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {homeTeamPlayers.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No players found for this team</p>
+                          ) : (
+                            homeTeamPlayers.map(player => {
+                              const isGoalie = player.position?.toLowerCase() === 'goalie';
+                              return (
+                                <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                  <span className="text-sm">{player.firstName} {player.lastName}</span>
+                                  <div className="flex gap-1">
+                                    {isGoalie ? (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerGoal(player.id)}
+                                          title="Add shot"
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          SA: {playerScores[player.id]?.goals || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveGoal(player.id)}
+                                          disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                          title="Remove shot"
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerGoal(player.id)}
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          G: {playerScores[player.id]?.goals || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveGoal(player.id)}
+                                          disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerAssist(player.id)}
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          A: {playerScores[player.id]?.assists || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveAssist(player.id)}
+                                          disabled={(playerScores[player.id]?.assists || 0) === 0}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
 
-                    {/* Away Team / Black Team */}
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-lg">
-                        {isEvalGame ? "Team Black" : selectedGame.awayTeam?.name || `Team ${selectedGame.awayTeamId}`}
-                      </h3>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {awayTeamPlayers.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No players found for this team</p>
-                        ) : (
-                          awayTeamPlayers.map(player => {
-                            const isGoalie = player.position?.toLowerCase() === 'goalie';
-                            return (
-                              <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                                <span className="text-sm">{player.firstName} {player.lastName}</span>
-                                <div className="flex gap-1">
-                                  {isGoalie ? (
-                                    <>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerGoal(player.id)}
-                                        title="Add shot"
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        SA: {playerScores[player.id]?.goals || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveGoal(player.id)}
-                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
-                                        title="Remove shot"
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerGoal(player.id)}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        G: {playerScores[player.id]?.goals || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveGoal(player.id)}
-                                        disabled={(playerScores[player.id]?.goals || 0) === 0}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handlePlayerAssist(player.id)}
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        A: {playerScores[player.id]?.assists || 0}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRemoveAssist(player.id)}
-                                        disabled={(playerScores[player.id]?.assists || 0) === 0}
-                                      >
-                                        <Minus className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
+                      {/* Away Team / Black Team */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-lg">
+                          {isEvalGame ? "Team Black" : selectedGame.awayTeam?.name || `Team ${selectedGame.awayTeamId}`}
+                        </h3>
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {awayTeamPlayers.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">No players found for this team</p>
+                          ) : (
+                            awayTeamPlayers.map(player => {
+                              const isGoalie = player.position?.toLowerCase() === 'goalie';
+                              return (
+                                <div key={player.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                                  <span className="text-sm">{player.firstName} {player.lastName}</span>
+                                  <div className="flex gap-1">
+                                    {isGoalie ? (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerGoal(player.id)}
+                                          title="Add shot"
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          SA: {playerScores[player.id]?.goals || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveGoal(player.id)}
+                                          disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                          title="Remove shot"
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerGoal(player.id)}
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          G: {playerScores[player.id]?.goals || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveGoal(player.id)}
+                                          disabled={(playerScores[player.id]?.goals || 0) === 0}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handlePlayerAssist(player.id)}
+                                        >
+                                          <Plus className="h-3 w-3" />
+                                          A: {playerScores[player.id]?.assists || 0}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleRemoveAssist(player.id)}
+                                          disabled={(playerScores[player.id]?.assists || 0) === 0}
+                                        >
+                                          <Minus className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })
-                        )}
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
               {/* Submit Button */}
-              <Button type="submit" disabled={!selectedGameId || submitMutation.isPending} className="w-full">
-                {submitMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Score
-              </Button>
+              {selectedGame && (
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={submitMutation.isPending || Object.keys(playerScores).length === 0}
+                  >
+                    {submitMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit Scores
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => {
+                      setPlayerScores({});
+                      setSelectedGameId(null);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
             </form>
           </CardContent>
         </Card>

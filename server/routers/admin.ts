@@ -207,6 +207,75 @@ export const adminRouter = router({
       return players;
     }),
 
+  getGamePlayers: adminProcedure
+    .input(z.object({ gameId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Get the game with team info
+      const gameResult = await db
+        .select({
+          id: games.id,
+          homeTeamId: games.homeTeamId,
+          awayTeamId: games.awayTeamId,
+          seasonId: games.seasonId,
+          isEvaluationGame: games.isEvaluationGame,
+        })
+        .from(games)
+        .where(eq(games.id, input.gameId));
+
+      if (!gameResult.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
+      }
+
+      const gameData = gameResult[0];
+
+      // Get players for home team
+      const homePlayers = await db
+        .select({
+          id: playerRegistrations.id,
+          firstName: playerRegistrations.firstName,
+          lastName: playerRegistrations.lastName,
+          position: playerRegistrations.position,
+          status: playerRegistrations.status,
+          teamId: playerRegistrations.teamId,
+          seasonId: playerRegistrations.seasonId,
+        })
+        .from(playerRegistrations)
+        .where(
+          and(
+            eq(playerRegistrations.teamId, gameData.homeTeamId),
+            eq(playerRegistrations.seasonId, gameData.seasonId),
+            eq(playerRegistrations.status, "approved")
+          )
+        )
+        .orderBy(playerRegistrations.firstName);
+
+      // Get players for away team
+      const awayPlayers = await db
+        .select({
+          id: playerRegistrations.id,
+          firstName: playerRegistrations.firstName,
+          lastName: playerRegistrations.lastName,
+          position: playerRegistrations.position,
+          status: playerRegistrations.status,
+          teamId: playerRegistrations.teamId,
+          seasonId: playerRegistrations.seasonId,
+        })
+        .from(playerRegistrations)
+        .where(
+          and(
+            eq(playerRegistrations.teamId, gameData.awayTeamId),
+            eq(playerRegistrations.seasonId, gameData.seasonId),
+            eq(playerRegistrations.status, "approved")
+          )
+        )
+        .orderBy(playerRegistrations.firstName);
+
+      return { homePlayers, awayPlayers };
+    }),
+
   getAvailablePlayersForEvaluation: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
