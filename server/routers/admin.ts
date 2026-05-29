@@ -1737,9 +1737,6 @@ export const adminRouter = router({
       const ptMap: Record<number, any> = {};
       ptRows.forEach(pt => { ptMap[pt.registrationId] = pt; });
 
-      const evalAssignments = await db.select({ registrationId: evaluationGameAssignments.registrationId }).from(evaluationGameAssignments);
-      const evalPlayerIds = new Set(evalAssignments.map(e => e.registrationId));
-
       const regs = await db.select().from(playerRegistrations).where(eq(playerRegistrations.seasonId, input.seasonId));
 
       return regs.map(r => ({
@@ -1752,7 +1749,6 @@ export const adminRouter = router({
         position: ptMap[r.id]?.position ?? null,
         playerRating: r.playerRating ?? null,
         teamId: ptMap[r.id]?.teamId ?? null,
-        isInEvaluation: evalPlayerIds.has(r.id),
         jerseyNumber: ptMap[r.id]?.jerseyNumber ?? null,
         isCaptain: ptMap[r.id]?.isCaptain ?? false,
       }));
