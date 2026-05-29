@@ -154,6 +154,59 @@ export const adminRouter = router({
       return results;
     }),
 
+  getEvaluationGamePlayers: adminProcedure
+    .input(z.object({ gameId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Get the game
+      const game = await db.select().from(games).where(eq(games.id, input.gameId));
+      if (!game.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
+      }
+
+      const gameData = game[0];
+      if (!gameData.isEvaluationGame) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This is not an evaluation game" });
+      }
+
+      // Get the game date
+      let dateStr = '';
+      if (gameData.gameDate) {
+        if (gameData.gameDate instanceof Date) {
+          dateStr = gameData.gameDate.toISOString().split('T')[0];
+        } else if (typeof gameData.gameDate === 'string') {
+          dateStr = gameData.gameDate.split('T')[0];
+        }
+      }
+
+      if (!dateStr) {
+        return [];
+      }
+
+      // Get all players assigned to this evaluation game date
+      const players = await db
+        .select({
+          id: playerRegistrations.id,
+          firstName: playerRegistrations.firstName,
+          lastName: playerRegistrations.lastName,
+          position: playerRegistrations.position,
+          status: playerRegistrations.status,
+          playerRating: playerRegistrations.playerRating,
+          evalTeam: evaluationGameAssignments.team,
+        })
+        .from(playerRegistrations)
+        .leftJoin(evaluationGameAssignments, and(
+          eq(playerRegistrations.id, evaluationGameAssignments.registrationId),
+          eq(evaluationGameAssignments.evaluationDate, dateStr)
+        ))
+        .where(eq(playerRegistrations.evaluationDate, dateStr))
+        .orderBy(playerRegistrations.firstName);
+
+      return players;
+    }),
+
   getAvailablePlayersForEvaluation: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
