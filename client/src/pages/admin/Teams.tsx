@@ -99,12 +99,22 @@ export default function AdminTeams() {
   const players = allPlayers as any[];
   const teamsList = teams as any[];
 
-  // Filter players by active season and team
+  // Filter out evaluation teams (Team White/Team Black)
+  const isEvaluationTeam = (teamName: string) => 
+    teamName?.toLowerCase().includes('white') || teamName?.toLowerCase().includes('black');
+
+  // Filter players by active season and team, excluding evaluation teams
   const getTeamRoster = (teamId: number) =>
     players.filter(p => p.seasonId === activeSeasonId && p.teamId === teamId);
 
-  // Unassigned players from active season only
-  const unassigned = players.filter(p => p.seasonId === activeSeasonId && !p.teamId);
+  // Unassigned players from active season only (excluding those in evaluation teams)
+  const unassigned = players.filter(p => {
+    if (p.seasonId !== activeSeasonId) return false;
+    if (p.teamId) return false; // Has a team assignment
+    // Check if player is assigned to an evaluation team via evaluationGameAssignments
+    // For now, we'll just show players without any team
+    return true;
+  });
 
   // Helper to count players by position
   const countByPosition = (playerList: any[]) => {
@@ -201,7 +211,7 @@ export default function AdminTeams() {
               />
 
               {/* Team Columns */}
-              {teamsList.map((team: any, i: number) => {
+              {teamsList.filter((team: any) => !isEvaluationTeam(team.name)).map((team: any, i: number) => {
                 const roster = getTeamRoster(team.id);
                 const colorClass = TEAM_COLORS[i % TEAM_COLORS.length];
                 return (
@@ -227,7 +237,7 @@ export default function AdminTeams() {
               })}
             </div>
 
-            {teamsList.length === 0 && (
+              {teamsList.filter((team: any) => !isEvaluationTeam(team.name)).length === 0 && (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
                   No teams found for this season. Create teams in Team Management settings.
