@@ -862,3 +862,8 @@
 ### Known Issues
 - Existing referee availability data (Simon Arzouan for Golan Guards vs H Hammers) needs to be migrated to staffAvailability table
 - Admin/staff-availability page shows "0 Referees" until new fix is applied and data is re-submitted
+
+- [x] Admin staff assignment: Add ability for admins to manually assign referees/scorekeepers to games
+- [x] Admin staff assignment: Create tRPC procedures (getAllApprovedStaff, removeStaffFromGame)
+- [x] Admin staff assignment: Add UI to select from all approved referees/scorekeepers in staff availability page
+- [x] Admin staff assignment: Add remove staff button to unassign staff from games

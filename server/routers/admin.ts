@@ -1987,4 +1987,55 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
+
+  getAllApprovedStaff: adminProcedure
+    .input(z.object({ role: z.enum(['referee', 'scorekeeper']) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const staff = await db.select()
+          .from(refereeApplications)
+          .where(and(
+            eq(refereeApplications.role, input.role),
+            eq(refereeApplications.status, 'approved')
+          ));
+        return staff;
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  removeStaffFromGame: adminProcedure
+    .input(z.object({
+      gameId: z.number(),
+      role: z.enum(['referee', 'scorekeeper'])
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const assignment = await db.select().from(gameAssignments)
+          .where(eq(gameAssignments.gameId, input.gameId));
+        
+        if (assignment.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Game assignment not found" });
+        }
+
+        const updateData: any = {};
+        if (input.role === 'referee') {
+          updateData.refereeId = null;
+        } else {
+          updateData.scorekeeperId = null;
+        }
+
+        await db.update(gameAssignments)
+          .set(updateData)
+          .where(eq(gameAssignments.gameId, input.gameId));
+
+        return { success: true, message: `${input.role} removed from game` };
+      } catch (error: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
 });

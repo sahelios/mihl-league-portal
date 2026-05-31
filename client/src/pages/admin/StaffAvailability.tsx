@@ -5,8 +5,22 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowLeft, Users, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Users, Loader2, Plus, X } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/dateUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function StaffAvailability() {
   const { user, loading: authLoading } = useAuth();
@@ -89,6 +103,9 @@ interface GameAvailabilityCardProps {
 }
 
 function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCardProps) {
+  const [selectedReferee, setSelectedReferee] = useState<number | null>(null);
+  const [selectedScorekeeper, setSelectedScorekeeper] = useState<number | null>(null);
+
   const { data: referees = [] } = trpc.admin.getAvailableStaffForGame.useQuery(
     { gameId: game.id, role: 'referee' },
     { enabled: isExpanded }
@@ -99,9 +116,67 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
     { enabled: isExpanded }
   );
 
+  const { data: allReferees = [] } = trpc.admin.getAllApprovedStaff.useQuery(
+    { role: 'referee' },
+    { enabled: isExpanded }
+  );
+
+  const { data: allScorekeepers = [] } = trpc.admin.getAllApprovedStaff.useQuery(
+    { role: 'scorekeeper' },
+    { enabled: isExpanded }
+  );
+
+  const { data: gameAssignment } = trpc.admin.getGameAssignment.useQuery(
+    { gameId: game.id },
+    { enabled: isExpanded }
+  );
+
+  const assignStaffMutation = trpc.admin.assignStaffToGame.useMutation();
+  const removeStaffMutation = trpc.admin.removeStaffFromGame.useMutation();
+
   const homeTeamName = game.teamAName || `Team ${game.homeTeamId}`;
   const awayTeamName = game.teamBName || `Team ${game.awayTeamId}`;
   const gameLabel = game.isEvaluationGame ? 'Team White vs Team Black' : `${homeTeamName} vs ${awayTeamName}`;
+
+  const handleAssignReferee = async () => {
+    if (!selectedReferee) return;
+    await assignStaffMutation.mutateAsync({
+      gameId: game.id,
+      refereeId: selectedReferee,
+    });
+    setSelectedReferee(null);
+  };
+
+  const handleAssignScorekeeper = async () => {
+    if (!selectedScorekeeper) return;
+    await assignStaffMutation.mutateAsync({
+      gameId: game.id,
+      scorekeeperId: selectedScorekeeper,
+    });
+    setSelectedScorekeeper(null);
+  };
+
+  const handleRemoveReferee = async () => {
+    await removeStaffMutation.mutateAsync({
+      gameId: game.id,
+      role: 'referee',
+    });
+  };
+
+  const handleRemoveScorekeeper = async () => {
+    await removeStaffMutation.mutateAsync({
+      gameId: game.id,
+      role: 'scorekeeper',
+    });
+  };
+
+  const assignedReferee = gameAssignment?.refereeId 
+    ? allReferees.find(r => r.id === gameAssignment.refereeId)
+    : null;
+
+  const assignedScorekeeper = gameAssignment?.scorekeeperId
+    ? allScorekeepers.find(s => s.id === gameAssignment.scorekeeperId)
+    : null;
 
   return (
     <Card className="cursor-pointer hover:shadow-md transition" onClick={onToggle}>
@@ -116,21 +191,79 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
           <div className="flex gap-2">
             <Badge variant="outline" className="flex items-center gap-1">
               <Users className="w-3 h-3" />
-              {referees.length} Referees
+              {referees.length} Available
             </Badge>
             <Badge variant="outline" className="flex items-center gap-1">
               <Users className="w-3 h-3" />
-              {scorekeepers.length} Scorekeepers
+              {scorekeepers.length} Available
             </Badge>
           </div>
         </div>
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="pt-0 space-y-6">
-          {/* Referees */}
+        <CardContent className="pt-0 space-y-6" onClick={(e) => e.stopPropagation()}>
+          {/* Assigned Referees */}
           <div>
-            <h3 className="font-semibold text-sm mb-3">Referees ({referees.length})</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm">Assigned Referee</h3>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Assign
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Assign Referee</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Select value={selectedReferee?.toString() || ''} onValueChange={(v) => setSelectedReferee(parseInt(v))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a referee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allReferees.map(ref => (
+                          <SelectItem key={ref.id} value={ref.id.toString()}>
+                            {ref.firstName} {ref.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleAssignReferee}
+                      disabled={!selectedReferee || assignStaffMutation.isPending}
+                    >
+                      {assignStaffMutation.isPending ? 'Assigning...' : 'Assign Referee'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {assignedReferee ? (
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">{assignedReferee.firstName} {assignedReferee.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{assignedReferee.email}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleRemoveReferee}
+                  disabled={removeStaffMutation.isPending}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No referee assigned</p>
+            )}
+          </div>
+
+          {/* Available Referees */}
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Available Referees ({referees.length})</h3>
             {referees.length === 0 ? (
               <p className="text-sm text-muted-foreground">No referees available</p>
             ) : (
@@ -143,10 +276,10 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">
-                        {ref.experience} years
+                        {ref.yearsOfExperience} years
                       </p>
-                      {ref.desiredSalary && (
-                        <p className="text-xs font-medium">${ref.desiredSalary}/game</p>
+                      {ref.desiredPayPerGame && (
+                        <p className="text-xs font-medium">${ref.desiredPayPerGame}/game</p>
                       )}
                     </div>
                   </div>
@@ -155,9 +288,67 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
             )}
           </div>
 
-          {/* Scorekeepers */}
+          {/* Assigned Scorekeepers */}
           <div>
-            <h3 className="font-semibold text-sm mb-3">Scorekeepers ({scorekeepers.length})</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm">Assigned Scorekeeper</h3>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Assign
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Assign Scorekeeper</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Select value={selectedScorekeeper?.toString() || ''} onValueChange={(v) => setSelectedScorekeeper(parseInt(v))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a scorekeeper" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allScorekeepers.map(sk => (
+                          <SelectItem key={sk.id} value={sk.id.toString()}>
+                            {sk.firstName} {sk.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      onClick={handleAssignScorekeeper}
+                      disabled={!selectedScorekeeper || assignStaffMutation.isPending}
+                    >
+                      {assignStaffMutation.isPending ? 'Assigning...' : 'Assign Scorekeeper'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {assignedScorekeeper ? (
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">{assignedScorekeeper.firstName} {assignedScorekeeper.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{assignedScorekeeper.email}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleRemoveScorekeeper}
+                  disabled={removeStaffMutation.isPending}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No scorekeeper assigned</p>
+            )}
+          </div>
+
+          {/* Available Scorekeepers */}
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Available Scorekeepers ({scorekeepers.length})</h3>
             {scorekeepers.length === 0 ? (
               <p className="text-sm text-muted-foreground">No scorekeepers available</p>
             ) : (
@@ -170,10 +361,10 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">
-                        {sk.experience} years
+                        {sk.yearsOfExperience} years
                       </p>
-                      {sk.desiredSalary && (
-                        <p className="text-xs font-medium">${sk.desiredSalary}/game</p>
+                      {sk.desiredPayPerGame && (
+                        <p className="text-xs font-medium">${sk.desiredPayPerGame}/game</p>
                       )}
                     </div>
                   </div>
