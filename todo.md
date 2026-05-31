@@ -847,3 +847,18 @@
 - [ ] Phase 5: Test staff application workflow end-to-end
 - [ ] Phase 5: Test availability management in staff portals
 - [ ] Phase 5: Test admin assignment capabilities
+
+
+## Bug Fixes & Improvements (May 31, 2026)
+
+### Staff Availability System Fix
+- [x] Fixed React hook error in StaffAvailability component (moved access check after hooks)
+- [x] Fixed selectGameAvailability procedure to create staffAvailability records (was only updating refereeApplications.selectedGames)
+- [x] Added staffAvailability import to referee.ts
+- [ ] Test: Re-submit referee availability through Staff Portal and verify it appears in admin/staff-availability
+- [ ] Test: Verify existing referee signups display correctly after re-submission
+- [ ] Manual data migration: Create staffAvailability records for existing referee signups
+
+### Known Issues
+- Existing referee availability data (Simon Arzouan for Golan Guards vs H Hammers) needs to be migrated to staffAvailability table
+- Admin/staff-availability page shows "0 Referees" until new fix is applied and data is re-submitted

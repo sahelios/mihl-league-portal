@@ -5,16 +5,28 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowLeft, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Users, Loader2 } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/dateUtils';
 
 export default function StaffAvailability() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
 
+  // Get upcoming games - always call hooks, but conditionally use data
+  const { data: upcomingGames = [], isLoading: gamesLoading } = trpc.league.getUpcomingGames.useQuery();
+
+  // Check auth and loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-accent" />
+      </div>
+    );
+  }
+
   // Admin Access Check
-  if (user?.email !== 'sarzouan@gmail.com') {
+  if (!user || user.email !== 'sarzouan@gmail.com') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -29,9 +41,6 @@ export default function StaffAvailability() {
       </div>
     );
   }
-
-  // Get upcoming games
-  const { data: upcomingGames = [], isLoading: gamesLoading } = trpc.league.getUpcomingGames.useQuery();
 
   return (
     <div className="min-h-screen bg-background">

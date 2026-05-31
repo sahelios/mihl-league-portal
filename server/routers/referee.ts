@@ -1,6 +1,6 @@
 import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
 import { getDb } from '../db';
-import { refereeApplications } from '../../drizzle/schema';
+import { refereeApplications, staffAvailability } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
@@ -90,9 +90,24 @@ export const refereeRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Application not found or not approved.' });
       }
 
+      // Update the refereeApplications record with selected games
       await db.update(refereeApplications)
         .set({ selectedGames: input.selectedGameIds })
         .where(eq(refereeApplications.id, app.id));
+
+      // Delete old staffAvailability records for this referee
+      await db.delete(staffAvailability)
+        .where(eq(staffAvailability.staffApplicationId, app.id));
+
+      // Create new staffAvailability records for each selected game
+      if (input.selectedGameIds.length > 0) {
+        const availabilityRecords = input.selectedGameIds.map(gameId => ({
+          staffApplicationId: app.id,
+          gameId: gameId,
+          isAvailable: true,
+        }));
+        await db.insert(staffAvailability).values(availabilityRecords);
+      }
 
       return { success: true };
     }),
