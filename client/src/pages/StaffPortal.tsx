@@ -180,7 +180,12 @@ export function StaffPortal() {
                         {game.teamAName} vs {game.teamBName}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {new Date(game.gameDate).toLocaleDateString()} at {game.gameTime}
+                        {new Date(game.gameDate).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })} at {game.gameTime}
                       </p>
                       {isTaken && !isSelected && (
                         <div className="mt-2 text-xs text-red-600 flex items-center gap-1">

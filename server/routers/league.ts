@@ -104,8 +104,15 @@ export const leagueRouter = router({
       try {
         const conditions = [];
 
-        // Default to Summer 2026 if no season specified
-        const seasonId = input?.seasonId || 30001;
+        // Use active season if no season specified
+        let seasonId = input?.seasonId;
+        if (!seasonId) {
+          const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true));
+          if (activeSeason.length === 0) {
+            return [];
+          }
+          seasonId = activeSeason[0].id;
+        }
         conditions.push(eq(games.seasonId, seasonId));
 
         // Filter by team if provided
@@ -135,16 +142,22 @@ export const leagueRouter = router({
         const allVenues = await db.select().from(gameVenues);
         const venueMap = new Map(allVenues.map(v => [v.id, v.name]));
 
-        return allGames.map(game => ({
-          ...game,
-          teamAName: teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`,
-          teamBName: teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`,
-          teamAScore: game.homeScore,
-          teamBScore: game.awayScore,
-          date: game.gameDate,
-          time: game.gameTime,
-          venue: venueMap.get(game.venueId) || 'TBA',
-        }));
+        return allGames.map(game => {
+          // Use the isEvaluationGame field from the games table
+          const isEvaluationGame = game.isEvaluationGame === true;
+          
+          return {
+            ...game,
+            teamAName: isEvaluationGame ? 'Team White' : (teamMap.get(game.homeTeamId) || `Team ${game.homeTeamId}`),
+            teamBName: isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`),
+            teamAScore: game.homeScore,
+            teamBScore: game.awayScore,
+            date: game.gameDate,
+            time: game.gameTime,
+            venue: venueMap.get(game.venueId) || 'TBA',
+            isEvaluationGame,
+          };
+        });
       } catch (error) {
         console.error('Error fetching schedule:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch schedule" });

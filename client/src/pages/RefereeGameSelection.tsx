@@ -80,8 +80,15 @@ export default function RefereeGameSelection() {
                 />
                 <Label htmlFor={`game-${game.id}`} className="flex-1 cursor-pointer flex justify-between items-center">
                   <div>
-                    <div className="font-semibold">{game.date} @ {game.time}</div>
-                    <div className="text-sm text-muted-foreground">{game.teamAway} vs {game.teamHome}</div>
+                    <div className="font-semibold">
+                      {new Date(game.date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })} @ {game.time}
+                    </div>
+                    <div className="text-sm text-muted-foreground">{game.teamAName} vs {game.teamBName}</div>
                   </div>
                   <Badge variant="outline">{game.venue}</Badge>
                 </Label>

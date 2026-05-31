@@ -867,3 +867,17 @@
 - [x] Admin staff assignment: Create tRPC procedures (getAllApprovedStaff, removeStaffFromGame)
 - [x] Admin staff assignment: Add UI to select from all approved referees/scorekeepers in staff availability page
 - [x] Admin staff assignment: Add remove staff button to unassign staff from games
+
+
+## Schedule Data Consistency Audit
+- [x] Audit: Identify all pages that display game schedules (Staff Portal, Player Portal, Schedule page, Admin pages)
+- [x] Audit: Check which backend procedures each page uses to fetch schedule data
+- [x] Audit: Verify if all pages are querying the same source of truth
+- [x] Fix: Fixed getSchedule procedure to use active season instead of hardcoded seasonId
+- [x] Fix: Fixed getSchedule to properly handle evaluation games (Team White/Black)
+- [x] Fix: Updated StaffPortal date formatting to match Schedule page (Tuesday, June 23, 2026)
+- [x] Fix: Updated RefereeGameSelection date formatting to match Schedule page
+- [x] Test: Verified Staff Portal displays correct games with proper dates
+- [x] Test: Verified Schedule page displays correct games
+- [x] Test: Verified Admin staff availability page displays correct games
+- [x] Test: All pages now display consistent schedule data
