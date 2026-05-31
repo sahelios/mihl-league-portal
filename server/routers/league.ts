@@ -599,28 +599,21 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const staffApp = await db.select().from(refereeApplications)
-          .where(eq(refereeApplications.id, ctx.user.id));
+        console.log('[addStaffAvailability] ctx.user:', { id: ctx.user.id, email: ctx.user.email });
+        let staffApp = await db.select().from(refereeApplications)
+          .where(eq(refereeApplications.userId, ctx.user.id));
+        console.log('[addStaffAvailability] staffApp found by userId:', staffApp.length, staffApp);
+        
         if (staffApp.length === 0) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Staff application not found" });
+          staffApp = await db.select().from(refereeApplications)
+            .where(eq(refereeApplications.email, ctx.user.email));
+          console.log('[addStaffAvailability] staffApp found by email:', staffApp.length, staffApp);
         }
         
-        // Check if someone of the same role is already assigned to this game
-        const existingAssignment = await db.select()
-          .from(staffAvailability)
-          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
-          .where(and(
-            eq(staffAvailability.gameId, input.gameId),
-            eq(staffAvailability.isAvailable, true),
-            eq(refereeApplications.role, staffApp[0].role)
-          ));
-        
-        if (existingAssignment.length > 0) {
-          throw new TRPCError({ 
-            code: "CONFLICT", 
-            message: `A ${staffApp[0].role} is already assigned to this game` 
-          });
+        if (staffApp.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `Staff application not found for userId=${ctx.user.id} or email=${ctx.user.email}` });
         }
+        
         
         // Check if this staff member is already available for this game
         const alreadyAvailable = await db.select()
@@ -652,7 +645,8 @@ export const leagueRouter = router({
         
         return { success: true };
       } catch (error: any) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        console.error('[addStaffAvailability] Error:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || 'Unknown error' });
       }
     }),
 
@@ -662,8 +656,14 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        const staffApp = await db.select().from(refereeApplications)
-          .where(eq(refereeApplications.id, ctx.user.id));
+        let staffApp = await db.select().from(refereeApplications)
+          .where(eq(refereeApplications.userId, ctx.user.id));
+        
+        if (staffApp.length === 0) {
+          staffApp = await db.select().from(refereeApplications)
+            .where(eq(refereeApplications.email, ctx.user.email));
+        }
+        
         if (staffApp.length === 0) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Staff application not found" });
         }
@@ -683,7 +683,8 @@ export const leagueRouter = router({
         
         return { success: true };
       } catch (error: any) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        console.error('[removeStaffAvailability] Error:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message || 'Unknown error' });
       }
     }),
 
@@ -693,7 +694,7 @@ export const leagueRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
         const staffApp = await db.select().from(refereeApplications)
-          .where(eq(refereeApplications.id, ctx.user.id));
+          .where(eq(refereeApplications.userId, ctx.user.id));
         if (staffApp.length === 0) {
           return [];
         }

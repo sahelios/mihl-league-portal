@@ -881,3 +881,12 @@
 - [x] Test: Verified Schedule page displays correct games
 - [x] Test: Verified Admin staff availability page displays correct games
 - [x] Test: All pages now display consistent schedule data
+
+
+## Staff Availability Bug - Full Debug & Fix (PRIORITY)
+- [ ] Verify Simon Arzouan has referee and scorekeeper application records with status 'approved'
+- [ ] Check if addStaffAvailability mutation is being called when games are selected in /staff-portal
+- [ ] Verify staffAvailability records are being created in database after selection
+- [ ] Test that admin/staff-availability shows selected staff for both referees and scorekeepers
+- [ ] Ensure fix works for both referees and scorekeepers
+- [ ] End-to-end test: Select game in /staff-portal → Verify appears in /admin/staff-availability

@@ -26,8 +26,8 @@ export function StaffPortal() {
     { enabled: false }
   );
 
-  // Mutations
-  const addAvailability = trpc.league.addStaffAvailability.useMutation({
+  // Mutations - use referee.selectGameAvailability which properly creates staffAvailability records
+  const updateAvailability = trpc.referee.selectGameAvailability.useMutation({
     onSuccess: () => {
       refetchAvailable();
       // Refetch all game statuses
@@ -38,22 +38,7 @@ export function StaffPortal() {
       }
     },
     onError: (error: any) => {
-      console.error('Failed to mark availability:', error.message);
-    }
-  });
-
-  const removeAvailability = trpc.league.removeStaffAvailability.useMutation({
-    onSuccess: () => {
-      refetchAvailable();
-      // Refetch all game statuses
-      if (upcomingGames) {
-        upcomingGames.forEach(game => {
-          getGameStaffStatus.refetch({ gameId: game.id });
-        });
-      }
-    },
-    onError: (error: any) => {
-      console.error('Failed to remove availability:', error.message);
+      console.error('Failed to update availability:', error.message);
     }
   });
 
@@ -83,19 +68,15 @@ export function StaffPortal() {
   }, [upcomingGames]);
 
   const handleToggleGame = async (gameId: number) => {
-    const isSelected = selectedGames.has(gameId);
-    
-    if (isSelected) {
-      setSelectedGames(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(gameId);
-        return newSet;
-      });
-      removeAvailability.mutate({ gameId });
+    const newSet = new Set(selectedGames);
+    if (newSet.has(gameId)) {
+      newSet.delete(gameId);
     } else {
-      setSelectedGames(prev => new Set(prev).add(gameId));
-      addAvailability.mutate({ gameId });
+      newSet.add(gameId);
     }
+    setSelectedGames(newSet);
+    // Call the mutation with all selected game IDs
+    updateAvailability.mutate({ selectedGameIds: Array.from(newSet) });
   };
 
   if (!user) {
@@ -170,8 +151,7 @@ export function StaffPortal() {
                       checked={isSelected}
                       onCheckedChange={() => handleToggleGame(game.id)}
                       disabled={
-                        addAvailability.isPending || 
-                        removeAvailability.isPending ||
+                        updateAvailability.isPending ||
                         (!canSelect && !isSelected)
                       }
                     />
@@ -180,7 +160,7 @@ export function StaffPortal() {
                         {game.teamAName} vs {game.teamBName}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {new Date(game.gameDate).toLocaleDateString('en-US', { 
+                        {new Date(game.gameDate + 'T00:00:00').toLocaleDateString('en-US', { 
                           weekday: 'long', 
                           month: 'long', 
                           day: 'numeric', 

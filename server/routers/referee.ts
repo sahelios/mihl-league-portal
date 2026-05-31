@@ -78,11 +78,21 @@ export const refereeRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
 
-      const apps = await db
+      // Try to find application by userId first, then fall back to email
+      let apps = await db
         .select()
         .from(refereeApplications)
-        .where(eq(refereeApplications.email, ctx.user?.email || ""))
+        .where(eq(refereeApplications.userId, ctx.user.id))
         .limit(1);
+      
+      if (!apps.length) {
+        // Fall back to email matching for backward compatibility
+        apps = await db
+          .select()
+          .from(refereeApplications)
+          .where(eq(refereeApplications.email, ctx.user?.email || ""))
+          .limit(1);
+      }
       
       const app = apps[0];
 

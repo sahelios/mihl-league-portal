@@ -413,6 +413,7 @@ export type InsertAuditLog = typeof auditLogs.$inferInsert;
 
 export const refereeApplications = mysqlTable("refereeApplications", {
   id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
   firstName: varchar("firstName", { length: 100 }).notNull(),
   lastName: varchar("lastName", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),

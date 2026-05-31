@@ -81,7 +81,7 @@ export default function RefereeGameSelection() {
                 <Label htmlFor={`game-${game.id}`} className="flex-1 cursor-pointer flex justify-between items-center">
                   <div>
                     <div className="font-semibold">
-                      {new Date(game.date).toLocaleDateString('en-US', { 
+                      {new Date(game.date + 'T00:00:00').toLocaleDateString('en-US', { 
                         weekday: 'long', 
                         month: 'long', 
                         day: 'numeric', 
