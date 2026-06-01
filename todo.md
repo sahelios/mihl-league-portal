@@ -924,3 +924,7 @@
 - [x] Test email/password authentication flow end-to-end
 - [x] Verify password hashing and security
 - [x] Save checkpoint after implementation
+- [x] Fix session token creation signatures in routers.ts (userId, email, name, options)
+- [x] Write and run vitest tests for email/password procedures (9/9 passing)
+- [x] Verify Login page displays both authentication options
+- [x] Verify error handling and validation in signup/login flows
