@@ -49,6 +49,7 @@ import RefereeGameSelection from "./pages/RefereeGameSelection";
 // Player Portal
 import PlayerPortal from "./pages/PlayerPortal";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
+import Login from "./pages/Login";
 
 // Staff Portal
 import { StaffPortal } from "./pages/StaffPortal";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/player-portal" component={PlayerPortal} />
       <Route path="/staff-portal" component={StaffPortal} />
       <Route path="/magic-login" component={MagicLinkLogin} />
+      <Route path="/login" component={Login} />
 
       {/* Admin Pages */}
       <Route path="/admin" component={AdminDashboard} />

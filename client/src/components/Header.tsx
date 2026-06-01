@@ -75,13 +75,14 @@ export default function Header({ isAdmin = false }: HeaderProps) {
                 </Button>
               </>
             ) : (
-              <Button
-                size="sm"
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                onClick={() => (window.location.href = getLoginUrl())}
-              >
-                Login
-              </Button>
+              <Link href="/login">
+                <Button
+                  size="sm"
+                  className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                >
+                  Login
+                </Button>
+              </Link>
             )}
 
             {/* Mobile Menu Button */}

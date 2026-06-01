@@ -913,3 +913,13 @@
 - [x] Verify admin access still works after migration
 - [x] Fix logout button to use correct cookie name (app_session_id)
 - [x] Save checkpoint after successful migration
+
+
+## NEW: Email/Password Authentication (Complete)
+- [x] Update authentication logic to support email/password alongside Google OAuth
+- [x] Create login form UI with email/password fields
+- [x] Implement signup/login tRPC procedures for email/password
+- [x] Update frontend login page to show both Google OAuth and email/password options
+- [x] Test email/password authentication flow end-to-end
+- [x] Verify password hashing and security
+- [x] Save checkpoint after implementation
