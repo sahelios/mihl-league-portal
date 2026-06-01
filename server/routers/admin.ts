@@ -33,6 +33,7 @@ import {
   loginTokens,
   adminRegisteredPlayers,
 } from "../../drizzle/schema";
+import { broadcastGameInfoUpdate } from "../_core/websocket";
 
 // Helper to ensure admin access
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -362,6 +363,15 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       await db.update(games).set({ homeScore: input.homeScore, awayScore: input.awayScore, status: 'completed' }).where(eq(games.id, input.gameId));
+      
+      // Broadcast real-time update to all connected clients
+      broadcastGameInfoUpdate(input.gameId.toString(), {
+        gameId: input.gameId,
+        homeScore: input.homeScore,
+        awayScore: input.awayScore,
+        status: 'completed',
+      });
+      
       return { success: true };
     }),
 
