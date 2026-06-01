@@ -25,6 +25,13 @@ class GoogleOAuthService {
     this.clientId = ENV.googleClientId;
     this.clientSecret = ENV.googleClientSecret;
 
+    console.log("[Google OAuth] Initializing with:", {
+      clientIdLength: this.clientId?.length,
+      clientSecretLength: this.clientSecret?.length,
+      hasClientId: !!this.clientId,
+      hasClientSecret: !!this.clientSecret,
+    });
+
     if (!this.clientId || !this.clientSecret) {
       console.error(
         "[Google OAuth] ERROR: GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET is not configured!"
@@ -40,6 +47,12 @@ class GoogleOAuthService {
     redirectUri: string
   ): Promise<{ accessToken: string; idToken?: string }> {
     try {
+      console.log("[Google OAuth] Exchanging code for token with:", {
+        clientId: this.clientId,
+        redirectUri,
+        codeLength: code.length,
+      });
+      
       const response = await axios.post(GOOGLE_TOKEN_URL, {
         client_id: this.clientId,
         client_secret: this.clientSecret,
@@ -52,8 +65,12 @@ class GoogleOAuthService {
         accessToken: response.data.access_token,
         idToken: response.data.id_token,
       };
-    } catch (error) {
-      console.error("[Google OAuth] Token exchange failed:", error);
+    } catch (error: any) {
+      console.error("[Google OAuth] Token exchange failed:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
       throw new Error("Failed to exchange code for token");
     }
   }
