@@ -68,8 +68,16 @@ class GoogleOAuthService {
     } catch (error: any) {
       console.error("[Google OAuth] Token exchange failed:", {
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data,
         message: error.message,
+        code: error.code,
+        requestData: {
+          client_id: this.clientId?.substring(0, 10) + '...',
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+          code_length: code.length,
+        }
       });
       throw new Error("Failed to exchange code for token");
     }

@@ -53,10 +53,12 @@ export const appRouter = router({
           });
 
           // Create session token
-          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
-            name: user.name || '',
-            expiresInMs: ONE_YEAR_MS,
-          });
+          const sessionToken = await ctx.sdk.createSessionToken(
+            user.id.toString(),
+            user.email,
+            user.name || 'User',
+            { expiresInMs: ONE_YEAR_MS }
+          );
 
           // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -97,10 +99,12 @@ export const appRouter = router({
           }
 
           // Create session token
-          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
-            name: user.name || '',
-            expiresInMs: ONE_YEAR_MS,
-          });
+          const sessionToken = await ctx.sdk.createSessionToken(
+            user.id.toString(),
+            user.email,
+            user.name || 'User',
+            { expiresInMs: ONE_YEAR_MS }
+          );
 
           // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -189,10 +193,12 @@ export const appRouter = router({
           await markTokenAsUsed(input.token);
 
           // Create session token
-          const sessionToken = await ctx.sdk.createSessionToken(user.id.toString(), {
-            name: user.name || '',
-            expiresInMs: ONE_YEAR_MS,
-          });
+          const sessionToken = await ctx.sdk.createSessionToken(
+            user.id.toString(),
+            user.email,
+            user.name || 'User',
+            { expiresInMs: ONE_YEAR_MS }
+          );
 
           // Set session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
