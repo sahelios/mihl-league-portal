@@ -930,6 +930,14 @@
 - [x] Verify error handling and validation in signup/login flows
 
 
+## NEW: Enhanced Logo with Full League Name (Complete - June 1, 2026)
+- [x] Create enhanced MIHL logo with full "The Mensches Ice Hockey League" text
+- [x] Logo includes shield, hockey stick, puck, and Star of David symbol
+- [x] Navy blue and gold color scheme (professional and distinctive)
+- [x] Update website header to use new enhanced logo
+- [x] Logo now displays correctly in header
+- [x] Provide instructions to update app logo in Management UI Settings for OAuth consent screen
+
 ## NEW: Public Legal Pages (Complete - June 1, 2026)
 - [x] Create Terms of Service page with bilingual content (English/French)
   - [x] User responsibilities and conduct rules
