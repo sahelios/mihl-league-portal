@@ -54,6 +54,10 @@ import Login from "./pages/Login";
 // Staff Portal
 import { StaffPortal } from "./pages/StaffPortal";
 
+// Legal Pages
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+
 import NotFound from "./pages/NotFound";
 
 function Router() {
@@ -78,6 +82,8 @@ function Router() {
       <Route path="/staff-portal" component={StaffPortal} />
       <Route path="/magic-login" component={MagicLinkLogin} />
       <Route path="/login" component={Login} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/privacy" component={Privacy} />
 
       {/* Admin Pages */}
       <Route path="/admin" component={AdminDashboard} />

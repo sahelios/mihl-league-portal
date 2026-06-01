@@ -928,3 +928,26 @@
 - [x] Write and run vitest tests for email/password procedures (9/9 passing)
 - [x] Verify Login page displays both authentication options
 - [x] Verify error handling and validation in signup/login flows
+
+
+## NEW: Public Legal Pages (Complete - June 1, 2026)
+- [x] Create Terms of Service page with bilingual content (English/French)
+  - [x] User responsibilities and conduct rules
+  - [x] League rules and game participation requirements
+  - [x] Liability disclaimers for injuries/accidents
+  - [x] Payment and refund policies
+  - [x] Suspension and removal procedures
+  - [x] Intellectual property and content rights
+- [x] Create Privacy Policy page with bilingual content (English/French)
+  - [x] Information collection practices (registration, payment, account, game data)
+  - [x] Data usage and email communications
+  - [x] Payment information handling and security
+  - [x] Third-party integrations (Google OAuth)
+  - [x] GDPR compliance and user rights
+  - [x] Data retention policies
+  - [x] Children's privacy protection
+  - [x] Public information display options
+- [x] Add Terms and Privacy routes to App.tsx
+- [x] Add Terms and Privacy links to Footer component
+- [x] Verify pages are accessible and properly styled
+- [x] Verify bilingual language toggle works on both pages

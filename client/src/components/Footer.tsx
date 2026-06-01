@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Footer() {
   return (
@@ -68,6 +69,19 @@ export default function Footer() {
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 mb-4 text-center text-sm bg-primary-foreground/5 p-4 rounded">
           <p className="text-primary-foreground font-semibold mb-1">Registration Deadline: June 9, 2026</p>
           <p className="text-primary-foreground/80 text-xs">Register before the deadline to secure your spot for the 2026 summer season</p>
+        </div>
+
+        {/* Legal Links */}
+        <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm">
+          <div className="flex justify-center gap-6 mb-4">
+            <Link href="/terms" className="hover:text-secondary transition text-primary-foreground/80 hover:text-primary-foreground">
+              Terms of Service
+            </Link>
+            <span className="text-primary-foreground/40">|</span>
+            <Link href="/privacy" className="hover:text-secondary transition text-primary-foreground/80 hover:text-primary-foreground">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
 
         <div className="text-center text-sm text-primary-foreground/60">
