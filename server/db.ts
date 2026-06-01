@@ -96,6 +96,18 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user: database not available");
+    return undefined;
+  }
+
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
 // League-specific queries
 
 export async function getActiveSeasonId() {
@@ -269,23 +281,6 @@ export async function updateSuspension(id: number, data: Partial<InsertSuspensio
 
 
 // Email/Password Authentication Functions
-export async function getUserByEmail(email: string) {
-  const db = await getDb();
-  if (!db) return null;
-  
-  try {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
-    
-    return result[0] || null;
-  } catch (error) {
-    console.error("[Database] Error getting user by email:", error);
-    return null;
-  }
-}
 
 export async function createUser(data: {
   email: string;

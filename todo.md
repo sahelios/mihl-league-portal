@@ -890,3 +890,14 @@
 - [ ] Test that admin/staff-availability shows selected staff for both referees and scorekeepers
 - [ ] Ensure fix works for both referees and scorekeepers
 - [ ] End-to-end test: Select game in /staff-portal → Verify appears in /admin/staff-availability
+
+
+## NEW: Google OAuth Migration (Complete)
+- [x] Migrate from Manus OAuth to Google OAuth
+- [x] Preserve all existing user accounts by email mapping
+- [x] Update server authentication code to use Google OAuth
+- [x] Configure Google OAuth environment variables
+- [x] Update frontend login UI and redirect flow
+- [x] Test Google OAuth login with existing user accounts
+- [x] Verify admin access still works after migration
+- [x] Save checkpoint after successful migration
