@@ -12,9 +12,6 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { validateLoginToken, markTokenAsUsed } from "./_core/adminRegistrationService";
 
-const COOKIE_NAME = "session";
-const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-
 export const appRouter = router({
   system: systemRouter,
   auth: router({

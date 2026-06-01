@@ -901,3 +901,15 @@
 - [x] Test Google OAuth login with existing user accounts
 - [x] Verify admin access still works after migration
 - [x] Save checkpoint after successful migration
+
+
+## NEW: Google OAuth Migration & Logout Fix (Complete)
+- [x] Migrate from Manus OAuth to Google OAuth
+- [x] Preserve all existing user accounts by email mapping
+- [x] Update server authentication code to use Google OAuth
+- [x] Configure Google OAuth environment variables
+- [x] Update frontend login UI and redirect flow
+- [x] Test Google OAuth login with existing user accounts (working on live site)
+- [x] Verify admin access still works after migration
+- [x] Fix logout button to use correct cookie name (app_session_id)
+- [x] Save checkpoint after successful migration

@@ -269,7 +269,8 @@ class GoogleOAuthSDK {
   getLoginUrl(returnPath: string = "/"): string {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const redirectUri = `${origin}/api/oauth/callback`;
-    const state = Buffer.from(redirectUri).toString("base64");
+    // Use a simple state value - Google will pass it back unchanged
+    const state = "oauth_state_123";
 
     return this.oauthService.getLoginUrl(redirectUri, state);
   }

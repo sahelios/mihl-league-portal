@@ -9,26 +9,43 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 function decodeState(state: string): string {
-  try {
-    return Buffer.from(state, "base64").toString("utf-8");
-  } catch {
-    return "/";
-  }
+  // State is just a simple value, not encoded
+  // Return the home page as default redirect
+  return "/";
 }
 
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
+    const error = getQueryParam(req, "error");
+    const errorDescription = getQueryParam(req, "error_description");
+
+    console.log("[Google OAuth] Callback received", {
+      hasCode: !!code,
+      hasState: !!state,
+      error,
+      errorDescription,
+    });
+
+    if (error) {
+      console.error("[Google OAuth] Error from Google:", error, errorDescription);
+      res.status(400).json({ error: `Google OAuth error: ${error}` });
+      return;
+    }
 
     if (!code || !state) {
+      console.error("[Google OAuth] Missing code or state", { code: !!code, state: !!state });
       res.status(400).json({ error: "code and state are required" });
       return;
     }
 
     try {
       const redirectUri = decodeState(state);
+      console.log("[Google OAuth] Decoded redirect URI:", redirectUri);
+      
       const session = await googleOAuthSDK.exchangeCodeForSession(code, redirectUri);
+      console.log("[Google OAuth] Session created for:", session.userInfo.email);
 
       const sessionToken = await googleOAuthSDK.createSessionToken(
         session.userInfo.id,
@@ -43,7 +60,7 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, "/");
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      res.status(500).json({ error: "OAuth callback failed", details: String(error) });
     }
   });
 }
