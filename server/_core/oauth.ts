@@ -41,8 +41,12 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const redirectUri = decodeState(state);
-      console.log("[Google OAuth] Decoded redirect URI:", redirectUri);
+      // Construct the redirect_uri that matches what was registered in Google Cloud Console
+      // This must be the full callback URL, not the page to redirect to
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const redirectUri = `${protocol}://${host}/api/oauth/callback`;
+      console.log("[Google OAuth] Using redirect URI for token exchange:", redirectUri);
       
       const session = await googleOAuthSDK.exchangeCodeForSession(code, redirectUri);
       console.log("[Google OAuth] Session created for:", session.userInfo.email);
@@ -57,7 +61,9 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      // Decode state to get the page to redirect to after login
+      const returnPath = decodeState(state);
+      res.redirect(302, returnPath || "/");
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });

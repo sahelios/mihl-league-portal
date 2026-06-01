@@ -912,6 +912,7 @@
 - [x] Test Google OAuth login with existing user accounts (working on live site)
 - [x] Verify admin access still works after migration
 - [x] Fix logout button to use correct cookie name (app_session_id)
+- [x] Fix OAuth token exchange redirect_uri mismatch
 - [x] Save checkpoint after successful migration
 
 
