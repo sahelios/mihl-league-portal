@@ -951,3 +951,17 @@
 - [x] Add Terms and Privacy links to Footer component
 - [x] Verify pages are accessible and properly styled
 - [x] Verify bilingual language toggle works on both pages
+
+
+## NEW: OAuth Verification Fixes (Complete - June 1, 2026)
+- [x] Fix home page visibility - ensure it's publicly accessible without login
+- [x] Add app purpose explanation to home page
+  - [x] Enhanced hero section with clear value proposition
+  - [x] New "About MIHL" section with detailed league description
+  - [x] "What We Offer" section highlighting key benefits
+  - [x] Key statistics display (4 teams, 2 venues, 100+ players, 20+ games)
+- [x] Ensure app name consistency across OAuth and UI
+  - [x] Verified home page displays "The Mensches Ice Hockey League"
+  - [x] Note: Update app name in Management UI Settings → General to "The Mensches Ice Hockey League" for OAuth consent screen consistency
+- [x] Verify home page is fully functional and loads without errors
+- [x] Test public access to home page (no login required)

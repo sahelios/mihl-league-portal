@@ -204,30 +204,30 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-primary text-primary-foreground py-16">
+      <section className="bg-primary text-primary-foreground py-20">
         <div className="container">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">
             The Mensches Ice Hockey League
           </h1>
-          <p className="text-lg text-primary-foreground/80 mb-6">
-            A recreational ice hockey league dedicated to community, competition, and camaraderie.
+          <p className="text-xl text-primary-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            A thriving recreational ice hockey league in Montreal dedicated to community, competition, and camaraderie. Join us for competitive play, skill development, and lasting friendships on the ice.
           </p>
           <div className="flex gap-4 flex-wrap">
             <Button 
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 text-base py-6 px-8"
               onClick={() => setLocation("/register")}
             >
               Players Register Now
             </Button>
             <Button 
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90 text-base py-6 px-8"
               onClick={() => setLocation("/referee-scorekeeper-apply")}
             >
               Referee/Scorekeeper Register Now
             </Button>
             <Button 
               variant="outline" 
-              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+              className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 text-base py-6 px-8"
               onClick={() => setLocation("/league-rules")}
             >
               Learn More
@@ -236,11 +236,82 @@ export default function Home() {
         </div>
       </section>
 
+      {/* About Section */}
+      <section className="bg-muted/50 py-16">
+        <div className="container">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-foreground">About MIHL</h2>
+              <p className="text-lg text-foreground/80 mb-4">
+                The Mensches Ice Hockey League is a premier recreational ice hockey league based in Montreal. We bring together passionate hockey players of all skill levels to compete in a fun, supportive, and community-focused environment.
+              </p>
+              <p className="text-lg text-foreground/80 mb-4">
+                Our league features competitive regular season play, evaluation games for skill development, and a strong emphasis on sportsmanship and camaraderie. Whether you're a seasoned player or returning to the ice after years away, MIHL offers the perfect opportunity to play the sport you love.
+              </p>
+              <p className="text-lg text-foreground/80">
+                With four competitive teams, professional officiating, and well-maintained venues, we provide a world-class recreational hockey experience.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-6 text-center">
+                <div className="text-4xl font-bold text-accent mb-2">4</div>
+                <p className="text-foreground font-semibold">Competitive Teams</p>
+              </Card>
+              <Card className="p-6 text-center">
+                <div className="text-4xl font-bold text-accent mb-2">2</div>
+                <p className="text-foreground font-semibold">Premium Venues</p>
+              </Card>
+              <Card className="p-6 text-center">
+                <div className="text-4xl font-bold text-accent mb-2">100+</div>
+                <p className="text-foreground font-semibold">Active Players</p>
+              </Card>
+              <Card className="p-6 text-center">
+                <div className="text-4xl font-bold text-accent mb-2">20+</div>
+                <p className="text-foreground font-semibold">Games/Season</p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
-      <div className="container py-12">
-        {/* Headline News */}
+      <div className="container py-16">
+        {/* What We Offer Section */}
+        <section className="mb-16 bg-gradient-to-r from-accent/10 to-secondary/10 -mx-4 md:-mx-8 px-4 md:px-8 py-12 rounded-lg">
+          <div className="container">
+            <h2 className="text-3xl font-bold mb-8 text-foreground">What We Offer</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="border-none shadow-none bg-transparent">
+                <CardHeader>
+                  <CardTitle className="text-xl text-accent">🏆 Competitive Play</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground/80">Exciting regular season games with professional officiating and fair competition across all skill levels.</p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-none bg-transparent">
+                <CardHeader>
+                  <CardTitle className="text-xl text-accent">📊 Skill Development</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground/80">Evaluation games and coaching opportunities to help players improve their skills and reach their potential.</p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-none bg-transparent">
+                <CardHeader>
+                  <CardTitle className="text-xl text-accent">🤝 Community</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-foreground/80">Build lasting friendships and be part of a vibrant hockey community dedicated to camaraderie and fun.</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Latest News */}
         <section className="mb-16">
-          <h2 className="text-3xl font-bold mb-8 text-foreground">Headline News</h2>
+          <h2 className="text-3xl font-bold mb-8 text-foreground">Latest News</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {news.map((item) => (
               <Card key={item.id} className="hover:shadow-lg transition">
