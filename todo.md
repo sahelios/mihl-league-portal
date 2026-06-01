@@ -965,3 +965,14 @@
   - [x] Note: Update app name in Management UI Settings → General to "The Mensches Ice Hockey League" for OAuth consent screen consistency
 - [x] Verify home page is fully functional and loads without errors
 - [x] Test public access to home page (no login required)
+
+
+## NEW: OAuth redirect_uri Mismatch Fix (Complete - June 1, 2026)
+- [x] Identify root cause: redirect_uri mismatch between authorization and token exchange
+- [x] Encode frontend origin in OAuth state parameter
+- [x] Decode state on backend to extract exact origin
+- [x] Use decoded origin to build redirect_uri for token exchange
+- [x] Ensure redirect_uri matches exactly between authorization request and token exchange
+- [x] Create comprehensive OAuth state encoding/decoding tests (7/7 passing)
+- [x] Verify all authentication tests pass (22/22 passing)
+- [x] Test OAuth state preservation across encode/decode cycles
