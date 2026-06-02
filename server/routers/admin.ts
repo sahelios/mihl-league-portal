@@ -1941,18 +1941,28 @@ export const adminRouter = router({
         const existing = await db.select().from(gameAssignments)
           .where(eq(gameAssignments.gameId, input.gameId));
         
+        // Build update object with only the fields being set
+        const updateData: any = {};
+        if (input.refereeId !== undefined) {
+          updateData.refereeId = input.refereeId;
+        }
+        if (input.scorekeeperId !== undefined) {
+          updateData.scorekeeperId = input.scorekeeperId;
+        }
+        
         if (existing.length > 0) {
-          await db.update(gameAssignments)
-            .set({
-              refereeId: input.refereeId,
-              scorekeeperId: input.scorekeeperId,
-            })
-            .where(eq(gameAssignments.gameId, input.gameId));
+          // Only update if there's data to update
+          if (Object.keys(updateData).length > 0) {
+            await db.update(gameAssignments)
+              .set(updateData)
+              .where(eq(gameAssignments.gameId, input.gameId));
+          }
         } else {
+          // For new assignments, use the provided values or null
           await db.insert(gameAssignments).values({
             gameId: input.gameId,
-            refereeId: input.refereeId,
-            scorekeeperId: input.scorekeeperId,
+            refereeId: input.refereeId || null,
+            scorekeeperId: input.scorekeeperId || null,
           });
         }
         return { success: true, message: "Staff assigned to game" };

@@ -986,6 +986,12 @@
 - [x] Test OAuth state preservation across encode/decode cycles
 
 
+## NEW: Staff Assignment Fix (Complete - June 2, 2026)
+- [x] Fix assignStaffToGame mutation to only update specific role being assigned
+- [x] Prevent referee assignment from overwriting scorekeeper assignment
+- [x] Prevent scorekeeper assignment from overwriting referee assignment
+- [x] Create and run 5 vitest tests for staff assignment (all passing)
+
 ## NEW: Real-Time Synchronization for Staff Availability & Game Management (In Progress - June 1, 2026)
 - [x] Install Socket.IO dependencies (socket.io, socket.io-client)
 - [x] Create WebSocket server infrastructure (server/_core/websocket.ts)
