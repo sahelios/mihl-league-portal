@@ -162,6 +162,16 @@ export default function Registration() {
           </button>
         </div>
         
+        {!user && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800 font-semibold">
+              {language === "en" 
+                ? "Please log in to complete your registration. Your email will be automatically filled in." 
+                : "Veuillez vous connecter pour compléter votre inscription. Votre e-mail sera rempli automatiquement."}
+            </p>
+          </div>
+        )}
+        
         {!registrationOpen && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 font-semibold">

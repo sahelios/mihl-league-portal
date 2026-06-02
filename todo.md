@@ -1016,3 +1016,6 @@
 - [x] Always display league registration form (the correct form)
 - [x] Ensure consistent experience for all users regardless of login status
 - [x] Verify project builds without errors
+- [x] Add prominent login requirement note at top of form
+- [x] Note explains email field is auto-filled after login
+- [x] Note available in English and French
