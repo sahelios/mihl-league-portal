@@ -16,7 +16,8 @@ type RegistrationStep = "signup" | "league-registration";
 export default function Registration() {
   const [, navigate] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
-  const [step, setStep] = useState<RegistrationStep>(user ? "league-registration" : "signup");
+  // Always show league registration form - this is the correct form
+  const [step, setStep] = useState<RegistrationStep>("league-registration");
   
   // Signup form state
   const [email, setEmail] = useState("");
@@ -146,83 +147,7 @@ export default function Registration() {
     }
   };
   
-  if (step === "signup" && !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-md mx-auto px-4 py-12">
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => setLanguage(language === "en" ? "fr" : "en")}
-              className="px-4 py-2 bg-accent text-accent-foreground rounded hover:bg-accent/90"
-            >
-              {language === "en" ? "FR" : "EN"}
-            </button>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>{language === "en" ? "Create Your Account" : "Créer Votre Compte"}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">{language === "en" ? "Full Name (Optional)" : "Nom Complet (Optionnel)"}</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder={language === "en" ? "John Doe" : "Jean Dupont"}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="email">{language === "en" ? "Email" : "E-mail"}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="password">{language === "en" ? "Password" : "Mot de passe"}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder={language === "en" ? "At least 6 characters" : "Au moins 6 caractères"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="confirmPassword">{language === "en" ? "Confirm Password" : "Confirmer le Mot de passe"}</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder={language === "en" ? "Confirm your password" : "Confirmez votre mot de passe"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {language === "en" ? "Create Account" : "Créer un Compte"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12">

@@ -1009,3 +1009,10 @@
 - [ ] Test real-time updates when admin updates game scores
 - [ ] Verify all pages auto-refresh on any change
 - [ ] Test cross-browser real-time synchronization
+
+
+## NEW: Registration Page Form Consistency Fix (Complete - June 2, 2026)
+- [x] Remove conditional signup form that showed when not logged in
+- [x] Always display league registration form (the correct form)
+- [x] Ensure consistent experience for all users regardless of login status
+- [x] Verify project builds without errors
