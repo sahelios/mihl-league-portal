@@ -72,6 +72,7 @@ export function registerOAuthRoutes(app: Express) {
       console.log("[Google OAuth] State data:", stateData);
       
       const session = await googleOAuthSDK.exchangeCodeForSession(code, redirectUri);
+      console.log("[Google OAuth] Session created, userInfo:", JSON.stringify(session.userInfo));
       console.log("[Google OAuth] Session created for:", session.userInfo.email);
       console.log("[Google OAuth] About to call createSessionToken");
 
