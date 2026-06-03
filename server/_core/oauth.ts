@@ -37,6 +37,10 @@ function decodeState(state: string): { origin: string; returnPath: string } {
 
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
+    // Ensure Cloudflare doesn't cache this response or strip Set-Cookie header
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
     const error = getQueryParam(req, "error");
@@ -95,14 +99,37 @@ export function registerOAuthRoutes(app: Express) {
         sameSite: cookieOptions.sameSite,
       });
       
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-      console.log("[Google OAuth] Cookie set, response headers:", res.getHeaders());
+      // Explicitly set cookie with domain from stateOrigin to ensure it's set on the correct domain
+      const finalCookieOptions = {
+        ...cookieOptions,
+        maxAge: ONE_YEAR_MS,
+        domain: ".mihl.ca", // Force domain for mihl.ca
+      };
+      res.cookie(COOKIE_NAME, sessionToken, finalCookieOptions);
+      console.log("[Google OAuth] Cookie set with options:", finalCookieOptions);
+      console.log("[Google OAuth] Response headers after cookie:", res.getHeaders());
 
-      // Redirect to absolute URL using origin from state to ensure cookie is set on correct domain
+      // Return 200 with client-side redirect instead of 302
+      // This prevents Cloudflare from stripping the Set-Cookie header
       const redirectUrl = new URL(stateData.returnPath || "/", stateData.origin).toString();
       console.log("[Google OAuth] Redirecting to:", redirectUrl);
-      res.redirect(302, redirectUrl);
-      console.log("[Google OAuth] Redirect sent");
+      
+      // Send HTML with JavaScript redirect to ensure Set-Cookie is sent with 200 response
+      const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Redirecting...</title>
+  <meta http-equiv="refresh" content="0;url=${redirectUrl}">
+</head>
+<body>
+  <p>Redirecting to <a href="${redirectUrl}">${redirectUrl}</a>...</p>
+  <script>
+    window.location.href = '${redirectUrl}';
+  </script>
+</body>
+</html>`;
+      res.status(200).send(htmlContent);
+      console.log("[Google OAuth] Sent 200 with client-side redirect");
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });
