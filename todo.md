@@ -1046,3 +1046,11 @@
 - [x] Create and run 8 vitest tests for OAuth callback (all passing)
 - [x] Tests verify state encoding/decoding for mihl.ca and www.mihl.ca
 - [x] Tests verify absolute redirect URL construction
+
+
+## NEW: Cookie Domain Fix for OAuth (Complete - June 3, 2026)
+- [x] Set cookie domain to .mihl.ca for cross-subdomain access
+- [x] Cookie now works for mihl.ca, www.mihl.ca, and all subdomains
+- [x] Maintain sameSite=none and secure flags for OAuth
+- [x] Create and run 13 vitest tests for cookie domain (all passing)
+- [x] Tests verify domain configuration for all scenarios
