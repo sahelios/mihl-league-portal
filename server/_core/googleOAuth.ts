@@ -99,6 +99,14 @@ class GoogleOAuthService {
         },
       });
 
+      console.log("[Google OAuth] getUserInfo response:", JSON.stringify(response.data));
+      console.log("[Google OAuth] getUserInfo parsed:", {
+        id: response.data.id,
+        email: response.data.email,
+        name: response.data.name,
+        picture: response.data.picture,
+      });
+
       return {
         id: response.data.id,
         email: response.data.email,
