@@ -17,12 +17,17 @@ function decodeState(state: string): { origin: string; returnPath: string } {
   try {
     const decoded = atob(state);
     const stateData = JSON.parse(decoded) as StateData;
+    // Always require origin in state - never use window.location.origin on server
+    if (!stateData.origin) {
+      throw new Error("Missing origin in state");
+    }
     return {
-      origin: stateData.origin || window.location.origin,
+      origin: stateData.origin,
       returnPath: stateData.returnPath || "/"
     };
   } catch (error) {
     console.error("[Google OAuth] Failed to decode state:", error);
+    // Fallback to https://mihl.ca if state decode fails
     return {
       origin: "https://mihl.ca",
       returnPath: "/"
@@ -79,8 +84,10 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Redirect to the page specified in state
-      res.redirect(302, stateData.returnPath || "/");
+      // Redirect to absolute URL using origin from state to ensure cookie is set on correct domain
+      const redirectUrl = new URL(stateData.returnPath || "/", stateData.origin).toString();
+      console.log("[Google OAuth] Redirecting to:", redirectUrl);
+      res.redirect(302, redirectUrl);
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });

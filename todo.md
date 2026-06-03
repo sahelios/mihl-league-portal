@@ -1037,3 +1037,12 @@
 - [x] Added connection pool health check on initialization
 - [x] Verified project builds without errors
 - [x] This fix resolves the intermittent 404 errors on mihl.ca caused by database disconnections
+
+
+## NEW: Google OAuth Callback Fix (Complete - June 3, 2026)
+- [x] Fix decodeState to never reference window.location.origin on server
+- [x] Change redirect after callback to absolute URL using origin from state
+- [x] Ensure cookie is set correctly for the domain
+- [x] Create and run 8 vitest tests for OAuth callback (all passing)
+- [x] Tests verify state encoding/decoding for mihl.ca and www.mihl.ca
+- [x] Tests verify absolute redirect URL construction
