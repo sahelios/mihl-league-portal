@@ -83,15 +83,26 @@ export function registerOAuthRoutes(app: Express) {
         { expiresInMs: ONE_YEAR_MS }
       );
       console.log("[Google OAuth] Session token created");
+      console.log("[Google OAuth] Session token length:", sessionToken.length);
 
       // Pass stateOrigin to ensure cookie domain is set correctly for the redirect destination
       const cookieOptions = getSessionCookieOptions(req, stateData.origin);
+      console.log("[Google OAuth] Cookie options:", {
+        domain: cookieOptions.domain,
+        path: cookieOptions.path,
+        secure: cookieOptions.secure,
+        httpOnly: cookieOptions.httpOnly,
+        sameSite: cookieOptions.sameSite,
+      });
+      
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      console.log("[Google OAuth] Cookie set, response headers:", res.getHeaders());
 
       // Redirect to absolute URL using origin from state to ensure cookie is set on correct domain
       const redirectUrl = new URL(stateData.returnPath || "/", stateData.origin).toString();
       console.log("[Google OAuth] Redirecting to:", redirectUrl);
       res.redirect(302, redirectUrl);
+      console.log("[Google OAuth] Redirect sent");
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });
