@@ -1027,3 +1027,13 @@
 - [x] Add overflow-x-auto for horizontal scrolling on small screens
 - [x] Ensure Player Portal and Staff Portal buttons align properly
 - [x] Verify all menu items display correctly
+
+
+## CRITICAL FIX: Database Connection Pooling & Reconnection Logic (Complete - June 3, 2026)
+- [x] Identified root cause of 404 errors: "Connection lost: The server closed the connection"
+- [x] Added mysql2 connection pooling with automatic reconnection
+- [x] Implemented exponential backoff retry logic (up to 3 retries)
+- [x] Added connection pool settings: waitForConnections, connectionLimit, keepAlive
+- [x] Added connection pool health check on initialization
+- [x] Verified project builds without errors
+- [x] This fix resolves the intermittent 404 errors on mihl.ca caused by database disconnections
