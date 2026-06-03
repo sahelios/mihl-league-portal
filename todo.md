@@ -1019,3 +1019,11 @@
 - [x] Add prominent login requirement note at top of form
 - [x] Note explains email field is auto-filled after login
 - [x] Note available in English and French
+
+
+## NEW: Header Navigation Alignment Fix (Complete - June 3, 2026)
+- [x] Fix portal button alignment in header menu
+- [x] Remove flex-wrap to prevent buttons from wrapping
+- [x] Add overflow-x-auto for horizontal scrolling on small screens
+- [x] Ensure Player Portal and Staff Portal buttons align properly
+- [x] Verify all menu items display correctly

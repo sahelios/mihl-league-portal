@@ -48,10 +48,10 @@ export default function Header({ isAdmin = false }: HeaderProps) {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-0 flex-wrap justify-center flex-1 mx-4">
+          <nav className="hidden lg:flex items-center gap-0 justify-center flex-1 mx-4 overflow-x-auto">
             {links.map((link: any) => (
               <Link key={link.href} href={link.href}>
-                <span className={`px-3 py-2 rounded-md text-xs lg:text-sm font-medium hover:bg-primary-foreground/10 transition cursor-pointer whitespace-nowrap ${
+                <span className={`px-3 py-2 rounded-md text-xs lg:text-sm font-medium hover:bg-primary-foreground/10 transition cursor-pointer whitespace-nowrap inline-block ${
                   link.highlight ? 'bg-secondary text-secondary-foreground font-bold' : ''
                 }`}>
                   {link.label}
