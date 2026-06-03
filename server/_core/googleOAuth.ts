@@ -173,14 +173,13 @@ class GoogleOAuthSDK {
     name: string,
     options: { expiresInMs?: number } = {}
   ): Promise<string> {
-    return this.signSession(
-      {
-        sub: googleId,
-        email,
-        name,
-      },
-      options
-    );
+    const payload = {
+      sub: googleId,
+      email,
+      name,
+    };
+    console.log("[Google OAuth SDK] createSessionToken called with payload:", payload);
+    return this.signSession(payload, options);
   }
 
   async signSession(
@@ -191,12 +190,15 @@ class GoogleOAuthSDK {
     const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
-
-    return new SignJWT({
+    
+    const jwtPayload = {
       sub: payload.sub,
       email: payload.email,
       name: payload.name,
-    })
+    };
+    console.log("[Google OAuth SDK] signSession creating JWT with payload:", jwtPayload);
+
+    return new SignJWT(jwtPayload)
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
       .sign(secretKey);
@@ -220,15 +222,22 @@ class GoogleOAuthSDK {
       });
 
       const { sub, email, name } = payload as Record<string, unknown>;
+      
+      console.log("[Google Auth] JWT verification successful!");
+      console.log("[Google Auth] Payload keys:", Object.keys(payload));
+      console.log("[Google Auth] Field types - sub:", typeof sub, "email:", typeof email, "name:", typeof name);
+      console.log("[Google Auth] Field values - sub:", sub, "email:", email, "name:", name);
 
       if (typeof sub !== "string" || typeof email !== "string" || typeof name !== "string") {
         console.warn("[Google Auth] Session payload missing required fields");
+        console.warn("[Google Auth] Expected all strings, got:", { sub: typeof sub, email: typeof email, name: typeof name });
         return null;
       }
 
       return { sub, email, name };
     } catch (error) {
       console.warn("[Google Auth] Session verification failed", String(error));
+      console.warn("[Google Auth] Error details:", error instanceof Error ? error.message : error);
       return null;
     }
   }
@@ -238,9 +247,19 @@ class GoogleOAuthSDK {
    * Preserves existing user accounts by email mapping
    */
   async authenticateRequest(req: Request): Promise<User> {
+    console.log("[Auth] authenticateRequest called");
+    console.log("[Auth] req.headers.cookie:", req.headers.cookie ? `present (${req.headers.cookie.length} chars)` : "MISSING");
+    console.log("[Auth] req.cookies:", (req as any).cookies ? "present" : "MISSING");
+    
     const cookies = this.parseCookies(req.headers.cookie);
+    console.log("[Auth] Parsed cookies count:", cookies.size);
+    console.log("[Auth] Cookie names:", Array.from(cookies.keys()));
+    
     const sessionCookie = cookies.get(COOKIE_NAME);
+    console.log("[Auth] Session cookie found:", sessionCookie ? `yes (${sessionCookie.length} chars)` : "NO");
+    
     const session = await this.verifySession(sessionCookie);
+    console.log("[Auth] Session verified:", session ? `yes (${session.email})` : "NO");
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");

@@ -73,6 +73,7 @@ export function registerOAuthRoutes(app: Express) {
       
       const session = await googleOAuthSDK.exchangeCodeForSession(code, redirectUri);
       console.log("[Google OAuth] Session created for:", session.userInfo.email);
+      console.log("[Google OAuth] About to call createSessionToken");
 
       const sessionToken = await googleOAuthSDK.createSessionToken(
         session.userInfo.id,
@@ -80,6 +81,7 @@ export function registerOAuthRoutes(app: Express) {
         session.userInfo.name,
         { expiresInMs: ONE_YEAR_MS }
       );
+      console.log("[Google OAuth] Session token created");
 
       // Pass stateOrigin to ensure cookie domain is set correctly for the redirect destination
       const cookieOptions = getSessionCookieOptions(req, stateData.origin);
