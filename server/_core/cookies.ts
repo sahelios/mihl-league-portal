@@ -22,15 +22,21 @@ function isSecureRequest(req: Request) {
 }
 
 export function getSessionCookieOptions(
-  req: Request
+  req: Request,
+  stateOrigin?: string
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
-  const hostname = req.hostname;
+  // Prefer X-Forwarded-Host (from proxy) over req.hostname
+  const forwardedHost = req.get("x-forwarded-host");
+  const hostname = forwardedHost ? forwardedHost.split(",")[0].trim() : req.hostname;
+  
+  // If stateOrigin is provided (from OAuth), use it to determine domain
   let domain: string | undefined;
+  const hostToCheck = stateOrigin ? new URL(stateOrigin).hostname : hostname;
 
   // Set domain for production domains to allow cross-subdomain access
-  if (hostname && !LOCAL_HOSTS.has(hostname) && !isIpAddress(hostname)) {
+  if (hostToCheck && !LOCAL_HOSTS.has(hostToCheck) && !isIpAddress(hostToCheck)) {
     // For mihl.ca, set domain to .mihl.ca so cookie works for www.mihl.ca too
-    if (hostname.includes("mihl.ca")) {
+    if (hostToCheck.includes("mihl.ca")) {
       domain = ".mihl.ca";
     }
     // For Manus preview domains, don't set domain (host-specific)

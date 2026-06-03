@@ -33,6 +33,10 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   
+  // Trust proxy so req.hostname and req.protocol reflect the public URL
+  // This is essential for correct cookie domain and OAuth redirect_uri
+  app.set('trust proxy', 1);
+  
   // Initialize WebSocket for real-time updates
   initializeWebSocket(server);
   // Configure body parser with larger size limit for file uploads

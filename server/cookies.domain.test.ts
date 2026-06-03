@@ -3,15 +3,17 @@ import type { Request } from "express";
 import { getSessionCookieOptions } from "./_core/cookies";
 
 describe("Session Cookie Domain Configuration", () => {
-  function createMockRequest(hostname: string, protocol: string = "https", forwardedProto?: string): Partial<Request> {
+  function createMockRequest(hostname: string, protocol: string = "https", forwardedProto?: string, forwardedHost?: string): Partial<Request> {
     const req: Partial<Request> = {
       hostname,
       protocol,
       headers: {},
+      get: (name: string) => {
+        if (name.toLowerCase() === "x-forwarded-host") return forwardedHost;
+        if (name.toLowerCase() === "x-forwarded-proto") return forwardedProto;
+        return undefined;
+      },
     };
-    if (forwardedProto) {
-      req.headers!["x-forwarded-proto"] = forwardedProto;
-    }
     return req;
   }
 
@@ -76,7 +78,9 @@ describe("Session Cookie Domain Configuration", () => {
   });
 
   it("should set secure to true when x-forwarded-proto is https", () => {
-    const req = createMockRequest("mihl.ca", "http", "https");
+    const req = createMockRequest("mihl.ca", "http");
+    // Set x-forwarded-proto in headers for isSecureRequest check
+    req.headers!["x-forwarded-proto"] = "https";
     const options = getSessionCookieOptions(req as Request);
     expect(options.secure).toBe(true);
   });

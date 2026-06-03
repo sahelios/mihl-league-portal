@@ -1054,3 +1054,13 @@
 - [x] Maintain sameSite=none and secure flags for OAuth
 - [x] Create and run 13 vitest tests for cookie domain (all passing)
 - [x] Tests verify domain configuration for all scenarios
+
+
+## NEW: Trust Proxy and Cookie Domain Improvements (Complete - June 3, 2026)
+- [x] Add app.set('trust proxy', 1) to Express server configuration
+- [x] Update cookie domain logic to use X-Forwarded-Host header
+- [x] Pass stateOrigin to getSessionCookieOptions in OAuth callback
+- [x] Cookie domain now determined from redirect destination origin
+- [x] Fix 13 vitest tests for cookie domain configuration (all passing)
+- [x] Tests verify X-Forwarded-Host header handling
+- [x] Tests verify secure flag with x-forwarded-proto header

@@ -81,7 +81,8 @@ export function registerOAuthRoutes(app: Express) {
         { expiresInMs: ONE_YEAR_MS }
       );
 
-      const cookieOptions = getSessionCookieOptions(req);
+      // Pass stateOrigin to ensure cookie domain is set correctly for the redirect destination
+      const cookieOptions = getSessionCookieOptions(req, stateData.origin);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
       // Redirect to absolute URL using origin from state to ensure cookie is set on correct domain
