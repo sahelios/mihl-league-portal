@@ -41,6 +41,7 @@ export function registerOAuthRoutes(app: Express) {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
     const error = getQueryParam(req, "error");
@@ -89,25 +90,14 @@ export function registerOAuthRoutes(app: Express) {
       console.log("[Google OAuth] Session token created");
       console.log("[Google OAuth] Session token length:", sessionToken.length);
 
-      // Pass stateOrigin to ensure cookie domain is set correctly for the redirect destination
-      const cookieOptions = getSessionCookieOptions(req, stateData.origin);
-      console.log("[Google OAuth] Cookie options:", {
-        domain: cookieOptions.domain,
-        path: cookieOptions.path,
-        secure: cookieOptions.secure,
-        httpOnly: cookieOptions.httpOnly,
-        sameSite: cookieOptions.sameSite,
-      });
-      
-      // Explicitly set cookie with domain from stateOrigin to ensure it's set on the correct domain
-      const finalCookieOptions = {
-        ...cookieOptions,
-        maxAge: ONE_YEAR_MS,
-        domain: ".mihl.ca", // Force domain for mihl.ca
-      };
-      res.cookie(COOKIE_NAME, sessionToken, finalCookieOptions);
-      console.log("[Google OAuth] Cookie set with options:", finalCookieOptions);
-      console.log("[Google OAuth] Response headers after cookie:", res.getHeaders());
+      // Manually construct Set-Cookie header to ensure it's set
+      // This bypasses any issues with res.cookie() not working properly
+      const maxAgeSeconds = Math.floor(ONE_YEAR_MS / 1000);
+      const setCookieValue = `${COOKIE_NAME}=${sessionToken}; Domain=.mihl.ca; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=None`;
+      res.setHeader('Set-Cookie', setCookieValue);
+      console.log("[Google OAuth] Set-Cookie header manually set");
+      console.log("[Google OAuth] Set-Cookie value (first 100 chars):", setCookieValue.substring(0, 100) + '...');
+      console.log("[Google OAuth] Response headers after manual cookie:", res.getHeaders());
 
       // Return 200 with client-side redirect instead of 302
       // This prevents Cloudflare from stripping the Set-Cookie header
