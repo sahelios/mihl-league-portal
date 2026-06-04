@@ -42,7 +42,7 @@ export default function Header({ isAdmin = false }: HeaderProps) {
           {/* Logo */}
           <Link href="/">
             <span className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition cursor-pointer">
-              <img src="/manus-storage/mihl-league-logo_5025857d.png" alt="MIHL Logo" className="w-12 h-12 object-contain" />
+              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/mihl-logo-enhanced-d8PvJfyTj2TDGtfaFgsK8z.webp" alt="The Mensches Ice Hockey League Logo" className="w-12 h-12 object-contain" />
               <span className="hidden sm:inline text-lg">MIHL</span>
             </span>
           </Link>

@@ -930,6 +930,14 @@
 - [x] Verify error handling and validation in signup/login flows
 
 
+## NEW: Enhanced Logo with Full League Name (Complete - June 1, 2026)
+- [x] Create enhanced MIHL logo with full "The Mensches Ice Hockey League" text
+- [x] Logo includes shield, hockey stick, puck, and Star of David symbol
+- [x] Navy blue and gold color scheme (professional and distinctive)
+- [x] Update website header to use new enhanced logo
+- [x] Logo now displays correctly in header
+- [x] Provide instructions to update app logo in Management UI Settings for OAuth consent screen
+
 ## NEW: Public Legal Pages (Complete - June 1, 2026)
 - [x] Create Terms of Service page with bilingual content (English/French)
   - [x] User responsibilities and conduct rules
@@ -976,3 +984,22 @@
 - [x] Create comprehensive OAuth state encoding/decoding tests (7/7 passing)
 - [x] Verify all authentication tests pass (22/22 passing)
 - [x] Test OAuth state preservation across encode/decode cycles
+
+
+## NEW: Real-Time Synchronization for Staff Availability & Game Management (In Progress - June 1, 2026)
+- [x] Install Socket.IO dependencies (socket.io, socket.io-client)
+- [x] Create WebSocket server infrastructure (server/_core/websocket.ts)
+- [x] Initialize WebSocket on Express server
+- [x] Implement broadcast functions for staff availability updates
+- [x] Implement broadcast functions for game info updates
+- [x] Add WebSocket broadcast to selectGameAvailability mutation
+- [x] Add WebSocket broadcast to submitGameScore mutation
+- [x] Create client-side WebSocket hook (useRealtimeUpdates)
+- [ ] Update staff portal to show assigned games with admin interface
+- [ ] Add real-time event listeners to /admin/staff-availability page
+- [ ] Add real-time event listeners to /admin/games page
+- [ ] Add real-time event listeners to /staff-portal page
+- [ ] Test real-time updates when staff marks availability
+- [ ] Test real-time updates when admin updates game scores
+- [ ] Verify all pages auto-refresh on any change
+- [ ] Test cross-browser real-time synchronization
