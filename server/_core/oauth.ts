@@ -79,8 +79,21 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      // Redirect to the page specified in state
-      res.redirect(302, stateData.returnPath || "/");
+      // Use meta refresh instead of 302 redirect to ensure Set-Cookie header is sent with 200 response
+      // This prevents Cloudflare from stripping the Set-Cookie header
+      const redirectPath = stateData.returnPath || "/";
+      res.status(200).send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="refresh" content="0;url=${redirectPath}">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="${redirectPath}">${redirectPath}</a>...</p>
+  <script>window.location.href = '${redirectPath}';</script>
+</body>
+</html>
+`);
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });
