@@ -32,6 +32,8 @@ function decodeState(state: string): { origin: string; returnPath: string } {
 
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
+    // Disable compression for this response to prevent headers from being stripped
+    res.setHeader('Content-Encoding', 'identity');
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
     const error = getQueryParam(req, "error");
@@ -78,10 +80,18 @@ export function registerOAuthRoutes(app: Express) {
 
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      
+      // Also set the cookie manually to ensure it's sent
+      const maxAgeSeconds = Math.floor(ONE_YEAR_MS / 1000);
+      const setCookieValue = `${COOKIE_NAME}=${sessionToken}; Domain=${cookieOptions.domain || 'mihl.ca'}; Path=${cookieOptions.path || '/'}; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=None`;
+      res.setHeader('Set-Cookie', setCookieValue);
+      console.log('[Google OAuth] Set-Cookie header explicitly set');
 
       // Use meta refresh instead of 302 redirect to ensure Set-Cookie header is sent with 200 response
       // This prevents Cloudflare from stripping the Set-Cookie header
       const redirectPath = stateData.returnPath || "/";
+      // Ensure no compression interferes with headers
+      res.removeHeader('Content-Encoding');
       res.status(200).send(`<!DOCTYPE html>
 <html>
 <head>
