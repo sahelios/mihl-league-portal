@@ -8,7 +8,6 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { initializeWebSocket } from "./websocket";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -32,13 +31,6 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  
-  // Trust proxy so req.hostname and req.protocol reflect the public URL
-  // This is essential for correct cookie domain and OAuth redirect_uri
-  app.set('trust proxy', 1);
-  
-  // Initialize WebSocket for real-time updates
-  initializeWebSocket(server);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -82,7 +74,6 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    console.log(`WebSocket server initialized on port ${port}`);
   });
 }
 

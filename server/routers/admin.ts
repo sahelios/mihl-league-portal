@@ -33,7 +33,6 @@ import {
   loginTokens,
   adminRegisteredPlayers,
 } from "../../drizzle/schema";
-import { broadcastGameInfoUpdate } from "../_core/websocket";
 
 // Helper to ensure admin access
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
@@ -363,15 +362,6 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       await db.update(games).set({ homeScore: input.homeScore, awayScore: input.awayScore, status: 'completed' }).where(eq(games.id, input.gameId));
-      
-      // Broadcast real-time update to all connected clients
-      broadcastGameInfoUpdate(input.gameId.toString(), {
-        gameId: input.gameId,
-        homeScore: input.homeScore,
-        awayScore: input.awayScore,
-        status: 'completed',
-      });
-      
       return { success: true };
     }),
 
@@ -1941,28 +1931,18 @@ export const adminRouter = router({
         const existing = await db.select().from(gameAssignments)
           .where(eq(gameAssignments.gameId, input.gameId));
         
-        // Build update object with only the fields being set
-        const updateData: any = {};
-        if (input.refereeId !== undefined) {
-          updateData.refereeId = input.refereeId;
-        }
-        if (input.scorekeeperId !== undefined) {
-          updateData.scorekeeperId = input.scorekeeperId;
-        }
-        
         if (existing.length > 0) {
-          // Only update if there's data to update
-          if (Object.keys(updateData).length > 0) {
-            await db.update(gameAssignments)
-              .set(updateData)
-              .where(eq(gameAssignments.gameId, input.gameId));
-          }
+          await db.update(gameAssignments)
+            .set({
+              refereeId: input.refereeId,
+              scorekeeperId: input.scorekeeperId,
+            })
+            .where(eq(gameAssignments.gameId, input.gameId));
         } else {
-          // For new assignments, use the provided values or null
           await db.insert(gameAssignments).values({
             gameId: input.gameId,
-            refereeId: input.refereeId || null,
-            scorekeeperId: input.scorekeeperId || null,
+            refereeId: input.refereeId,
+            scorekeeperId: input.scorekeeperId,
           });
         }
         return { success: true, message: "Staff assigned to game" };

@@ -42,16 +42,16 @@ export default function Header({ isAdmin = false }: HeaderProps) {
           {/* Logo */}
           <Link href="/">
             <span className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition cursor-pointer">
-              <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663601380927/Fde3d448vCxuYB8KePk65W/mihl-logo-enhanced-d8PvJfyTj2TDGtfaFgsK8z.webp" alt="The Mensches Ice Hockey League Logo" className="w-12 h-12 object-contain" />
+              <img src="/manus-storage/mihl-league-logo_5025857d.png" alt="MIHL Logo" className="w-12 h-12 object-contain" />
               <span className="hidden sm:inline text-lg">MIHL</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-0 justify-center flex-1 mx-4 overflow-x-auto">
+          <nav className="hidden lg:flex items-center gap-0 flex-wrap justify-center flex-1 mx-4">
             {links.map((link: any) => (
               <Link key={link.href} href={link.href}>
-                <span className={`px-3 py-2 rounded-md text-xs lg:text-sm font-medium hover:bg-primary-foreground/10 transition cursor-pointer whitespace-nowrap inline-block ${
+                <span className={`px-3 py-2 rounded-md text-xs lg:text-sm font-medium hover:bg-primary-foreground/10 transition cursor-pointer whitespace-nowrap ${
                   link.highlight ? 'bg-secondary text-secondary-foreground font-bold' : ''
                 }`}>
                   {link.label}

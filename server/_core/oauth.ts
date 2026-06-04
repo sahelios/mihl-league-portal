@@ -8,10 +8,26 @@ function getQueryParam(req: Request, key: string): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-function decodeState(state: string): string {
-  // State is just a simple value, not encoded
-  // Return the home page as default redirect
-  return "/";
+interface StateData {
+  origin: string;
+  returnPath: string;
+}
+
+function decodeState(state: string): { origin: string; returnPath: string } {
+  try {
+    const decoded = atob(state);
+    const stateData = JSON.parse(decoded) as StateData;
+    return {
+      origin: stateData.origin || window.location.origin,
+      returnPath: stateData.returnPath || "/"
+    };
+  } catch (error) {
+    console.error("[Google OAuth] Failed to decode state:", error);
+    return {
+      origin: "https://mihl.ca",
+      returnPath: "/"
+    };
+  }
 }
 
 export function registerOAuthRoutes(app: Express) {
@@ -41,9 +57,15 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const redirectUri = decodeState(state);
-      console.log("[Google OAuth] Decoded redirect URI:", redirectUri);
-
+      // Construct the redirect_uri that matches what was registered in Google Cloud Console
+      // This must be the full callback URL, not the page to redirect to
+      // Use X-Forwarded headers for Cloud Run behind load balancer
+      // Decode state to get the exact origin used in the authorization request
+      const stateData = decodeState(state);
+      const redirectUri = `${stateData.origin}/api/oauth/callback`;
+      console.log("[Google OAuth] Using redirect URI for token exchange:", redirectUri);
+      console.log("[Google OAuth] State data:", stateData);
+      
       const session = await googleOAuthSDK.exchangeCodeForSession(code, redirectUri);
       console.log("[Google OAuth] Session created for:", session.userInfo.email);
 
@@ -57,7 +79,8 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.redirect(302, "/");
+      // Redirect to the page specified in state
+      res.redirect(302, stateData.returnPath || "/");
     } catch (error) {
       console.error("[Google OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed", details: String(error) });

@@ -4,7 +4,6 @@ import { refereeApplications, staffAvailability } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { broadcastStaffAvailabilityUpdate } from '../_core/websocket';
 
 const applicationSchema = z.object({
   firstName: z.string().min(1),
@@ -119,15 +118,6 @@ export const refereeRouter = router({
         }));
         await db.insert(staffAvailability).values(availabilityRecords);
       }
-
-      // Broadcast real-time update to all connected clients
-      broadcastStaffAvailabilityUpdate({
-        staffApplicationId: app.id,
-        staffName: `${app.firstName} ${app.lastName}`,
-        role: app.role,
-        selectedGameIds: input.selectedGameIds,
-        email: app.email,
-      });
 
       return { success: true };
     }),
