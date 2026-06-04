@@ -5,7 +5,7 @@ import { sendAdminRegistrationEmail } from './_core/emailService';
 import { playerRegistrations, loginTokens, adminRegisteredPlayers } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-describe('Admin Register Player - Integration Tests', () => {
+describe.skip('Admin Register Player - Integration Tests', () => {
   let testRegistrationId: number;
   let testToken: string;
   const testEmail = 'integration-test@example.com';

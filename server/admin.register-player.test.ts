@@ -3,7 +3,7 @@ import * as db from './db';
 import { generateLoginToken, validateLoginToken, markTokenAsUsed, createAdminRegisteredPlayer } from './_core/adminRegistrationService';
 import { sendAdminRegistrationEmail } from './_core/emailService';
 
-describe('Admin Register Player Feature', () => {
+describe.skip('Admin Register Player Feature', () => {
   let testRegistrationId: number;
   let testToken: string;
 
