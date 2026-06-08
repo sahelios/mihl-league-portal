@@ -530,9 +530,15 @@ export const leagueRouter = router({
         const venues = venueIds.length > 0 ? await db.select().from(gameVenues).where(inArray(gameVenues.id, venueIds)) : [];
         const venueMap = new Map(venues.map(v => [v.id, v.name]));
         
-        // Format games
+        // Format games - return YYYY-MM-DD format for consistent handling
         return filteredGames.map(game => {
-          const dateStr = game.gameDate instanceof Date ? game.gameDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : game.gameDate;
+          // Convert date to YYYY-MM-DD string to prevent timezone shifts
+          let dateStr = '';
+          if (game.gameDate instanceof Date) {
+            dateStr = game.gameDate.toISOString().split('T')[0];
+          } else if (typeof game.gameDate === 'string') {
+            dateStr = game.gameDate;
+          }
           return {
             ...game,
             teamHome: { name: 'Team White' },
