@@ -65,6 +65,12 @@ export default function PlayerPortal() {
   });
 
   // Fetch team availability for expanded game
+  React.useEffect(() => {
+    if (expandedGameId) {
+      console.log(`[PlayerPortal] Expanded game ${expandedGameId}`);
+    }
+  }, [expandedGameId]);
+
   const { data: teamAvailability = [], isLoading: teamAvailLoading } = trpc.league.getGameTeamAvailability.useQuery(
     { gameId: expandedGameId || 0 },
     { enabled: expandedGameId !== null }

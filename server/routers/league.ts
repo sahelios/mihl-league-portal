@@ -769,6 +769,7 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
+        console.log(`[Team Availability] Fetching availability for gameId: ${input.gameId}`);
         // Get all player availability for this game
         const availabilityRecords = await db.select({
           playerTeamId: playerAvailability.playerTeamId,
@@ -784,13 +785,16 @@ export const leagueRouter = router({
           .where(eq(playerAvailability.gameId, input.gameId))
           .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
 
-        return availabilityRecords.map(record => ({
+        console.log(`[Team Availability] Found ${availabilityRecords.length} availability records for gameId: ${input.gameId}`);
+        const result = availabilityRecords.map(record => ({
           playerTeamId: record.playerTeamId,
           name: `${record.firstName} ${record.lastName}`,
           email: record.email,
           position: record.position,
           isAvailable: record.isAvailable,
         }));
+        console.log(`[Team Availability] Returning ${result.length} players`);
+        return result;
       } catch (error: any) {
         console.error('Error fetching game team availability:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch team availability" });
