@@ -73,7 +73,11 @@ export default function PlayerPortal() {
 
   const { data: teamAvailability = [], isLoading: teamAvailLoading } = trpc.league.getGameTeamAvailability.useQuery(
     { gameId: expandedGameId || 0 },
-    { enabled: expandedGameId !== null, onSuccess: (data) => console.log(`[Team Availability Query] Success:`, data), onError: (error) => console.error(`[Team Availability Query] Error:`, error) }
+    { 
+      enabled: expandedGameId !== null && expandedGameId !== 0,
+      onSuccess: (data) => console.log(`[Team Availability Query] Success for game ${expandedGameId}:`, data), 
+      onError: (error) => console.error(`[Team Availability Query] Error for game ${expandedGameId}:`, error) 
+    }
   );
 
   // Check access
