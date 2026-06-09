@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, Loader2, Users, Calendar, TrendingUp, CheckCircle, XCircle } from "lucide-react";
+import { AlertCircle, Loader2, Users, Calendar, TrendingUp, CheckCircle, XCircle, ChevronDown } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { formatDate, formatTime } from "@/lib/dateUtils";
 
@@ -16,6 +16,7 @@ export default function PlayerPortal() {
   const [, navigate] = useLocation();
   const [selectedGame, setSelectedGame] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
 
   // Fetch player team and registration
   const { data: playerReg, isLoading: regLoading } = trpc.league.getPlayerRegistration.useQuery(
@@ -57,10 +58,17 @@ export default function PlayerPortal() {
   const updateAvailabilityMutation = trpc.league.updatePlayerAvailability.useMutation({
     onSuccess: () => {
       utils.league.getPlayerAvailability.invalidate();
+      utils.league.getGameTeamAvailability.invalidate();
       setIsDialogOpen(false);
       setSelectedGame(null);
     },
   });
+
+  // Fetch team availability for expanded game
+  const { data: teamAvailability = [], isLoading: teamAvailLoading } = trpc.league.getGameTeamAvailability.useQuery(
+    { gameId: expandedGameId || 0 },
+    { enabled: expandedGameId !== null }
+  );
 
   // Check access
   if (authLoading || regLoading) {
@@ -334,7 +342,18 @@ export default function PlayerPortal() {
                             </Badge>
                           </div>
 
-                          <Dialog open={selectedGame === game.id} onOpenChange={(open) => {
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedGameId(expandedGameId === game.id ? null : game.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <Users size={16} />
+                              Team Availability
+                              <ChevronDown size={16} className={`transition-transform ${expandedGameId === game.id ? 'rotate-180' : ''}`} />
+                            </Button>
+                            <Dialog open={selectedGame === game.id} onOpenChange={(open) => {
                             if (!open) {
                               setSelectedGame(null);
                               setIsDialogOpen(false);
@@ -386,6 +405,37 @@ export default function PlayerPortal() {
                               </div>
                             </DialogContent>
                           </Dialog>
+                            </div>
+
+                          {expandedGameId === game.id ? (
+                            <div className="border-t border-border pt-3 mt-3">
+                              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                <Users size={16} />
+                                Team Availability
+                              </h4>
+                              {teamAvailLoading ? (
+                                <div className="flex justify-center py-4">
+                                  <Loader2 className="animate-spin" size={20} />
+                                </div>
+                              ) : teamAvailability.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-4">No availability data</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {teamAvailability.map((player: any) => (
+                                    <div key={player.playerTeamId} className="flex items-center justify-between p-2 bg-muted rounded">
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium">{player.name}</p>
+                                        {player.position && <p className="text-xs text-muted-foreground">{player.position}</p>}
+                                      </div>
+                                      <Badge variant={player.isAvailable ? "default" : "destructive"} className="ml-2">
+                                        {player.isAvailable ? "Available" : "Unavailable"}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}

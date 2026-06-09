@@ -3,7 +3,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams, staffAvailability, refereeApplications } from "../../drizzle/schema";
-import { eq, desc, and, or, inArray } from "drizzle-orm";
+import { eq, desc, and, or, inArray, sql } from "drizzle-orm";
 
 export const leagueRouter = router({
   // Public queries
@@ -761,5 +761,39 @@ export const leagueRouter = router({
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
-    })
+    }),
+
+  getGameTeamAvailability: protectedProcedure
+    .input(z.object({ gameId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        // Get all player availability for this game
+        const availabilityRecords = await db.select({
+          playerTeamId: playerAvailability.playerTeamId,
+          isAvailable: playerAvailability.isAvailable,
+          firstName: playerRegistrations.firstName,
+          lastName: playerRegistrations.lastName,
+          email: playerRegistrations.email,
+          position: playerRegistrations.position,
+        })
+          .from(playerAvailability)
+          .innerJoin(playerTeams, eq(playerAvailability.playerTeamId, playerTeams.id))
+          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+          .where(eq(playerAvailability.gameId, input.gameId))
+          .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
+
+        return availabilityRecords.map(record => ({
+          playerTeamId: record.playerTeamId,
+          name: `${record.firstName} ${record.lastName}`,
+          email: record.email,
+          position: record.position,
+          isAvailable: record.isAvailable,
+        }));
+      } catch (error: any) {
+        console.error('Error fetching game team availability:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch team availability" });
+      }
+    }),
 });
