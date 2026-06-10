@@ -83,7 +83,7 @@ export default function PlayerPortal() {
       console.log('[PlayerPortal] Fetching team availability for game:', expandedGameId);
       setTeamAvailLoading(true);
       teamAvailQuery.refetch().then((result) => {
-        console.log('[PlayerPortal] Team availability result:', result);
+        console.log('[PlayerPortal] Team availability result:', result); console.log('[PlayerPortal] Result data:', result.data); console.log('[PlayerPortal] Full result:', JSON.stringify(result, null, 2));
         if (result.data) {
           setTeamAvailability(result.data);
         }
