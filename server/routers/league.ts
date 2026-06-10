@@ -778,6 +778,7 @@ export const leagueRouter = router({
           awayTeamId: games.awayTeamId,
           seasonId: games.seasonId,
           isEvaluationGame: games.isEvaluationGame,
+          gameDate: games.gameDate,
         })
           .from(games)
           .where(eq(games.id, input.gameId))
@@ -791,26 +792,66 @@ export const leagueRouter = router({
         const gameInfo = game[0];
         console.log(`[Team Availability] Game ${input.gameId} has teams: ${gameInfo.homeTeamId}, ${gameInfo.awayTeamId}, season: ${gameInfo.seasonId}`);
 
+        // Format game date for evaluation game lookup
+        const gameDateStr = gameInfo.gameDate instanceof Date 
+          ? gameInfo.gameDate.toISOString().split('T')[0]
+          : typeof gameInfo.gameDate === 'string'
+          ? gameInfo.gameDate
+          : '';
+
         // Get all players from both teams in this season
-        const teamPlayers = await db.select({
-          playerTeamId: playerTeams.id,
-          firstName: playerRegistrations.firstName,
-          lastName: playerRegistrations.lastName,
-          email: playerRegistrations.email,
-          position: playerTeams.position, // Use position from playerTeams if available
-        })
-          .from(playerTeams)
-          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
-          .where(
-            and(
-              eq(playerTeams.seasonId, gameInfo.seasonId),
-              or(
-                eq(playerTeams.teamId, gameInfo.homeTeamId),
-                eq(playerTeams.teamId, gameInfo.awayTeamId)
+        // For evaluation games, also get their team assignment (White/Black)
+        let teamPlayers: any[] = [];
+        
+        if (gameInfo.isEvaluationGame) {
+          // For evaluation games, get players with their team assignment
+          teamPlayers = await db.select({
+            playerTeamId: playerTeams.id,
+            registrationId: playerTeams.registrationId,
+            firstName: playerRegistrations.firstName,
+            lastName: playerRegistrations.lastName,
+            email: playerRegistrations.email,
+            position: playerTeams.position,
+            evalTeam: evaluationGameAssignments.team,
+          })
+            .from(playerTeams)
+            .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+            .leftJoin(evaluationGameAssignments, and(
+              eq(evaluationGameAssignments.registrationId, playerTeams.registrationId),
+              eq(evaluationGameAssignments.evaluationDate, gameDateStr)
+            ))
+            .where(
+              and(
+                eq(playerTeams.seasonId, gameInfo.seasonId),
+                or(
+                  eq(playerTeams.teamId, gameInfo.homeTeamId),
+                  eq(playerTeams.teamId, gameInfo.awayTeamId)
+                )
               )
             )
-          )
-          .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
+            .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
+        } else {
+          // For regular season games, just get players
+          teamPlayers = await db.select({
+            playerTeamId: playerTeams.id,
+            firstName: playerRegistrations.firstName,
+            lastName: playerRegistrations.lastName,
+            email: playerRegistrations.email,
+            position: playerTeams.position,
+          })
+            .from(playerTeams)
+            .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+            .where(
+              and(
+                eq(playerTeams.seasonId, gameInfo.seasonId),
+                or(
+                  eq(playerTeams.teamId, gameInfo.homeTeamId),
+                  eq(playerTeams.teamId, gameInfo.awayTeamId)
+                )
+              )
+            )
+            .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
+        }
 
         console.log(`[Team Availability] Found ${teamPlayers.length} players on both teams`);
 
@@ -828,13 +869,17 @@ export const leagueRouter = router({
         const availabilityMap = new Map(availabilityRecords.map(r => [r.playerTeamId, r.isAvailable]));
 
         // Combine player info with availability
-        const result = teamPlayers.map(player => ({
-          playerTeamId: player.playerTeamId,
-          name: `${player.firstName} ${player.lastName}`,
-          email: player.email,
-          position: player.position || 'N/A',
-          isAvailable: availabilityMap.has(player.playerTeamId) ? availabilityMap.get(player.playerTeamId) : null,
-        }));
+        const result = teamPlayers.map(player => {
+          const evalTeamLabel = player.evalTeam === 'white' ? 'Team White' : player.evalTeam === 'black' ? 'Team Black' : null;
+          return {
+            playerTeamId: player.playerTeamId,
+            name: `${player.firstName} ${player.lastName}`,
+            email: player.email,
+            position: player.position || 'N/A',
+            isAvailable: availabilityMap.has(player.playerTeamId) ? availabilityMap.get(player.playerTeamId) : null,
+            evalTeam: evalTeamLabel,
+          };
+        });
 
         console.log(`[Team Availability] Returning ${result.length} players with availability`);
         return result;

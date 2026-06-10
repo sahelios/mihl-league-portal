@@ -994,9 +994,14 @@
 - [x] Overlay availability records by playerTeamId
 - [x] Return actual player names instead of stale playerTeamIds
 - [x] Deploy fix to dev server
+- [x] Fix availability display to treat null as available by default (not unavailable)
+- [x] Add evalTeam field to getGameTeamAvailability for evaluation games
+- [x] Display team assignment (Team White/Team Black) next to player names for evaluation games only
+- [x] Updated frontend to show evaluation game team labels
+- [x] Fixed TypeScript type annotations for teamAvailability state
 - [ ] Test on live site (mihl.ca) with real player data
 - [ ] Verify players see correct teammates in team availability display
-- [ ] Verify availability status displays correctly (available/unavailable/null)
+- [ ] Verify availability status displays correctly (available/unavailable)
 
 ## NEW: Real-Time Synchronization for Staff Availability & Game Management (In Progress - June 1, 2026)
 - [x] Install Socket.IO dependencies (socket.io, socket.io-client)

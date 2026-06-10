@@ -71,7 +71,7 @@ export default function PlayerPortal() {
     }
   }, [expandedGameId]);
 
-  const [teamAvailability, setTeamAvailability] = React.useState([]);
+  const [teamAvailability, setTeamAvailability] = React.useState<any[]>([]);
   const [teamAvailLoading, setTeamAvailLoading] = React.useState(false);
   const teamAvailQuery = trpc.league.getGameTeamAvailability.useQuery(
     { gameId: expandedGameId || 0 },
@@ -446,17 +446,29 @@ export default function PlayerPortal() {
                                 <p className="text-sm text-muted-foreground text-center py-4">No availability data</p>
                               ) : (
                                 <div className="space-y-2">
-                                  {teamAvailability.map((player: any) => (
-                                    <div key={player.playerTeamId} className="flex items-center justify-between p-2 bg-muted rounded">
-                                      <div className="flex-1">
-                                        <p className="text-sm font-medium">{player.name}</p>
-                                        {player.position && <p className="text-xs text-muted-foreground">{player.position}</p>}
+                                  {teamAvailability.map((player: any) => {
+                                    // Treat null/undefined as available (database default is true)
+                                    const isAvailable = player.isAvailable !== false;
+                                    const isEvalGame = game.isEvaluationGame;
+                                    return (
+                                      <div key={player.playerTeamId} className="flex items-center justify-between p-2 bg-muted rounded">
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">
+                                            {player.name}
+                                            {isEvalGame && player.evalTeam && (
+                                              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                ({player.evalTeam})
+                                              </span>
+                                            )}
+                                          </p>
+                                          {player.position && <p className="text-xs text-muted-foreground">{player.position}</p>}
+                                        </div>
+                                        <Badge variant={isAvailable ? "default" : "destructive"} className="ml-2">
+                                          {isAvailable ? "Available" : "Unavailable"}
+                                        </Badge>
                                       </div>
-                                      <Badge variant={player.isAvailable ? "default" : "destructive"} className="ml-2">
-                                        {player.isAvailable ? "Available" : "Unavailable"}
-                                      </Badge>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
