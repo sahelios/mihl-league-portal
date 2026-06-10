@@ -986,6 +986,18 @@
 - [x] Test OAuth state preservation across encode/decode cycles
 
 
+## NEW: Team Availability Feature Fix (Complete - June 10, 2026)
+- [x] Fix getGameTeamAvailability procedure to fetch teams from games table
+- [x] Get game's seasonId and team IDs (homeTeamId, awayTeamId) from games table
+- [x] Query playerTeams filtered by seasonId and team IDs to get current season roster
+- [x] Join with playerRegistrations to get player names and email
+- [x] Overlay availability records by playerTeamId
+- [x] Return actual player names instead of stale playerTeamIds
+- [x] Deploy fix to dev server
+- [ ] Test on live site (mihl.ca) with real player data
+- [ ] Verify players see correct teammates in team availability display
+- [ ] Verify availability status displays correctly (available/unavailable/null)
+
 ## NEW: Real-Time Synchronization for Staff Availability & Game Management (In Progress - June 1, 2026)
 - [x] Install Socket.IO dependencies (socket.io, socket.io-client)
 - [x] Create WebSocket server infrastructure (server/_core/websocket.ts)

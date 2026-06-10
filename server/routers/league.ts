@@ -770,30 +770,73 @@ export const leagueRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
         console.log(`[Team Availability] Fetching availability for gameId: ${input.gameId}`);
-        // Get all player availability for this game
-        const availabilityRecords = await db.select({
-          playerTeamId: playerAvailability.playerTeamId,
-          isAvailable: playerAvailability.isAvailable,
+        
+        // First, get the game to find out which teams are playing and what season
+        const game = await db.select({
+          id: games.id,
+          homeTeamId: games.homeTeamId,
+          awayTeamId: games.awayTeamId,
+          seasonId: games.seasonId,
+          isEvaluationGame: games.isEvaluationGame,
+        })
+          .from(games)
+          .where(eq(games.id, input.gameId))
+          .limit(1);
+
+        if (game.length === 0) {
+          console.log(`[Team Availability] Game ${input.gameId} not found`);
+          return [];
+        }
+
+        const gameInfo = game[0];
+        console.log(`[Team Availability] Game ${input.gameId} has teams: ${gameInfo.homeTeamId}, ${gameInfo.awayTeamId}, season: ${gameInfo.seasonId}`);
+
+        // Get all players from both teams in this season
+        const teamPlayers = await db.select({
+          playerTeamId: playerTeams.id,
           firstName: playerRegistrations.firstName,
           lastName: playerRegistrations.lastName,
           email: playerRegistrations.email,
-          position: playerRegistrations.position,
+          position: playerTeams.position, // Use position from playerTeams if available
         })
-          .from(playerAvailability)
-          .leftJoin(playerTeams, eq(playerAvailability.playerTeamId, playerTeams.id))
-          .leftJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
-          .where(eq(playerAvailability.gameId, input.gameId))
+          .from(playerTeams)
+          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+          .where(
+            and(
+              eq(playerTeams.seasonId, gameInfo.seasonId),
+              or(
+                eq(playerTeams.teamId, gameInfo.homeTeamId),
+                eq(playerTeams.teamId, gameInfo.awayTeamId)
+              )
+            )
+          )
           .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
 
-        console.log(`[Team Availability] Found ${availabilityRecords.length} availability records for gameId: ${input.gameId}`);
-        const result = availabilityRecords.map(record => ({
-          playerTeamId: record.playerTeamId,
-          name: record.firstName && record.lastName ? `${record.firstName} ${record.lastName}` : `Player ${record.playerTeamId}`,
-          email: record.email || 'N/A',
-          position: record.position || 'N/A',
-          isAvailable: record.isAvailable,
+        console.log(`[Team Availability] Found ${teamPlayers.length} players on both teams`);
+
+        // Get availability records for this game
+        const availabilityRecords = await db.select({
+          playerTeamId: playerAvailability.playerTeamId,
+          isAvailable: playerAvailability.isAvailable,
+        })
+          .from(playerAvailability)
+          .where(eq(playerAvailability.gameId, input.gameId));
+
+        console.log(`[Team Availability] Found ${availabilityRecords.length} availability records`);
+
+        // Create a map of availability by playerTeamId
+        const availabilityMap = new Map(availabilityRecords.map(r => [r.playerTeamId, r.isAvailable]));
+
+        // Combine player info with availability
+        const result = teamPlayers.map(player => ({
+          playerTeamId: player.playerTeamId,
+          name: `${player.firstName} ${player.lastName}`,
+          email: player.email,
+          position: player.position || 'N/A',
+          isAvailable: availabilityMap.has(player.playerTeamId) ? availabilityMap.get(player.playerTeamId) : null,
         }));
-        console.log(`[Team Availability] Returning ${result.length} players`);
+
+        console.log(`[Team Availability] Returning ${result.length} players with availability`);
         return result;
       } catch (error: any) {
         console.error('Error fetching game team availability:', error);
