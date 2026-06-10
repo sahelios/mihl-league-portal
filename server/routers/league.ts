@@ -780,8 +780,8 @@ export const leagueRouter = router({
           position: playerRegistrations.position,
         })
           .from(playerAvailability)
-          .innerJoin(playerTeams, eq(playerAvailability.playerTeamId, playerTeams.id))
-          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+          .leftJoin(playerTeams, eq(playerAvailability.playerTeamId, playerTeams.id))
+          .leftJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
           .where(eq(playerAvailability.gameId, input.gameId))
           .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
 
