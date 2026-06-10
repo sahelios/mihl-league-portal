@@ -71,15 +71,29 @@ export default function PlayerPortal() {
     }
   }, [expandedGameId]);
 
-  console.log('[PlayerPortal] Query defined, expandedGameId:', expandedGameId);
-  const { data: teamAvailability = [], isLoading: teamAvailLoading } = trpc.league.getGameTeamAvailability.useQuery(
+  const [teamAvailability, setTeamAvailability] = React.useState([]);
+  const [teamAvailLoading, setTeamAvailLoading] = React.useState(false);
+  const teamAvailQuery = trpc.league.getGameTeamAvailability.useQuery(
     { gameId: expandedGameId || 0 },
-    { 
-      enabled: expandedGameId !== null && expandedGameId !== 0,
-      onSuccess: (data) => console.log(`[Team Availability Query] Success for game ${expandedGameId}:`, data), 
-      onError: (error) => console.error(`[Team Availability Query] Error for game ${expandedGameId}:`, error) 
-    }
+    { enabled: false }
   );
+
+  React.useEffect(() => {
+    if (expandedGameId && expandedGameId !== 0) {
+      console.log('[PlayerPortal] Fetching team availability for game:', expandedGameId);
+      setTeamAvailLoading(true);
+      teamAvailQuery.refetch().then((result) => {
+        console.log('[PlayerPortal] Team availability result:', result);
+        if (result.data) {
+          setTeamAvailability(result.data);
+        }
+        setTeamAvailLoading(false);
+      }).catch((error) => {
+        console.error('[PlayerPortal] Team availability error:', error);
+        setTeamAvailLoading(false);
+      });
+    }
+  }, [expandedGameId]);
 
   // Check access
   if (authLoading || regLoading) {
