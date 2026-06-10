@@ -788,9 +788,9 @@ export const leagueRouter = router({
         console.log(`[Team Availability] Found ${availabilityRecords.length} availability records for gameId: ${input.gameId}`);
         const result = availabilityRecords.map(record => ({
           playerTeamId: record.playerTeamId,
-          name: `${record.firstName} ${record.lastName}`,
-          email: record.email,
-          position: record.position,
+          name: record.firstName && record.lastName ? `${record.firstName} ${record.lastName}` : `Player ${record.playerTeamId}`,
+          email: record.email || 'N/A',
+          position: record.position || 'N/A',
           isAvailable: record.isAvailable,
         }));
         console.log(`[Team Availability] Returning ${result.length} players`);
