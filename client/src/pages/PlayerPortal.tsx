@@ -71,6 +71,7 @@ export default function PlayerPortal() {
     }
   }, [expandedGameId]);
 
+  console.log('[PlayerPortal] Query defined, expandedGameId:', expandedGameId);
   const { data: teamAvailability = [], isLoading: teamAvailLoading } = trpc.league.getGameTeamAvailability.useQuery(
     { gameId: expandedGameId || 0 },
     { 
