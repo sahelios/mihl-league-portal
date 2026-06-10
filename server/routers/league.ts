@@ -804,7 +804,7 @@ export const leagueRouter = router({
         let teamPlayers: any[] = [];
         
         if (gameInfo.isEvaluationGame) {
-          // For evaluation games, get players with their team assignment
+          // For evaluation games, get ONLY players assigned to this specific evaluation date
           teamPlayers = await db.select({
             playerTeamId: playerTeams.id,
             registrationId: playerTeams.registrationId,
@@ -814,15 +814,15 @@ export const leagueRouter = router({
             position: playerTeams.position,
             evalTeam: evaluationGameAssignments.team,
           })
-            .from(playerTeams)
-            .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
-            .leftJoin(evaluationGameAssignments, and(
-              eq(evaluationGameAssignments.registrationId, playerTeams.registrationId),
-              eq(evaluationGameAssignments.evaluationDate, gameDateStr)
+            .from(evaluationGameAssignments)
+            .innerJoin(playerRegistrations, eq(evaluationGameAssignments.registrationId, playerRegistrations.id))
+            .innerJoin(playerTeams, and(
+              eq(playerTeams.registrationId, playerRegistrations.id),
+              eq(playerTeams.seasonId, gameInfo.seasonId)
             ))
             .where(
               and(
-                eq(playerTeams.seasonId, gameInfo.seasonId),
+                eq(evaluationGameAssignments.evaluationDate, gameDateStr),
                 or(
                   eq(playerTeams.teamId, gameInfo.homeTeamId),
                   eq(playerTeams.teamId, gameInfo.awayTeamId)

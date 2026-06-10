@@ -999,6 +999,8 @@
 - [x] Display team assignment (Team White/Team Black) next to player names for evaluation games only
 - [x] Updated frontend to show evaluation game team labels
 - [x] Fixed TypeScript type annotations for teamAvailability state
+- [x] Fix evaluation game player filtering to only show players assigned to that specific date
+- [x] Changed from leftJoin to innerJoin to exclude misplaced players
 - [ ] Test on live site (mihl.ca) with real player data
 - [ ] Verify players see correct teammates in team availability display
 - [ ] Verify availability status displays correctly (available/unavailable)
