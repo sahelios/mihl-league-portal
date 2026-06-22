@@ -184,10 +184,12 @@ export default function Suspensions() {
                 </div>
               ) : (
                 <Card className="border-dashed bg-muted/20">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    {language === "en" 
-                      ? "No active suspensions at this time." 
-                      : "Aucune suspension active pour le moment."}
+                  <CardContent className="py-12 text-center">
+                    <p className="text-lg font-semibold text-foreground">
+                      {language === "en" 
+                        ? "Hooray! No Active Suspensions." 
+                        : "Hourra ! Aucune suspension active."}
+                    </p>
                   </CardContent>
                 </Card>
               )}

@@ -1006,6 +1006,8 @@
 - [x] Fix Schedule page timezone issue with formatDate function
 - [x] Update /stats page to show only players from active season
 - [x] Implement getLeaderboard with real player stats filtered by active season
+- [x] Update /suspensions page to show only players from active season
+- [x] Add "Hooray! No Active Suspensions." message when no suspensions
 - [ ] Test on live site (mihl.ca) with real player data
 - [ ] Verify players see correct teammates in team availability display
 - [ ] Verify availability status displays correctly (available/unavailable)

@@ -552,8 +552,26 @@ export const adminRouter = router({
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
     try {
-      const allSuspensions = await db.select().from(suspensions);
-      const completedGames = await db.select().from(games).where(eq(games.status, 'completed'));
+      // Get active season
+      const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
+      if (!activeSeason.length) return [];
+      
+      // Get suspensions for players in the active season
+      const allSuspensions = await db
+        .select({
+          id: suspensions.id,
+          playerName: suspensions.playerName,
+          reason: suspensions.reason,
+          startDate: suspensions.startDate,
+          endDate: suspensions.endDate,
+          isActive: suspensions.isActive,
+          teamId: suspensions.teamId,
+        })
+        .from(suspensions)
+        .innerJoin(playerTeams, eq(suspensions.playerName, playerTeams.registrationId))
+        .where(eq(playerTeams.seasonId, activeSeason[0].id));
+      
+      const completedGames = await db.select().from(games).where(and(eq(games.status, 'completed'), eq(games.seasonId, activeSeason[0].id)));
       
       return allSuspensions.map(suspension => {
         const gamesAfterStart = completedGames.filter(g => {
