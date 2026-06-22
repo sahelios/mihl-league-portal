@@ -40,9 +40,20 @@ export default function Schedule() {
     });
   }, [games, teamFilter, statusTab]);
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateInput: string | Date) => {
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-    return new Date(dateStr).toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", options);
+    let localDate: Date;
+    
+    if (dateInput instanceof Date) {
+      localDate = dateInput;
+    } else if (typeof dateInput === 'string') {
+      const [year, month, day] = dateInput.split('T')[0].split('-');
+      localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else {
+      return 'Invalid date';
+    }
+    
+    return localDate.toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", options);
   };
 
   const getStatusBadge = (status: string) => {

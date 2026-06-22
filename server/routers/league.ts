@@ -256,20 +256,46 @@ export const leagueRouter = router({
     }
   }),
 
-  // Missing Leaderboard Logic for Public Stats.tsx
   getLeaderboard: publicProcedure
-    .input(z.object({ stat: z.enum(["points", "goals", "assists"]), limit: z.number().optional(), search: z.string().optional(), team: z.string().optional(), position: z.string().optional() }))
-    .query(async () => {
-      // Return generated stats for the leaderboard based on active schema limitations
-      return Array.from({ length: 15 }).map((_, i) => ({
-        id: i + 1,
-        name: `Player ${i + 1}`,
-        team: i % 2 === 0 ? "Iron Lions" : "Schvitz Saints",
-        gamesPlayed: 10,
-        goals: Math.floor(Math.random() * 15),
-        assists: Math.floor(Math.random() * 15),
-        points: Math.floor(Math.random() * 30),
-      })).sort((a, b) => b.points - a.points);
+    .input(z.object({ stat: z.enum(["points", "goals", "assists"]), limit: z.number().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        // Get active season
+        const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
+        if (!activeSeason.length) return [];
+        
+        // Fetch player stats for active season only
+        const stats = await db
+          .select({
+            id: playerStats.id,
+            name: sql<string>`CONCAT(${playerRegistrations.firstName}, ' ', ${playerRegistrations.lastName})`,
+            team: masterTeams.name,
+            gamesPlayed: playerStats.gamesPlayed,
+            goals: playerStats.goals,
+            assists: playerStats.assists,
+            points: sql<number>`COALESCE(${playerStats.goals}, 0) + COALESCE(${playerStats.assists}, 0)`,
+          })
+          .from(playerStats)
+          .innerJoin(playerTeams, eq(playerStats.playerTeamId, playerTeams.id))
+          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
+          .innerJoin(teams, eq(playerTeams.teamId, teams.id))
+          .innerJoin(masterTeams, eq(teams.masterTeamId, masterTeams.id))
+          .where(eq(playerTeams.seasonId, activeSeason[0].id));
+        
+        // Sort by requested stat
+        const sorted = stats.sort((a, b) => {
+          if (input.stat === 'points') return (b.points || 0) - (a.points || 0);
+          if (input.stat === 'goals') return (b.goals || 0) - (a.goals || 0);
+          return (b.assists || 0) - (a.assists || 0);
+        });
+        
+        return sorted.slice(0, input.limit || 50);
+      } catch (error: any) {
+        console.error('Error fetching leaderboard:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
     }),
 
   // Player Portal Queries

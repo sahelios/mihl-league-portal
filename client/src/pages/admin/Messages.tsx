@@ -62,14 +62,14 @@ export default function AdminMessages() {
     },
   });
 
-  // Admin Access Check[cite: 1, 2]
+  // Admin Access Check
   useEffect(() => {
-    if (user && user.email !== 'sarzouan@gmail.com') {
+    if (user && user.role !== 'admin') {
       navigate("/");
     }
   }, [user, navigate]);
 
-  if (!user || user.email !== 'sarzouan@gmail.com') return null;
+  if (!user || user.role !== 'admin') return null;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1001,6 +1001,11 @@
 - [x] Fixed TypeScript type annotations for teamAvailability state
 - [x] Fix evaluation game player filtering to only show players assigned to that specific date
 - [x] Changed from leftJoin to innerJoin to exclude misplaced players
+- [x] Fix admin messages access control to use role instead of hardcoded email
+- [x] Add getPlayers, getMessageHistory, and sendMessage procedures to admin router
+- [x] Fix Schedule page timezone issue with formatDate function
+- [x] Update /stats page to show only players from active season
+- [x] Implement getLeaderboard with real player stats filtered by active season
 - [ ] Test on live site (mihl.ca) with real player data
 - [ ] Verify players see correct teammates in team availability display
 - [ ] Verify availability status displays correctly (available/unavailable)

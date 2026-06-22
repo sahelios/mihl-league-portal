@@ -2048,4 +2048,85 @@ export const adminRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
       }
     }),
+
+  // ============ MESSAGING ============
+  getPlayers: adminProcedure
+    .input(z.object({}).strict())
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const result = await db
+          .select({
+            id: playerRegistrations.id,
+            firstName: playerRegistrations.firstName,
+            lastName: playerRegistrations.lastName,
+            email: playerRegistrations.email,
+            messageCount: sql<number>`0`,
+          })
+          .from(playerRegistrations)
+          .where(eq(playerRegistrations.status, 'approved'))
+          .orderBy(playerRegistrations.firstName);
+        return result;
+      } catch (error: any) {
+        console.error('Error fetching players:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  getMessageHistory: adminProcedure
+    .input(z.object({}).strict())
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        const result = await db
+          .select({
+            id: adminMessages.id,
+            recipientType: adminMessages.recipientType,
+            targetId: adminMessages.targetId,
+            content: adminMessages.content,
+            status: adminMessages.status,
+            createdAt: adminMessages.createdAt,
+          })
+          .from(adminMessages)
+          .orderBy(desc(adminMessages.createdAt))
+          .limit(50);
+        
+        return result.map(msg => ({
+          id: msg.id,
+          recipientName: msg.recipientType === 'all' ? 'All Players' : `Recipient ${msg.targetId}`,
+          content: msg.content,
+          status: msg.status,
+          timestamp: new Date(msg.createdAt).toLocaleString(),
+        }));
+      } catch (error: any) {
+        console.error('Error fetching message history:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  sendMessage: adminProcedure
+    .input(z.object({
+      type: z.enum(['all', 'team', 'player']),
+      targetId: z.number().optional(),
+      content: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      try {
+        await db.insert(adminMessages).values({
+          recipientType: input.type,
+          targetId: input.targetId || null,
+          content: input.content,
+          status: 'sent',
+          createdAt: new Date(),
+        });
+        return { success: true, message: 'Message sent successfully' };
+      } catch (error: any) {
+        console.error('Error sending message:', error);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
 });
