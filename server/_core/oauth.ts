@@ -18,7 +18,7 @@ function decodeState(state: string): { origin: string; returnPath: string } {
     const decoded = atob(state);
     const stateData = JSON.parse(decoded) as StateData;
     return {
-      origin: stateData.origin || window.location.origin,
+      origin: stateData.origin || "https://mihl.ca",
       returnPath: stateData.returnPath || "/"
     };
   } catch (error) {

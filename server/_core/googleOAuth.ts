@@ -193,11 +193,12 @@ class GoogleOAuthSDK {
     const secretKey = this.getSessionSecret();
 
     return new SignJWT({
-      sub: payload.sub,
       email: payload.email,
       name: payload.name,
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setSubject(payload.sub)
+      .setIssuedAt()
       .setExpirationTime(expirationSeconds)
       .sign(secretKey);
   }

@@ -19,6 +19,10 @@ export const getLoginUrl = (returnPath?: string) => {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("state", state);
+  // Force Google to show the account selection screen.
+  // Without this, Google silently re-authenticates the user after logout
+  // (if they still have an active Google session), causing an auto-relogin loop.
+  url.searchParams.set("prompt", "select_account");
 
   return url.toString();
 };

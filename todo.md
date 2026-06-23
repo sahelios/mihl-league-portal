@@ -1008,6 +1008,10 @@
 - [x] Implement getLeaderboard with real player stats filtered by active season
 - [x] Update /suspensions page to show only players from active season
 - [x] Add "Hooray! No Active Suspensions." message when no suspensions
+- [x] Fix authentication JWT issue - use setSubject() for registered claims
+- [x] Fix logout auto-relogin loop - remove invalidate() call after logout
+- [x] Add prompt=select_account to Google OAuth to prevent silent re-auth
+- [x] Fix redirect loop check - compare full href not just pathname
 - [ ] Test on live site (mihl.ca) with real player data
 - [ ] Verify players see correct teammates in team availability display
 - [ ] Verify availability status displays correctly (available/unavailable)
