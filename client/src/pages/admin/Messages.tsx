@@ -50,8 +50,13 @@ export default function AdminMessages() {
   const { data: history, isLoading: loadingHistory } = trpc.admin.getMessageHistory.useQuery();
 
   const sendMutation = trpc.admin.sendMessage.useMutation({
-    onSuccess: () => {
-      toast.success(language === "en" ? "Message sent!" : "Message envoyé !");
+    onSuccess: (data: any) => {
+      const count = data?.emailsSent ?? 0;
+      toast.success(
+        language === "en"
+          ? `Message sent to ${count} player${count !== 1 ? 's' : ''}!`
+          : `Message envoyé à ${count} joueur${count !== 1 ? 's' : ''} !`
+      );
       setForm({ ...form, content: "" });
       utils.admin.getMessageHistory.invalidate();
       setIsSubmitting(false);

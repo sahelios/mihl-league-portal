@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { z } from "zod";
 import { generateLoginToken, createAdminRegisteredPlayer } from "../_core/adminRegistrationService";
-import { sendAdminRegistrationEmail } from "../_core/emailService";
+import { sendAdminRegistrationEmail, sendEmail } from "../_core/emailService";
 import { eq, and, sql, or, inArray, desc } from "drizzle-orm";
 import {
   playerRegistrations,
@@ -2206,24 +2206,30 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
+        // Select only columns that actually exist in the adminMessages schema
         const result = await db
           .select({
             id: adminMessages.id,
-            recipientType: adminMessages.recipientType,
-            targetId: adminMessages.targetId,
+            subject: adminMessages.subject,
             content: adminMessages.content,
-            status: adminMessages.status,
+            toTeamId: adminMessages.toTeamId,
+            toPlayerTeamId: adminMessages.toPlayerTeamId,
             createdAt: adminMessages.createdAt,
           })
           .from(adminMessages)
           .orderBy(desc(adminMessages.createdAt))
           .limit(50);
-        
+
         return result.map(msg => ({
           id: msg.id,
-          recipientName: msg.recipientType === 'all' ? 'All Players' : `Recipient ${msg.targetId}`,
+          // Derive a human-readable recipient label from stored fields
+          recipientName: msg.subject || (
+            msg.toTeamId        ? `Team #${msg.toTeamId}` :
+            msg.toPlayerTeamId  ? `Player #${msg.toPlayerTeamId}` :
+                                  'All Players'
+          ),
           content: msg.content,
-          status: msg.status,
+          status: 'sent' as const,
           timestamp: new Date(msg.createdAt).toLocaleString(),
         }));
       } catch (error: any) {
@@ -2236,20 +2242,109 @@ export const adminRouter = router({
     .input(z.object({
       type: z.enum(['all', 'team', 'player']),
       targetId: z.number().optional(),
-      content: z.string().min(1).max(500),
+      content: z.string().min(1), // no max — UI removed the 500-char cap
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
+        // ── 1. Build recipient list ──────────────────────────────────────────
+        let recipients: { email: string; name: string }[] = [];
+
+        if (input.type === 'all') {
+          const rows = await db
+            .select({
+              email: playerRegistrations.email,
+              firstName: playerRegistrations.firstName,
+              lastName: playerRegistrations.lastName,
+            })
+            .from(playerRegistrations)
+            .where(eq(playerRegistrations.status, 'approved'));
+          recipients = rows.map(r => ({
+            email: r.email,
+            name: `${r.firstName} ${r.lastName}`,
+          }));
+
+        } else if (input.type === 'team' && input.targetId) {
+          // Get the active season so we target the right playerTeams rows
+          const [activeSeason] = await db
+            .select({ id: seasons.id })
+            .from(seasons)
+            .where(eq(seasons.isActive, true))
+            .limit(1);
+
+          const rows = await db
+            .select({
+              email: playerRegistrations.email,
+              firstName: playerRegistrations.firstName,
+              lastName: playerRegistrations.lastName,
+            })
+            .from(playerRegistrations)
+            .innerJoin(
+              playerTeams,
+              and(
+                eq(playerTeams.registrationId, playerRegistrations.id),
+                eq(playerTeams.teamId, input.targetId),
+                ...(activeSeason ? [eq(playerTeams.seasonId, activeSeason.id)] : []),
+              )
+            )
+            .where(eq(playerRegistrations.status, 'approved'));
+          recipients = rows.map(r => ({
+            email: r.email,
+            name: `${r.firstName} ${r.lastName}`,
+          }));
+
+        } else if (input.type === 'player' && input.targetId) {
+          const [row] = await db
+            .select({
+              email: playerRegistrations.email,
+              firstName: playerRegistrations.firstName,
+              lastName: playerRegistrations.lastName,
+            })
+            .from(playerRegistrations)
+            .where(eq(playerRegistrations.id, input.targetId))
+            .limit(1);
+          if (row) recipients = [{ email: row.email, name: `${row.firstName} ${row.lastName}` }];
+        }
+
+        // ── 2. Send emails ───────────────────────────────────────────────────
+        let emailsSent = 0;
+        let emailsFailed = 0;
+        for (const recipient of recipients) {
+          if (!recipient.email) continue;
+          const result = await sendEmail(
+            recipient.email,
+            'Message from MIHL',
+            `Hi ${recipient.name},\n\n${input.content}\n\n— MIHL Management`,
+            `<p>Hi ${recipient.name},</p><p style="white-space:pre-wrap">${input.content}</p><p>— MIHL Management</p>`,
+          );
+          if (result.success) emailsSent++;
+          else emailsFailed++;
+        }
+
+        // ── 3. Persist to DB using actual schema columns ─────────────────────
+        // adminMessages schema: fromAdminId, toTeamId, toPlayerTeamId, subject, content, isRead
+        // Note: recipientType / targetId / status do NOT exist in the schema.
+        const subjectLabel =
+          input.type === 'all'    ? 'All Players' :
+          input.type === 'team'   ? `Team #${input.targetId}` :
+                                    `Player #${input.targetId}`;
+
         await db.insert(adminMessages).values({
-          recipientType: input.type,
-          targetId: input.targetId || null,
+          fromAdminId: ctx.user.id,
+          toTeamId:       input.type === 'team'   ? (input.targetId ?? null) : null,
+          toPlayerTeamId: input.type === 'player' ? (input.targetId ?? null) : null,
+          subject: subjectLabel,
           content: input.content,
-          status: 'sent',
-          createdAt: new Date(),
         });
-        return { success: true, message: 'Message sent successfully' };
+
+        return {
+          success: true,
+          message: `Message sent to ${emailsSent} player(s)${emailsFailed > 0 ? `, ${emailsFailed} failed` : ''}`,
+          emailsSent,
+          emailsFailed,
+          totalRecipients: recipients.length,
+        };
       } catch (error: any) {
         console.error('Error sending message:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
