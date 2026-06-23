@@ -33,6 +33,13 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   
+  // Trust the reverse proxy (Manus cloud, Nginx, etc.) so that
+  // req.secure and req.protocol correctly reflect HTTPS.
+  // Without this, req.protocol is always 'http' behind a proxy,
+  // which causes cookies to be issued/cleared without the Secure flag,
+  // making the browser reject clearCookie (SameSite=None requires Secure).
+  app.set('trust proxy', 1);
+  
   // Initialize WebSocket for real-time updates
   initializeWebSocket(server);
   // Configure body parser with larger size limit for file uploads

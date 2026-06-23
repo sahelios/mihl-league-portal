@@ -18,7 +18,23 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
+
+      // Diagnostic: log what we're about to clear so server logs can be checked
+      console.log('[Logout] Clearing cookie', COOKIE_NAME, {
+        hostname: ctx.req.hostname,
+        secure: ctx.req.secure,
+        protocol: ctx.req.protocol,
+        forwardedProto: ctx.req.headers['x-forwarded-proto'],
+        cookieOptions,
+      });
+
+      // Primary clear — matches the options used when the cookie was set
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+      // Belt-and-suspenders: also clear without a domain restriction in case
+      // the original cookie was set without one (edge cases in some proxies)
+      ctx.res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/', sameSite: 'lax', secure: ctx.req.secure, maxAge: -1 });
+
       return {
         success: true,
       } as const;
