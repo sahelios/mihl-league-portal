@@ -2143,17 +2143,10 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get active season
-        const activeSeason = await db
-          .select({ id: seasons.id })
-          .from(seasons)
-          .where(eq(seasons.isActive, true))
-          .limit(1);
-        
-        if (!activeSeason.length) {
-          return [];
-        }
-        
+        // Return ALL approved players regardless of which season they registered in.
+        // Filtering by playerRegistrations.seasonId excludes returning players whose
+        // registration predates the current active season, causing the player dropdown
+        // in the messaging tool to appear empty.
         const result = await db
           .select({
             id: playerRegistrations.id,
@@ -2163,12 +2156,7 @@ export const adminRouter = router({
             messageCount: sql<number>`0`,
           })
           .from(playerRegistrations)
-          .where(
-            and(
-              eq(playerRegistrations.status, 'approved'),
-              eq(playerRegistrations.seasonId, activeSeason[0].id)
-            )
-          )
+          .where(eq(playerRegistrations.status, 'approved'))
           .orderBy(playerRegistrations.firstName);
         return result;
       } catch (error: any) {
