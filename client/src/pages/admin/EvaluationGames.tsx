@@ -123,10 +123,18 @@ export default function EvaluationGames() {
 
               const whiteTeam = attendees
                 .filter(p => p.evalTeam === 'white')
-                .sort((a, b) => (POSITION_ORDER[a.position?.toLowerCase()] ?? 3) - (POSITION_ORDER[b.position?.toLowerCase()] ?? 3));
+                .sort((a, b) => {
+                  const rankDiff = (b.playerRating || 0) - (a.playerRating || 0);
+                  if (rankDiff !== 0) return rankDiff;
+                  return (POSITION_ORDER[a.position?.toLowerCase()] ?? 3) - (POSITION_ORDER[b.position?.toLowerCase()] ?? 3);
+                });
               const blackTeam = attendees
                 .filter(p => p.evalTeam === 'black')
-                .sort((a, b) => (POSITION_ORDER[a.position?.toLowerCase()] ?? 3) - (POSITION_ORDER[b.position?.toLowerCase()] ?? 3));
+                .sort((a, b) => {
+                  const rankDiff = (b.playerRating || 0) - (a.playerRating || 0);
+                  if (rankDiff !== 0) return rankDiff;
+                  return (POSITION_ORDER[a.position?.toLowerCase()] ?? 3) - (POSITION_ORDER[b.position?.toLowerCase()] ?? 3);
+                });
               const unassigned = attendees.filter(p => !p.evalTeam);
 
               // Players not yet in this game

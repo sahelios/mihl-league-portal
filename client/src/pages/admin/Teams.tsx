@@ -315,7 +315,7 @@ function PlayerPool({
         {players.length === 0 ? (
           <p className="text-xs text-center opacity-50 py-4">No players</p>
         ) : (
-          players.map((player: any) => (
+          [...players].sort((a, b) => (b.playerRating || 0) - (a.playerRating || 0)).map((player: any) => (
             <div
               key={player.id}
               draggable
