@@ -826,22 +826,28 @@ export const leagueRouter = router({
           ? gameInfo.gameDate
           : '';
 
-        // Convert YYYY-MM-DD to "JUN 23" format to match evaluationGameAssignments.evaluationDate
-        const evalDateLabel = gameDateStr
-          ? new Date(gameDateStr + 'T12:00:00')
-              .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              .toUpperCase()   // "Jun 23" → "JUN 23"
-          : '';
+        // evaluationGameAssignments.evaluationDate is stored as YYYY-MM-DD
+        // (the admin page passes game.date which is already "2026-06-23").
+        // Do NOT convert to "JUN 23" — use gameDateStr directly.
 
         // Get all players from both teams in this season
         // For evaluation games, also get their team assignment (White/Black)
         let teamPlayers: any[] = [];
         
         if (gameInfo.isEvaluationGame) {
-          // For evaluation games: join evaluationGameAssignments (for team colour)
-          // with playerTeams (LEFT JOIN — player may not have a regular-season team yet).
-          // Filter by the converted eval-date label so the comparison works.
-          // If teamId is supplied by the caller, restrict to just that team's players.
+          // Map caller's teamId to an eval team colour ('white'|'black'|null).
+          // homeTeamId = Team White, awayTeamId = Team Black (convention).
+          // Filter by evaluationGameAssignments.team (the authoritative colour field)
+          // NOT by playerTeams.teamId — players may not have a playerTeams row yet
+          // during the evaluation period.
+          const callerEvalTeam: string | null = input.teamId
+            ? (input.teamId === gameInfo.homeTeamId
+                ? 'white'
+                : input.teamId === gameInfo.awayTeamId
+                ? 'black'
+                : null)
+            : null;
+
           teamPlayers = await db.select({
             playerTeamId: playerTeams.id,
             registrationId: evaluationGameAssignments.registrationId,
@@ -859,13 +865,10 @@ export const leagueRouter = router({
             ))
             .where(
               and(
-                eq(evaluationGameAssignments.evaluationDate, evalDateLabel),
-                input.teamId
-                  ? eq(playerTeams.teamId, input.teamId)
-                  : or(
-                      eq(playerTeams.teamId, gameInfo.homeTeamId),
-                      eq(playerTeams.teamId, gameInfo.awayTeamId)
-                    )
+                eq(evaluationGameAssignments.evaluationDate, gameDateStr),
+                callerEvalTeam
+                  ? eq(evaluationGameAssignments.team, callerEvalTeam)
+                  : undefined
               )
             )
             .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
