@@ -74,7 +74,7 @@ export default function PlayerPortal() {
   const [teamAvailability, setTeamAvailability] = React.useState<any[]>([]);
   const [teamAvailLoading, setTeamAvailLoading] = React.useState(false);
   const teamAvailQuery = trpc.league.getGameTeamAvailability.useQuery(
-    { gameId: expandedGameId || 0 },
+    { gameId: expandedGameId || 0, teamId: playerReg?.teamId ?? undefined },
     { enabled: false }
   );
 

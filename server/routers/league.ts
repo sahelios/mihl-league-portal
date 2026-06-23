@@ -335,31 +335,32 @@ export const leagueRouter = router({
         const activeSeason = await db.select().from(seasons).where(eq(seasons.isActive, true)).limit(1);
         if (!activeSeason.length) return registration;
         
-        // Get player team info for active season (includes position override)
-        const playerTeamResult = await db.select().from(playerTeams)
+        // Look up playerTeams by EMAIL + active season, not by registrationId.
+        // A player may have registrations across multiple seasons; using registrationId
+        // risks finding the wrong one (no playerTeams row) and returning null teamId.
+        const playerTeamResult = await db.select({
+          id: playerTeams.id,
+          teamId: playerTeams.teamId,
+          position: playerTeams.position,
+          registrationId: playerTeams.registrationId,
+        })
+          .from(playerTeams)
+          .innerJoin(playerRegistrations, eq(playerTeams.registrationId, playerRegistrations.id))
           .where(and(
-            eq(playerTeams.registrationId, registration.id),
+            eq(playerRegistrations.email, input.email),
             eq(playerTeams.seasonId, activeSeason[0].id)
           ))
           .limit(1);
-        
-        // Override teamId and position from playerTeams if available (admin-set values take precedence)
+
         if (playerTeamResult.length) {
-          const overrides: any = {};
-          if (playerTeamResult[0].position) {
-            overrides.position = playerTeamResult[0].position;
-          }
-          if (playerTeamResult[0].teamId) {
-            overrides.teamId = playerTeamResult[0].teamId;
-          }
-          if (Object.keys(overrides).length > 0) {
-            return {
-              ...registration,
-              ...overrides,
-            };
-          }
+          const pt = playerTeamResult[0];
+          return {
+            ...registration,
+            ...(pt.teamId   ? { teamId:   pt.teamId   } : {}),
+            ...(pt.position ? { position: pt.position } : {}),
+          };
         }
-        
+
         return registration;
       } catch (error) {
         console.error('Error fetching player registration:', error);
@@ -790,7 +791,7 @@ export const leagueRouter = router({
     }),
 
   getGameTeamAvailability: protectedProcedure
-    .input(z.object({ gameId: z.number() }))
+    .input(z.object({ gameId: z.number(), teamId: z.number().optional() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -825,15 +826,25 @@ export const leagueRouter = router({
           ? gameInfo.gameDate
           : '';
 
+        // Convert YYYY-MM-DD to "JUN 23" format to match evaluationGameAssignments.evaluationDate
+        const evalDateLabel = gameDateStr
+          ? new Date(gameDateStr + 'T12:00:00')
+              .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              .toUpperCase()   // "Jun 23" → "JUN 23"
+          : '';
+
         // Get all players from both teams in this season
         // For evaluation games, also get their team assignment (White/Black)
         let teamPlayers: any[] = [];
         
         if (gameInfo.isEvaluationGame) {
-          // For evaluation games, get ONLY players assigned to this specific evaluation date
+          // For evaluation games: join evaluationGameAssignments (for team colour)
+          // with playerTeams (LEFT JOIN — player may not have a regular-season team yet).
+          // Filter by the converted eval-date label so the comparison works.
+          // If teamId is supplied by the caller, restrict to just that team's players.
           teamPlayers = await db.select({
             playerTeamId: playerTeams.id,
-            registrationId: playerTeams.registrationId,
+            registrationId: evaluationGameAssignments.registrationId,
             firstName: playerRegistrations.firstName,
             lastName: playerRegistrations.lastName,
             email: playerRegistrations.email,
@@ -842,22 +853,25 @@ export const leagueRouter = router({
           })
             .from(evaluationGameAssignments)
             .innerJoin(playerRegistrations, eq(evaluationGameAssignments.registrationId, playerRegistrations.id))
-            .innerJoin(playerTeams, and(
+            .leftJoin(playerTeams, and(
               eq(playerTeams.registrationId, playerRegistrations.id),
               eq(playerTeams.seasonId, gameInfo.seasonId)
             ))
             .where(
               and(
-                eq(evaluationGameAssignments.evaluationDate, gameDateStr),
-                or(
-                  eq(playerTeams.teamId, gameInfo.homeTeamId),
-                  eq(playerTeams.teamId, gameInfo.awayTeamId)
-                )
+                eq(evaluationGameAssignments.evaluationDate, evalDateLabel),
+                input.teamId
+                  ? eq(playerTeams.teamId, input.teamId)
+                  : or(
+                      eq(playerTeams.teamId, gameInfo.homeTeamId),
+                      eq(playerTeams.teamId, gameInfo.awayTeamId)
+                    )
               )
             )
             .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
         } else {
-          // For regular season games, just get players
+          // For regular season games, filter to the caller's team only (if supplied)
+          // so each player sees only their own teammates, not the opposition.
           teamPlayers = await db.select({
             playerTeamId: playerTeams.id,
             firstName: playerRegistrations.firstName,
@@ -870,10 +884,12 @@ export const leagueRouter = router({
             .where(
               and(
                 eq(playerTeams.seasonId, gameInfo.seasonId),
-                or(
-                  eq(playerTeams.teamId, gameInfo.homeTeamId),
-                  eq(playerTeams.teamId, gameInfo.awayTeamId)
-                )
+                input.teamId
+                  ? eq(playerTeams.teamId, input.teamId)
+                  : or(
+                      eq(playerTeams.teamId, gameInfo.homeTeamId),
+                      eq(playerTeams.teamId, gameInfo.awayTeamId)
+                    )
               )
             )
             .orderBy(playerRegistrations.firstName, playerRegistrations.lastName);
