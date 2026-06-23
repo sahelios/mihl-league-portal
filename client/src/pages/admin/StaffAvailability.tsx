@@ -5,7 +5,7 @@ import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowLeft, Users, Loader2, Plus, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Users, Loader2, Plus, X, CheckCircle2, Clock } from 'lucide-react';
 import { formatDate, formatTime } from '@/lib/dateUtils';
 import {
   Dialog,
@@ -126,9 +126,9 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
     { enabled: isExpanded }
   );
 
+  // Always fetch assignment so the collapsed card header shows correct status
   const { data: gameAssignment } = trpc.admin.getGameAssignment.useQuery(
-    { gameId: game.id },
-    { enabled: isExpanded }
+    { gameId: game.id }
   );
 
   const utils = trpc.useUtils();
@@ -201,15 +201,31 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
               {formatDate(game.gameDate)} at {formatTime(game.gameTime)}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {referees.length} Available
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {scorekeepers.length} Available
-            </Badge>
+          <div className="flex flex-col gap-1.5 items-end">
+            {/* Referee status */}
+            {gameAssignment?.refereeId ? (
+              <Badge className="flex items-center gap-1 bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20">
+                <CheckCircle2 className="w-3 h-3" />
+                Referee Assigned
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                No Referee
+              </Badge>
+            )}
+            {/* Scorekeeper status */}
+            {gameAssignment?.scorekeeperId ? (
+              <Badge className="flex items-center gap-1 bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20">
+                <CheckCircle2 className="w-3 h-3" />
+                Scorekeeper Assigned
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                No Scorekeeper
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
