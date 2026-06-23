@@ -173,11 +173,10 @@ export default function AdminMessages() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <Label>{language === "en" ? "Message" : "Message"}</Label>
-                    <span className="text-[10px] text-muted-foreground">{form.content.length}/500</span>
+                    <span className="text-[10px] text-muted-foreground">{form.content.length}</span>
                   </div>
                   <Textarea
                     required
-                    maxLength={500}
                     value={form.content}
                     onChange={(e) => setForm({ ...form, content: e.target.value })}
                     className="bg-background min-h-[150px]"
