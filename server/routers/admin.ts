@@ -448,11 +448,25 @@ export const adminRouter = router({
 
   createNewsPost: adminProcedure
     .input(z.object({ title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.insert(newsPosts).values({ title: input.title, content: input.content, imageUrl: input.imageUrl || null });
+      const activeSeason = await db.query.seasons.findFirst({
+        where: (seasons, { eq }) => eq(seasons.isActive, true),
+      });
+
+      if (!activeSeason) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No active season found" });
+      }
+
+      await db.insert(newsPosts).values({
+        title: input.title,
+        content: input.content,
+        imageUrl: input.imageUrl || null,
+        authorId: ctx.user.id,
+        seasonId: activeSeason.id,
+      });
       return { success: true };
     }),
 
@@ -772,6 +786,61 @@ export const adminRouter = router({
       } catch (error: any) {
         console.error('Error fetching teams:', error);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+    }),
+
+  /**
+   * Returns ALL approved players with their team assignment for a specific season.
+   *
+   * This is the correct query for the Team Management page. It LEFT JOINs
+   * playerRegistrations with playerTeams (filtered by seasonId) so that:
+   *   - Players with no playerTeams row for this season have currentTeamId = null  → unassigned
+   *   - Players with a playerTeams row have currentTeamId set                      → assigned
+   *
+   * Unlike getAll (which returns playerRegistrations.teamId, a denormalized field
+   * that doesn't carry season context), this query uses the playerTeams table as
+   * the authoritative source of truth for season-specific assignments.
+   */
+  getApprovedPlayersForSeason: adminProcedure
+    .input(z.object({ seasonId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+
+      try {
+        const rows = await db
+          .select({
+            id: playerRegistrations.id,
+            firstName: playerRegistrations.firstName,
+            lastName: playerRegistrations.lastName,
+            email: playerRegistrations.email,
+            phone: playerRegistrations.phone,
+            position: playerRegistrations.position,
+            status: playerRegistrations.status,
+            registrationSeasonId: playerRegistrations.seasonId,
+            playerRating: playerRegistrations.playerRating,
+            playerPictureUrl: playerRegistrations.playerPictureUrl,
+            isFirstTime: playerRegistrations.isFirstTime,
+            registrationType: playerRegistrations.registrationType,
+            paymentConfirmed: playerRegistrations.paymentConfirmed,
+            jerseyOrderConfirmed: playerRegistrations.jerseyOrderConfirmed,
+            currentTeamId: playerTeams.teamId,
+            currentSeasonId: playerTeams.seasonId,
+          })
+          .from(playerRegistrations)
+          .leftJoin(
+            playerTeams,
+            and(
+              eq(playerTeams.registrationId, playerRegistrations.id),
+              eq(playerTeams.seasonId, input.seasonId),
+            ),
+          )
+          .where(eq(playerRegistrations.status, 'approved'));
+
+        return rows;
+      } catch (error: any) {
+        console.error('[getApprovedPlayersForSeason] Error:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
       }
     }),
 

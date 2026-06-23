@@ -53,9 +53,15 @@ export default function AdminTeams() {
     { enabled: !!activeSeasonId }
   );
 
-  // Use the same procedure as admin/Players - registration.getAll
+  // Use getApprovedPlayersForSeason — a LEFT JOIN of playerRegistrations with
+  // playerTeams filtered to activeSeasonId. This is the correct source of truth:
+  //   - currentTeamId = null  → player has no team this season → unassigned pool
+  //   - currentTeamId set     → player is on that team this season
   const { data: allPlayers = [], isLoading: loadingPlayers, refetch } =
-    trpc.registration.getAll.useQuery();
+    trpc.admin.getApprovedPlayersForSeason.useQuery(
+      { seasonId: activeSeasonId! },
+      { enabled: !!activeSeasonId },
+    );
 
   // ── Mutations ─────────────────────────────────────────────────────────────
   const assignTeamMutation = trpc.admin.assignPlayerToTeam.useMutation({
