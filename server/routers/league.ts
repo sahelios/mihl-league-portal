@@ -2,7 +2,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams, staffAvailability, refereeApplications } from "../../drizzle/schema";
+import { games, teams, suspensions, playerRegistrations, gameVenues, evaluationGameAssignments, seasons, masterTeams, playerAvailability, playerTeams, staffAvailability, refereeApplications, gameAssignments } from "../../drizzle/schema";
 import { eq, desc, and, or, inArray, sql } from "drizzle-orm";
 
 export const leagueRouter = router({
@@ -753,27 +753,44 @@ export const leagueRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
-        // Get assigned referee
-        const assignedReferee = await db.select()
-          .from(staffAvailability)
-          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
-          .where(and(
-            eq(staffAvailability.gameId, input.gameId),
-            eq(staffAvailability.isAvailable, true),
-            eq(refereeApplications.role, 'referee')
-          ));
-        
-        // Get assigned scorekeeper
-        const assignedScorekeeper = await db.select()
-          .from(staffAvailability)
-          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
-          .where(and(
-            eq(staffAvailability.gameId, input.gameId),
-            eq(staffAvailability.isAvailable, true),
-            eq(refereeApplications.role, 'scorekeeper')
-          ));
-        
-        // Get all available referees for this game
+        // Read admin assignments from gameAssignments (authoritative source).
+        // staffAvailability only tracks who is available, NOT who was assigned.
+        const assignment = await db.select()
+          .from(gameAssignments)
+          .where(eq(gameAssignments.gameId, input.gameId))
+          .limit(1);
+
+        const assignmentRow = assignment[0] ?? null;
+
+        // Fetch assigned referee details
+        let referee: { id: number; name: string; email: string } | null = null;
+        if (assignmentRow?.refereeId) {
+          const rows = await db.select().from(refereeApplications)
+            .where(eq(refereeApplications.id, assignmentRow.refereeId)).limit(1);
+          if (rows.length > 0) {
+            referee = {
+              id: rows[0].id,
+              name: `${rows[0].firstName} ${rows[0].lastName}`,
+              email: rows[0].email ?? '',
+            };
+          }
+        }
+
+        // Fetch assigned scorekeeper details
+        let scorekeeper: { id: number; name: string; email: string } | null = null;
+        if (assignmentRow?.scorekeeperId) {
+          const rows = await db.select().from(refereeApplications)
+            .where(eq(refereeApplications.id, assignmentRow.scorekeeperId)).limit(1);
+          if (rows.length > 0) {
+            scorekeeper = {
+              id: rows[0].id,
+              name: `${rows[0].firstName} ${rows[0].lastName}`,
+              email: rows[0].email ?? '',
+            };
+          }
+        }
+
+        // Get available referees from staffAvailability (separate from assignment)
         const availableReferees = await db.select({
           id: refereeApplications.id,
           firstName: refereeApplications.firstName,
@@ -787,8 +804,7 @@ export const leagueRouter = router({
             eq(staffAvailability.isAvailable, true),
             eq(refereeApplications.role, 'referee')
           ));
-        
-        // Get all available scorekeepers for this game
+
         const availableScorekeepers = await db.select({
           id: refereeApplications.id,
           firstName: refereeApplications.firstName,
@@ -802,18 +818,10 @@ export const leagueRouter = router({
             eq(staffAvailability.isAvailable, true),
             eq(refereeApplications.role, 'scorekeeper')
           ));
-        
+
         return {
-          referee: assignedReferee.length > 0 ? {
-            id: assignedReferee[0].refereeApplications.id,
-            name: `${assignedReferee[0].refereeApplications.firstName} ${assignedReferee[0].refereeApplications.lastName}`,
-            email: assignedReferee[0].refereeApplications.email,
-          } : null,
-          scorekeeper: assignedScorekeeper.length > 0 ? {
-            id: assignedScorekeeper[0].refereeApplications.id,
-            name: `${assignedScorekeeper[0].refereeApplications.firstName} ${assignedScorekeeper[0].refereeApplications.lastName}`,
-            email: assignedScorekeeper[0].refereeApplications.email,
-          } : null,
+          referee,
+          scorekeeper,
           availableReferees: availableReferees.map(r => ({
             id: r.id,
             name: `${r.firstName} ${r.lastName}`,

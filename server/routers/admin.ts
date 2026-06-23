@@ -2043,46 +2043,85 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       try {
+        // Validate and fetch the staff member being assigned
+        let assignedStaff: typeof refereeApplications.$inferSelect | null = null;
+        let assignedRole: 'referee' | 'scorekeeper' | null = null;
+
         if (input.refereeId) {
-          const referee = await db.select().from(refereeApplications)
+          const rows = await db.select().from(refereeApplications)
             .where(and(
               eq(refereeApplications.id, input.refereeId),
               eq(refereeApplications.role, 'referee'),
               eq(refereeApplications.status, 'approved')
             ));
-          if (referee.length === 0) {
+          if (rows.length === 0)
             throw new TRPCError({ code: "NOT_FOUND", message: "Referee not found or not approved" });
-          }
+          assignedStaff = rows[0];
+          assignedRole = 'referee';
         }
+
         if (input.scorekeeperId) {
-          const scorekeeper = await db.select().from(refereeApplications)
+          const rows = await db.select().from(refereeApplications)
             .where(and(
               eq(refereeApplications.id, input.scorekeeperId),
               eq(refereeApplications.role, 'scorekeeper'),
               eq(refereeApplications.status, 'approved')
             ));
-          if (scorekeeper.length === 0) {
+          if (rows.length === 0)
             throw new TRPCError({ code: "NOT_FOUND", message: "Scorekeeper not found or not approved" });
-          }
+          assignedStaff = rows[0];
+          assignedRole = 'scorekeeper';
         }
+
+        // IMPORTANT: only set the field being assigned — do NOT touch the other role.
+        // Previously both refereeId and scorekeeperId were set on every update,
+        // which wiped whichever one was undefined (null-ing the existing assignment).
+        const updateFields: Record<string, any> = {};
+        if (input.refereeId !== undefined) updateFields.refereeId = input.refereeId;
+        if (input.scorekeeperId !== undefined) updateFields.scorekeeperId = input.scorekeeperId;
 
         const existing = await db.select().from(gameAssignments)
           .where(eq(gameAssignments.gameId, input.gameId));
-        
+
         if (existing.length > 0) {
           await db.update(gameAssignments)
-            .set({
-              refereeId: input.refereeId,
-              scorekeeperId: input.scorekeeperId,
-            })
+            .set(updateFields)
             .where(eq(gameAssignments.gameId, input.gameId));
         } else {
           await db.insert(gameAssignments).values({
             gameId: input.gameId,
-            refereeId: input.refereeId,
-            scorekeeperId: input.scorekeeperId,
+            refereeId: input.refereeId ?? null,
+            scorekeeperId: input.scorekeeperId ?? null,
           });
         }
+
+        // Send assignment email to the staff member
+        if (assignedStaff && assignedStaff.email && assignedRole) {
+          const gameRows = await db.select().from(games)
+            .leftJoin(gameVenues, eq(games.venueId, gameVenues.id))
+            .where(eq(games.id, input.gameId))
+            .limit(1);
+
+          if (gameRows.length > 0) {
+            const g = gameRows[0].games;
+            const venue = gameRows[0].gameVenues;
+            const gameDateStr = g.gameDate instanceof Date
+              ? g.gameDate.toISOString().split('T')[0]
+              : String(g.gameDate ?? '');
+            const roleLabel = assignedRole === 'referee' ? 'Referee' : 'Scorekeeper';
+            const staffName = `${assignedStaff.firstName} ${assignedStaff.lastName}`;
+            const venueName = venue?.name ?? 'TBA';
+            const gameTime = g.gameTime ?? 'TBA';
+
+            await sendEmail(
+              assignedStaff.email,
+              `MIHL Game Assignment — ${roleLabel}`,
+              `Hi ${staffName},\n\nYou have been assigned as ${roleLabel} for the following game:\n\nDate: ${gameDateStr}\nTime: ${gameTime}\nVenue: ${venueName}\n\nPlease make sure you arrive at least 15 minutes early.\n\n— MIHL Management`,
+              `<p>Hi ${staffName},</p><p>You have been assigned as <strong>${roleLabel}</strong> for the following game:</p><ul><li><strong>Date:</strong> ${gameDateStr}</li><li><strong>Time:</strong> ${gameTime}</li><li><strong>Venue:</strong> ${venueName}</li></ul><p>Please make sure you arrive at least 15 minutes early.</p><p>— MIHL Management</p>`
+            );
+          }
+        }
+
         return { success: true, message: "Staff assigned to game" };
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });

@@ -131,8 +131,21 @@ function GameAvailabilityCard({ game, isExpanded, onToggle }: GameAvailabilityCa
     { enabled: isExpanded }
   );
 
-  const assignStaffMutation = trpc.admin.assignStaffToGame.useMutation();
-  const removeStaffMutation = trpc.admin.removeStaffFromGame.useMutation();
+  const utils = trpc.useUtils();
+
+  const assignStaffMutation = trpc.admin.assignStaffToGame.useMutation({
+    onSuccess: () => {
+      utils.admin.getGameAssignment.invalidate({ gameId: game.id });
+      utils.league.getGameStaffStatus.invalidate({ gameId: game.id });
+    },
+  });
+
+  const removeStaffMutation = trpc.admin.removeStaffFromGame.useMutation({
+    onSuccess: () => {
+      utils.admin.getGameAssignment.invalidate({ gameId: game.id });
+      utils.league.getGameStaffStatus.invalidate({ gameId: game.id });
+    },
+  });
 
   const homeTeamName = game.teamAName || `Team ${game.homeTeamId}`;
   const awayTeamName = game.teamBName || `Team ${game.awayTeamId}`;
