@@ -99,11 +99,11 @@ export default function AdminTeams() {
   };
 
   // ── Partition players ─────────────────────────────────────────────────────
-  const players = allPlayers as any[];
+  const players = (allPlayers as any[]).filter(p => p.status === 'approved');
   const teamsList = teams as any[];
   
   // Debug logging
-  console.log('Teams page - Total players:', players.length);
+  console.log('Teams page - Total approved players:', players.length);
   console.log('Teams page - Active season:', activeSeasonId);
   const ronReiter = players.find(p => p.email === 'ron@snjbuild.ca');
   console.log('Ron Reiter data:', ronReiter);
