@@ -449,12 +449,18 @@ export const adminRouter = router({
       content: post.content,
       imageUrl: post.imageUrl,
       author: "Admin",
+      published: post.isApproved,
       createdAt: post.createdAt.toISOString().split('T')[0]
     }));
   }),
 
   createNewsPost: adminProcedure
-    .input(z.object({ title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
+    .input(z.object({
+      title: z.string().min(1),
+      content: z.string().min(1),
+      imageUrl: z.string().optional(),
+      published: z.boolean().optional().default(true),
+    }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -477,17 +483,29 @@ export const adminRouter = router({
         imageUrl: input.imageUrl || null,
         authorId: ctx.user.id,
         seasonId: activeSeason.id,
+        isApproved: input.published ?? true,
       });
       return { success: true };
     }),
 
   updateNewsPost: adminProcedure
-    .input(z.object({ id: z.number(), title: z.string().min(1), content: z.string().min(1), imageUrl: z.string().optional() }))
+    .input(z.object({
+      id: z.number(),
+      title: z.string().min(1),
+      content: z.string().min(1),
+      imageUrl: z.string().optional(),
+      published: z.boolean().optional(),
+    }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.update(newsPosts).set({ title: input.title, content: input.content, imageUrl: input.imageUrl || null }).where(eq(newsPosts.id, input.id));
+      await db.update(newsPosts).set({
+        title: input.title,
+        content: input.content,
+        imageUrl: input.imageUrl || null,
+        ...(input.published !== undefined && { isApproved: input.published }),
+      }).where(eq(newsPosts.id, input.id));
       return { success: true };
     }),
 
