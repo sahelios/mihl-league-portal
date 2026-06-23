@@ -773,6 +773,36 @@ export const leagueRouter = router({
             eq(refereeApplications.role, 'scorekeeper')
           ));
         
+        // Get all available referees for this game
+        const availableReferees = await db.select({
+          id: refereeApplications.id,
+          firstName: refereeApplications.firstName,
+          lastName: refereeApplications.lastName,
+          email: refereeApplications.email,
+        })
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, 'referee')
+          ));
+        
+        // Get all available scorekeepers for this game
+        const availableScorekeepers = await db.select({
+          id: refereeApplications.id,
+          firstName: refereeApplications.firstName,
+          lastName: refereeApplications.lastName,
+          email: refereeApplications.email,
+        })
+          .from(staffAvailability)
+          .innerJoin(refereeApplications, eq(staffAvailability.staffApplicationId, refereeApplications.id))
+          .where(and(
+            eq(staffAvailability.gameId, input.gameId),
+            eq(staffAvailability.isAvailable, true),
+            eq(refereeApplications.role, 'scorekeeper')
+          ));
+        
         return {
           referee: assignedReferee.length > 0 ? {
             id: assignedReferee[0].refereeApplications.id,
@@ -784,6 +814,16 @@ export const leagueRouter = router({
             name: `${assignedScorekeeper[0].refereeApplications.firstName} ${assignedScorekeeper[0].refereeApplications.lastName}`,
             email: assignedScorekeeper[0].refereeApplications.email,
           } : null,
+          availableReferees: availableReferees.map(r => ({
+            id: r.id,
+            name: `${r.firstName} ${r.lastName}`,
+            email: r.email,
+          })),
+          availableScorekeepers: availableScorekeepers.map(s => ({
+            id: s.id,
+            name: `${s.firstName} ${s.lastName}`,
+            email: s.email,
+          })),
         };
       } catch (error: any) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });

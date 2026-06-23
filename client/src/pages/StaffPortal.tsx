@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, CheckCircle2, Clock, User, Lock, Trash2 } from 'lucide-react';
-// Toast notifications are handled by mutation callbacks
+import { AlertCircle, CheckCircle2, Clock, User, Lock, Users } from 'lucide-react';
 
 export function StaffPortal() {
   const { user } = useAuth();
@@ -133,59 +132,141 @@ export function StaffPortal() {
               <p className="text-gray-600 mt-2">Loading games...</p>
             </div>
           ) : upcomingGames && upcomingGames.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {upcomingGames.map(game => {
                 const staffStatus = gameStaffStatus[game.id];
                 const isSelected = selectedGames.has(game.id);
                 const isTaken = user?.role === 'referee' ? staffStatus?.referee : staffStatus?.scorekeeper;
                 const canSelect = !isTaken || isSelected;
 
+                // Get available staff for display
+                const availableStaff = user?.role === 'referee' 
+                  ? staffStatus?.availableReferees || []
+                  : staffStatus?.availableScorekeepers || [];
+
                 return (
                   <div
                     key={game.id}
-                    className={`flex items-center gap-4 p-4 border rounded-lg transition ${
+                    className={`border rounded-lg p-4 transition ${
                       canSelect ? 'hover:bg-gray-50' : 'bg-gray-50 opacity-60'
                     }`}
                   >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => handleToggleGame(game.id)}
-                      disabled={
-                        updateAvailability.isPending ||
-                        (!canSelect && !isSelected)
-                      }
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold">
-                        {game.teamAName} vs {game.teamBName}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(game.gameDate + 'T00:00:00').toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        })} at {game.gameTime}
-                      </p>
-                      {isTaken && !isSelected && (
-                        <div className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                    {/* Game Header with Checkbox */}
+                    <div className="flex items-start gap-4 mb-3">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleToggleGame(game.id)}
+                        disabled={
+                          updateAvailability.isPending ||
+                          (!canSelect && !isSelected)
+                        }
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">
+                          {game.teamAName} vs {game.teamBName}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(game.gameDate + 'T00:00:00').toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })} at {game.gameTime}
+                        </p>
+                      </div>
+                      {isSelected ? (
+                        <Badge variant="default" className="flex items-center gap-1 whitespace-nowrap">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Available
+                        </Badge>
+                      ) : isTaken ? (
+                        <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
                           <Lock className="w-3 h-3" />
-                          {user?.role === 'referee' ? 'Referee' : 'Scorekeeper'} already assigned: {isTaken.name}
-                        </div>
+                          Taken
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="whitespace-nowrap">Not Available</Badge>
                       )}
                     </div>
-                    {isSelected ? (
-                      <Badge variant="default" className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Available
-                      </Badge>
-                    ) : isTaken ? (
-                      <Badge variant="secondary" className="flex items-center gap-1">
+
+                    {/* Staff Status Section */}
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                      {/* Referee Column */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Referee
+                        </h4>
+                        {staffStatus?.referee ? (
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <p className="font-medium text-sm text-green-900">{staffStatus.referee.name}</p>
+                            <p className="text-xs text-green-700">{staffStatus.referee.email}</p>
+                            <Badge variant="default" className="mt-1 text-xs">Assigned</Badge>
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <p className="text-xs text-yellow-700 font-medium">No referee assigned</p>
+                          </div>
+                        )}
+                        {staffStatus?.availableReferees && staffStatus.availableReferees.length > 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                            <p className="text-xs font-semibold text-blue-900 flex items-center gap-1 mb-1">
+                              <Users className="w-3 h-3" />
+                              Available ({staffStatus.availableReferees.length})
+                            </p>
+                            <div className="space-y-1">
+                              {staffStatus.availableReferees.map((ref: any) => (
+                                <div key={ref.id} className="text-xs text-blue-700">
+                                  <p className="font-medium">{ref.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Scorekeeper Column */}
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Scorekeeper
+                        </h4>
+                        {staffStatus?.scorekeeper ? (
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <p className="font-medium text-sm text-green-900">{staffStatus.scorekeeper.name}</p>
+                            <p className="text-xs text-green-700">{staffStatus.scorekeeper.email}</p>
+                            <Badge variant="default" className="mt-1 text-xs">Assigned</Badge>
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
+                            <p className="text-xs text-yellow-700 font-medium">No scorekeeper assigned</p>
+                          </div>
+                        )}
+                        {staffStatus?.availableScorekeepers && staffStatus.availableScorekeepers.length > 0 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                            <p className="text-xs font-semibold text-blue-900 flex items-center gap-1 mb-1">
+                              <Users className="w-3 h-3" />
+                              Available ({staffStatus.availableScorekeepers.length})
+                            </p>
+                            <div className="space-y-1">
+                              {staffStatus.availableScorekeepers.map((sk: any) => (
+                                <div key={sk.id} className="text-xs text-blue-700">
+                                  <p className="font-medium">{sk.name}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Warning if taken */}
+                    {isTaken && !isSelected && (
+                      <div className="mt-3 text-xs text-red-600 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        Taken
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">Not Available</Badge>
+                        {user?.role === 'referee' ? 'Referee' : 'Scorekeeper'} already assigned: {isTaken.name}
+                      </div>
                     )}
                   </div>
                 );
