@@ -166,12 +166,12 @@ export default function AdminSettings() {
   // ---------------------------------------------------------------------------
   // Admin Check
   useEffect(() => {
-    if (user && user.email !== 'sarzouan@gmail.com') {
+    if (user && user.role !== 'admin') {
       navigate("/");
     }
   }, [user, navigate]);
 
-  if (!user || user.email !== 'sarzouan@gmail.com') return null;
+  if (!user || user.role !== 'admin') return null;
 
   const handleSeasonSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

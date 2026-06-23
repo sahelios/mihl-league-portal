@@ -32,7 +32,7 @@ export default function EvaluationGames() {
   const [addPlayerSelection, setAddPlayerSelection] = useState<Record<number, string>>({});
   const [addTeamSelection, setAddTeamSelection] = useState<Record<number, EvalTeam>>({});
 
-  if (!loading && (!user || user.email !== 'sarzouan@gmail.com')) {
+  if (!loading && (!user || user.role !== 'admin')) {
     navigate('/');
     return null;
   }

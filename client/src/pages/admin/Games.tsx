@@ -55,7 +55,7 @@ export default function Games() {
   });
 
   // Admin Access Check
-  if (user?.email !== 'sarzouan@gmail.com') {
+  if (user?.role !== 'admin') {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">

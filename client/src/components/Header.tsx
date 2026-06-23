@@ -13,8 +13,7 @@ export default function Header({ isAdmin = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   
-  // Only allow sarzouan@gmail.com to access admin portal
-  const isUserAdmin = (user?.email === 'sarzouan@gmail.com') || isAdmin;
+  const isUserAdmin = (user?.role === 'admin') || isAdmin;
 
   const publicLinks = [
     { href: "/", label: "Home" },
@@ -30,7 +29,6 @@ export default function Header({ isAdmin = false }: HeaderProps) {
     { href: "/staff-portal", label: "Staff Portal", highlight: true },
   ];
 
-  // For admins (sarzouan@gmail.com only), show public links but add Admin Portal at the beginning
   const links = isUserAdmin 
     ? [{ href: "/admin", label: "Admin Portal", highlight: true }, ...publicLinks]
     : publicLinks;

@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   const { user } = useAuth();
 
   // Redirect non-admins
-  if (user && user.email !== 'sarzouan@gmail.com') {
+  if (user && user.role !== 'admin') {
     navigate("/");
     return null;
   }

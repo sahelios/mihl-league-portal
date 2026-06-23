@@ -10,6 +10,13 @@ import {
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
+// Emails that are always granted admin role on login.
+// Add additional admins here without changing env vars.
+const ADMIN_EMAILS = new Set([
+  'sarzouan@gmail.com',
+  'aharonbensimon@gmail.com',
+]);
+
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
@@ -62,7 +69,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (user.openId === ENV.ownerOpenId || ADMIN_EMAILS.has(user.email ?? '')) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }

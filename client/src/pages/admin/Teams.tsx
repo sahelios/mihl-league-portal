@@ -35,7 +35,7 @@ export default function AdminTeams() {
   const [draggedPlayer, setDraggedPlayer] = useState<any>(null);
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
-  if (!loading && (!user || user.email !== 'sarzouan@gmail.com')) {
+  if (!loading && (!user || user.role !== 'admin')) {
     navigate('/');
     return null;
   }

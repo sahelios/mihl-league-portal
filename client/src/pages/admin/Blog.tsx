@@ -32,7 +32,7 @@ export default function BlogManagement() {
 
   const [form, setForm] = useState({ title: "", content: "", imageUrl: "", published: true });
 
-  if (user?.email !== 'sarzouan@gmail.com') {
+  if (user?.role !== 'admin') {
     navigate("/");
     return null;
   }
