@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/const";
+import { logoutFlag } from "@/lib/logout-flag";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -48,6 +49,10 @@ export function useAuth(options?: UseAuthOptions) {
       // The page reload below clears all React Query cache automatically.
       // No manual invalidation needed.
       if (typeof window !== 'undefined') {
+        // Set flag BEFORE navigating so the redirectToLoginIfUnauthorized
+        // subscriber in main.tsx ignores any UNAUTHORIZED errors that arrive
+        // from in-flight queries during this brief window.
+        logoutFlag.active = true;
         window.location.href = '/';
       }
     }

@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { logoutFlag } from "@/lib/logout-flag";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
@@ -20,6 +21,11 @@ const queryClient = new QueryClient({
 });
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
+  // Suppress redirect if logout is in progress. In-flight queries on protected
+  // pages will return UNAUTHORIZED after the cookie is cleared; without this
+  // guard they would race against the explicit '/' redirect in logout() and
+  // send the user to Google OAuth instead of the home page.
+  if (logoutFlag.active) return;
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
