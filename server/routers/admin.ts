@@ -232,25 +232,30 @@ export const adminRouter = router({
 
       const gameData = gameResult[0];
 
-      // Get players for home team
+      // Use playerTeams (the season-aware source of truth) to find who is on
+      // each team for this game's season. playerRegistrations.teamId and
+      // playerRegistrations.seasonId are both denormalized/registration-time
+      // values and exclude returning players from prior seasons.
       const homePlayers = await db
         .select({
           id: playerRegistrations.id,
           firstName: playerRegistrations.firstName,
           lastName: playerRegistrations.lastName,
-          position: playerRegistrations.position,
+          position: playerTeams.position,
           status: playerRegistrations.status,
-          teamId: playerRegistrations.teamId,
-          seasonId: playerRegistrations.seasonId,
+          teamId: playerTeams.teamId,
+          seasonId: playerTeams.seasonId,
         })
         .from(playerRegistrations)
-        .where(
+        .innerJoin(
+          playerTeams,
           and(
-            eq(playerRegistrations.teamId, gameData.homeTeamId),
-            eq(playerRegistrations.seasonId, gameData.seasonId),
-            eq(playerRegistrations.status, "approved")
+            eq(playerTeams.registrationId, playerRegistrations.id),
+            eq(playerTeams.teamId, gameData.homeTeamId),
+            eq(playerTeams.seasonId, gameData.seasonId),
           )
         )
+        .where(eq(playerRegistrations.status, "approved"))
         .orderBy(playerRegistrations.firstName);
 
       // Get players for away team
@@ -259,19 +264,21 @@ export const adminRouter = router({
           id: playerRegistrations.id,
           firstName: playerRegistrations.firstName,
           lastName: playerRegistrations.lastName,
-          position: playerRegistrations.position,
+          position: playerTeams.position,
           status: playerRegistrations.status,
-          teamId: playerRegistrations.teamId,
-          seasonId: playerRegistrations.seasonId,
+          teamId: playerTeams.teamId,
+          seasonId: playerTeams.seasonId,
         })
         .from(playerRegistrations)
-        .where(
+        .innerJoin(
+          playerTeams,
           and(
-            eq(playerRegistrations.teamId, gameData.awayTeamId),
-            eq(playerRegistrations.seasonId, gameData.seasonId),
-            eq(playerRegistrations.status, "approved")
+            eq(playerTeams.registrationId, playerRegistrations.id),
+            eq(playerTeams.teamId, gameData.awayTeamId),
+            eq(playerTeams.seasonId, gameData.seasonId),
           )
         )
+        .where(eq(playerRegistrations.status, "approved"))
         .orderBy(playerRegistrations.firstName);
 
       return { homePlayers, awayPlayers };
@@ -1838,7 +1845,13 @@ export const adminRouter = router({
       const ptMap: Record<number, any> = {};
       ptRows.forEach(pt => { ptMap[pt.registrationId] = pt; });
 
-      const regs = await db.select().from(playerRegistrations).where(eq(playerRegistrations.seasonId, input.seasonId));
+      // Return all approved players regardless of which season they registered
+      // in. playerRegistrations.seasonId is the season they first signed up —
+      // filtering on it excludes returning players from prior seasons.
+      const regs = await db
+        .select()
+        .from(playerRegistrations)
+        .where(eq(playerRegistrations.status, 'approved'));
 
       return regs.map(r => ({
         id: r.id,

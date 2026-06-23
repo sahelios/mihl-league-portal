@@ -26,26 +26,33 @@ export default function TeamManagement() {
     selectedSeasonId ? { seasonId: selectedSeasonId } : undefined,
     { enabled: !!selectedSeasonId }
   );
-  const { data: registrations = [] } = trpc.registration.getAll.useQuery({} as any, { enabled: !!selectedSeasonId });
+  // Use getApprovedPlayersForSeason so the season-aware playerTeams JOIN is
+  // used — not playerRegistrations.teamId which is denormalized and excludes
+  // returning players whose registration predates the active season.
+  const { data: registrations = [] } = trpc.admin.getApprovedPlayersForSeason.useQuery(
+    { seasonId: selectedSeasonId! },
+    { enabled: !!selectedSeasonId }
+  );
   const { data: waitingList = [] } = trpc.admin.getWaitingList.useQuery({} as any, { enabled: !!selectedSeasonId });
 
   // Mutations
   const assignTeamMutation = trpc.admin.assignTeam.useMutation({
     onSuccess: () => {
       toast.success("Player assigned to team!");
-      utils.registration.getAll.invalidate();
+      utils.admin.getApprovedPlayersForSeason.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || "Failed to assign player");
     },
   });
 
-  // Filter players by status
-  const pendingPlayers = registrations.filter(r => r.status === "pending" && !r.teamId);
-  const approvedPlayers = registrations.filter(r => r.status === "approved" && !r.teamId);
-  const waitingListPlayers = waitingList.filter(w => !registrations.find(r => r.id === w.playerId && r.teamId));
+  // currentTeamId comes from the playerTeams JOIN (season-aware).
+  // For unassigned: currentTeamId is null. For team roster: currentTeamId matches.
+  const approvedPlayers = (registrations as any[]).filter(r => !r.currentTeamId);
+  const pendingPlayers: any[] = []; // getApprovedPlayersForSeason only returns approved
+  const waitingListPlayers = waitingList.filter((w: any) => !(registrations as any[]).find(r => r.id === w.playerId && r.currentTeamId));
 
-  const teamPlayers = registrations.filter(r => r.teamId === selectedTeamId);
+  const teamPlayers = (registrations as any[]).filter(r => r.currentTeamId === selectedTeamId);
 
   const handleAssignPlayer = (playerId: number) => {
     if (!selectedTeamId) {
