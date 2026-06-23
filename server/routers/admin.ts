@@ -452,13 +452,17 @@ export const adminRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const activeSeason = await db.query.seasons.findFirst({
-        where: (seasons, { eq }) => eq(seasons.isActive, true),
-      });
+      const activeSeasonResult = await db
+        .select()
+        .from(seasons)
+        .where(eq(seasons.isActive, true))
+        .limit(1);
 
-      if (!activeSeason) {
+      if (!activeSeasonResult.length) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No active season found" });
       }
+
+      const activeSeason = activeSeasonResult[0];
 
       await db.insert(newsPosts).values({
         title: input.title,
