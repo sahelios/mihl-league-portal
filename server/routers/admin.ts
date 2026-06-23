@@ -35,6 +35,12 @@ import {
 } from "../../drizzle/schema";
 import { broadcastGameInfoUpdate } from "../_core/websocket";
 
+// Strip 4-byte emoji before saving — MySQL utf8 columns (3-byte) reject them.
+// Safer than ALTER TABLE at runtime which locks tables and breaks connections.
+function stripEmoji(s: string): string {
+  return s.replace(/[\u{10000}-\u{10FFFF}]/gu, "");
+}
+
 // Helper to ensure admin access
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (ctx.user?.role !== "admin") {
@@ -478,8 +484,8 @@ export const adminRouter = router({
       const activeSeason = activeSeasonResult[0];
 
       await db.insert(newsPosts).values({
-        title: input.title,
-        content: input.content,
+        title: stripEmoji(input.title),
+        content: stripEmoji(input.content),
         imageUrl: input.imageUrl || null,
         authorId: ctx.user.id,
         seasonId: activeSeason.id,
@@ -501,8 +507,8 @@ export const adminRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       await db.update(newsPosts).set({
-        title: input.title,
-        content: input.content,
+        title: stripEmoji(input.title),
+        content: stripEmoji(input.content),
         imageUrl: input.imageUrl || null,
         ...(input.published !== undefined && { isApproved: input.published }),
       }).where(eq(newsPosts.id, input.id));
