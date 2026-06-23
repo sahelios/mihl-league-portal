@@ -41,7 +41,10 @@ export function getDateOnly(date: Date | string): string {
  * formatDate(new Date(2026, 5, 23)) // Returns "Tue, Jun 23, 2026"
  */
 export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? parseLocalDate(getDateOnly(date)) : date;
+  // Always go through getDateOnly → parseLocalDate so a raw UTC-midnight Date
+  // object (what mysql2 returns for DATE columns) doesn't show the previous day
+  // in UTC-offset timezones like Montreal (UTC-4).
+  const d = parseLocalDate(getDateOnly(typeof date === 'string' ? date : date.toISOString()));
   return d.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',

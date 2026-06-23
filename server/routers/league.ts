@@ -152,7 +152,7 @@ export const leagueRouter = router({
             teamBName: isEvaluationGame ? 'Team Black' : (teamMap.get(game.awayTeamId) || `Team ${game.awayTeamId}`),
             teamAScore: game.homeScore,
             teamBScore: game.awayScore,
-            date: game.gameDate,
+            date: game.gameDate instanceof Date ? game.gameDate.toISOString().split('T')[0] : String(game.gameDate ?? ''),
             time: game.gameTime,
             venue: venueMap.get(game.venueId) || 'TBA',
             isEvaluationGame,

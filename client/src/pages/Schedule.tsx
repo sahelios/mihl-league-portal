@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { formatDate as formatDateUtil } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,21 +41,7 @@ export default function Schedule() {
     });
   }, [games, teamFilter, statusTab]);
 
-  const formatDate = (dateInput: string | Date) => {
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-    let localDate: Date;
-    
-    if (dateInput instanceof Date) {
-      localDate = dateInput;
-    } else if (typeof dateInput === 'string') {
-      const [year, month, day] = dateInput.split('T')[0].split('-');
-      localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    } else {
-      return 'Invalid date';
-    }
-    
-    return localDate.toLocaleDateString(language === "en" ? "en-CA" : "fr-CA", options);
-  };
+  const formatDate = (dateInput: string | Date) => formatDateUtil(dateInput);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
